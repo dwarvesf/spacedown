@@ -25,7 +25,15 @@
 #                  Safari extension, render helper, LaunchAgent or md-open link.
 #   --with-safari  also build the Safari drop extension and install its render
 #                  helper + LaunchAgent (needs the md-preview CLI and pandoc).
+#
+# Env (used by scripts/release.sh):
+#   SIGN_ID=<identity>  sign with this identity instead of adhoc, with a secure
+#                       timestamp and the release app entitlements (no get-task-allow,
+#                       which notarization rejects).
+#   NO_INSTALL=1        stop after signing and print the built app's path.
 set -euo pipefail
+SIGN_ID="${SIGN_ID:--}"
+NO_INSTALL="${NO_INSTALL:-0}"
 
 SAFARI=0
 case "${1:-}" in
@@ -108,12 +116,23 @@ fi
 
 # 5. Sign adhoc + hardened runtime, OUTSIDE-IN (nested appex first, then the app
 #    re-seals PlugIns). Safari appex carries the sandbox + mach-lookup exception.
-echo "build-safari: signing (adhoc + runtime + entitlements)..."
-sign() { codesign --force --sign - --options runtime --entitlements "$1" "$2"; }
+APP_ENT="${ENT}/app.entitlements"
+TIMESTAMP=()
+if [[ "$SIGN_ID" != "-" ]]; then
+  APP_ENT="${ENT}/app.release.entitlements"
+  TIMESTAMP=(--timestamp)
+fi
+echo "build-safari: signing (${SIGN_ID} + runtime + entitlements)..."
+# The ${a[@]+...} form keeps an empty array safe under set -u on macOS's bash 3.2.
+sign() { codesign --force --sign "$SIGN_ID" --options runtime ${TIMESTAMP[@]+"${TIMESTAMP[@]}"} --entitlements "$1" "$2"; }
 sign "${QLDIR}/MarkdownPreviewQL.entitlements" "${APP}/Contents/PlugIns/MarkdownPreviewQL.appex"
 [[ $SAFARI -eq 1 ]] && sign "${ENT}/extension.entitlements" "$SAFARI_APPEX"
-sign "${ENT}/app.entitlements"                  "${APP}"
+sign "$APP_ENT"                                 "${APP}"
 codesign --verify --deep --strict "$APP" || { echo "build-safari: signature verify failed" >&2; exit 1; }
+if [[ "$NO_INSTALL" == "1" ]]; then
+  echo "$APP"
+  exit 0
+fi
 
 # 6. Install the app.
 mkdir -p "$APP_DEST"
