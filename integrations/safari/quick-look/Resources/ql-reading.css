@@ -147,6 +147,10 @@ table.sd-wide td:not(.sd-tight) { min-width: 22ch; }
    fixed equal-width columns it floats numbers to mid-page. Explicit markdown
    column alignment (style="text-align: right") still wins via the base rule. */
 td.sd-num, th.sd-num { text-align: left; }
+/* marked writes markdown column alignment (---: and :---:) as an align attribute,
+   which the text-align rules above would otherwise override. */
+th[align="right"], td[align="right"] { text-align: right; }
+th[align="center"], td[align="center"] { text-align: center; }
 
 /* Figure captions: the house convention is an image alone in its paragraph followed
    by the caption paragraph. Markdown emits no <figure>, so the structure is the only
