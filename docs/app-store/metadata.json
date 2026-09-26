@@ -1,0 +1,16 @@
+{
+  "locale": "en-US",
+  "name": "Spacedown",
+  "subtitle": "Markdown preview on Space",
+  "primaryCategory": "PRODUCTIVITY",
+  "secondaryCategory": "DEVELOPER_TOOLS",
+  "keywords": "markdown,quick look,preview,md,latex,katex,math,obsidian,notes,reader,finder,spacebar,readme",
+  "promotionalText": "Press space on any Markdown file in Finder and read it rendered, math included.",
+  "description": "Spacedown adds a Markdown preview to Quick Look. Select a .md file in Finder, press Space, and read it rendered instead of as raw text.\n\nWhat it renders:\n- Headings, lists, tables, links and images\n- LaTeX math with KaTeX, inline and display\n- Code blocks with syntax highlighting\n- Obsidian-style callouts and wikilinks\n- YAML frontmatter as a clean property table\n- Task lists\n\nA calm reading theme follows your Mac's light and dark appearance. Wide tables scroll sideways instead of squashing.\n\nPrivate by design: everything renders on your Mac. No network, no accounts, no tracking.\n\nOpen Spacedown once after installing, then press Space on any Markdown file. If the preview does not appear, turn Spacedown on under System Settings, General, Login Items & Extensions, Quick Look.\n\nFree and open source from Dwarves Foundation: github.com/dwarvesf/spacedown",
+  "supportUrl": "https://github.com/dwarvesf/spacedown/issues",
+  "marketingUrl": "https://github.com/dwarvesf/spacedown",
+  "privacyPolicyUrl": "https://github.com/dwarvesf/spacedown/blob/main/docs/PRIVACY.md",
+  "copyright": "2026 Dwarves Foundation",
+  "price": "free",
+  "reviewNotes": "Spacedown is a Quick Look preview extension for Markdown files. To test: open the app once, then in Finder select any .md file and press Space. The app window only explains this. No account or network access is needed."
+}
