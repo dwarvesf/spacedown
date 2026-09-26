@@ -67,10 +67,13 @@ Mach service are both `dfoundation.spacedown.render`. launchd starts it on deman
 idle-exits after 30 seconds. `quick-look/test-render.js` checks that the plist, the helper,
 the extension client and the mach-lookup entitlement all name the same service.
 
-**Caveat (notarization, unchanged):** adhoc is still "unsigned" to Safari, so the
-"Allow unsigned extensions" toggle **resets every Safari restart** until the app is
-notarized with a Developer ID. The Finder "Open With" path renders in
-Safari permanently with no toggle and is the zero-infra fallback.
+**Caveat (notarization):** adhoc is still "unsigned" to Safari, so the
+"Allow unsigned extensions" toggle **resets every Safari restart**. A Developer ID
+signature alone is not enough: Safari skips the extension ("Computing the code signing
+dictionary failed" in its log) until the app is notarized. Build with
+`SIGN_ID="Developer ID Application: ..." NOTARIZE=<notarytool profile>` to get a
+permanent entry. The Finder "Open With" path renders in Safari permanently with no
+toggle and is the zero-infra fallback.
 
 How Safari differs from Chromium (both share `dropzone.{html,js}`):
 

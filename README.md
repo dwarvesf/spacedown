@@ -143,7 +143,7 @@ After the build, select a `.md` file in Finder and press space. If the preview d
 
 The Safari extension must be App-Sandboxed to load, and a sandboxed extension cannot run pandoc. It therefore forwards each dropped file over XPC to a small unsandboxed helper, which launchd starts on demand and which exits when idle. To enable the extension after `--with-safari`:
 
-1. Safari > Settings > Developer: tick **Allow unsigned extensions**. An ad hoc signature counts as unsigned, and this setting resets on every Safari restart until the app is notarized.
+1. Safari > Settings > Developer: tick **Allow unsigned extensions**. An ad hoc signature counts as unsigned, and this setting resets on every Safari restart. A build signed and notarized with a Developer ID (`SIGN_ID` and `NOTARIZE`, see the header of `build-safari.sh`) skips this step; Safari does not list a Developer ID extension that is not notarized.
 2. Quit and relaunch Safari.
 3. Safari > Settings > Extensions: tick **Spacedown**.
 4. Click the toolbar button, then drag a `.md` file onto the drop page.
