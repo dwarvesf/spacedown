@@ -179,7 +179,32 @@
   // Appex-only CSS: hide the double marker on task-list items (marked emits
   // <li><input...>). Callout accents live in the shared vscode-preview-head.html,
   // which build-safari.sh copies in as md-style.html.
-  var QL_EXTRA_CSS = '<style>li.task-list-item{list-style:none}</style>';
+  var QL_EXTRA_CSS = '<style>li.task-list-item{list-style:none}' +
+    '.wikilink{text-decoration:underline dotted;text-underline-offset:.18em}</style>';
+
+  // Obsidian wikilinks, [[target]] and [[target|title]], as a marked inline extension so
+  // code spans and fences keep their brackets. The panel has nowhere to navigate, so a
+  // wikilink renders as marked-up text rather than a dead link.
+  function escapeText(s) {
+    return s.replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  if (global.marked && !global.__mdpWikilinks) {
+    global.__mdpWikilinks = true;
+    global.marked.use({
+      extensions: [{
+        name: "wikilink",
+        level: "inline",
+        start: function (src) { var i = src.indexOf("[["); return i < 0 ? undefined : i; },
+        tokenizer: function (src) {
+          var m = /^\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]/.exec(src);
+          if (m) return { type: "wikilink", raw: m[0], text: (m[2] || m[1]).trim() };
+        },
+        renderer: function (token) { return '<span class="wikilink">' + escapeText(token.text) + "</span>"; }
+      }]
+    });
+  }
 
   // Syntax highlighting. The pandoc path highlights via `--syntax-highlighting tango`,
   // so an unhighlighted panel read as a downgrade from the browser preview. Done as a

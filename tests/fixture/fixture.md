@@ -6,7 +6,7 @@ owner: example-team
 meta:
   season: spring
   stations: 6
-description: A synthetic document that exercises every md-preview feature. Workflow: (1) render it, (2) check each section, (3) compare light and dark.
+description: A synthetic document that exercises every Spacedown feature. Workflow: (1) render it, (2) check each section, (3) compare light and dark.
 ---
 
 # Spring rainfall review

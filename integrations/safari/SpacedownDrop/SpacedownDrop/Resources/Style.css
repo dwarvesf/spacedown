@@ -1,7 +1,8 @@
-/* Spacedown, Safari extension container onboarding window.
-   Native macOS (Tahoe-era) look: content sits on the window background, no
-   floating web card, system-semantic colors that adapt to light/dark,
-   a single brand-indigo accent (icon, glyph, and button agree). Fits 460x460, no scroll.
+/* Spacedown app window: Quick Look first, the Safari section only in a
+   --with-safari build. Native macOS (Tahoe-era) look: content sits on the window
+   background, no floating web card, system-semantic colors that adapt to light/dark,
+   a single brand-indigo accent (icon, glyph, and button agree). Fits 460x500
+   (460x640 with Safari), no scroll.
 
    v2 polish pass: app-icon-grade tile depth, Apple title metrics + tracking,
    flatter inline status capsule, refined native push-button, tighter vertical
@@ -220,18 +221,51 @@ h1 {
     box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
-/* State drives only the dot color + which status line is shown.
-   The heading never changes color. */
-body.state-on    .status .dot { background: var(--status-green); }
-body.state-off   .status .dot { background: var(--status-amber); }
-body.state-unknown .status .dot,
-body:not(.state-on):not(.state-off) .status .dot { background: var(--label-tertiary); }
+/* Quick Look ships inside the app, so its dot is always green. Safari extension
+   state drives only the Safari dot color + which Safari status line is shown. */
+.status-ql .dot { background: var(--status-green); }
+body.state-on    .status-safari .dot { background: var(--status-green); }
+body.state-off   .status-safari .dot { background: var(--status-amber); }
+body.state-unknown .status-safari .dot,
+body:not(.state-on):not(.state-off) .status-safari .dot { background: var(--label-tertiary); }
+
+[hidden] { display: none !important; }
+
+.steps {
+    margin: 14px 0 0;
+    font-size: 13px;
+    color: var(--label);
+}
+
+kbd {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--chip-ink);
+    background: var(--chip-bg);
+    border: 0.5px solid var(--chip-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    box-shadow: 0 1px 0 var(--chip-border);
+}
+
+/* The Safari section sits under a hairline, as an optional second feature. */
+section.safari {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 0.5px solid var(--separator);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+section.safari .status { margin-top: 0; }
 
 .state { margin: 0; }
 
 /* ---- Primary push button (native accent) -------------------------------- */
 
-button.open-preferences {
+button.open-preferences, button.open-extensions {
     margin-top: 22px;
     font-family: inherit;
     font-size: 13px;
@@ -251,14 +285,14 @@ button.open-preferences {
         0 1px 2px rgba(70, 58, 207, 0.28);
     transition: filter 0.10s ease, box-shadow 0.10s ease;
 }
-button.open-preferences:hover { filter: brightness(1.06); }
-button.open-preferences:active {
+button.open-preferences:hover, button.open-extensions:hover { filter: brightness(1.06); }
+button.open-preferences:active, button.open-extensions:active {
     filter: brightness(0.93);
     box-shadow:
         inset 0 1px 2px rgba(0, 0, 0, 0.22),
         0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
-button.open-preferences:focus-visible {
+button.open-preferences:focus-visible, button.open-extensions:focus-visible {
     outline: none;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.22),

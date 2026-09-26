@@ -31,6 +31,14 @@ check("display math -> katex display", /katex-display|displaystyle|\\sum|class="
 check("code fence still works", /<pre|<code/.test(ctx.mdToHtml("```\nx=1\n```\n")));
 check("no-math doc unaffected", ctx.mdToHtml("# Plain\n\njust text").includes("<h1"));
 
+// Wikilinks: [[target]] and [[target|title]] render as text (the panel has nowhere to
+// navigate), while a code span keeps its literal brackets.
+const wl = ctx.mdToHtml("See [[station-notes]] and [[calibration-log|the log]], not `[[raw]]`.");
+check("[[target]] -> wikilink span", wl.includes('<span class="wikilink">station-notes</span>'));
+check("[[target|title]] -> title text", wl.includes('<span class="wikilink">the log</span>') && !wl.includes("calibration-log"));
+check("wikilink inside a code span stays literal", wl.includes("<code>[[raw]]</code>"));
+check("wikilink text is escaped", ctx.mdToHtml("[[a<b>]]").includes("a&lt;b&gt;"));
+
 // Frontmatter: leading --- block renders as the mdp-frontmatter table (same contract
 // as assets/frontmatter-to-table.py), odd shapes fall back to a yaml fence, and a
 // mid-document --- stays a plain thematic break.

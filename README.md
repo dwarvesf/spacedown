@@ -16,7 +16,11 @@ Get the notarized `Spacedown-<version>-macos.zip` from [Releases](https://github
 
 ## Screenshots
 
-_Screenshots coming soon: the paper theme in light and dark, the outline sidebar, and the Quick Look panel._
+| Light | Dark |
+|---|---|
+| ![Spacedown Quick Look preview of a sample document in light mode](docs/images/quicklook-light.png) | ![The same preview in dark mode](docs/images/quicklook-dark.png) |
+
+![The Spacedown app window after first launch](docs/images/app-window.png)
 
 ## Features
 

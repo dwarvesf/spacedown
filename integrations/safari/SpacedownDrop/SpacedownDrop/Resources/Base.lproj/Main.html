@@ -11,18 +11,29 @@
   <div class="card">
     <div class="logo" aria-hidden="true"><span class="glyph">M<span class="arrow">&#8595;</span></span></div>
     <h1>Spacedown</h1>
-    <p class="tagline">Render Markdown the way you read it.</p>
+    <p class="tagline">Markdown, rendered when you press space.</p>
 
-    <div class="status" role="status" aria-live="polite">
+    <div class="status status-ql" role="status">
       <span class="dot" aria-hidden="true"></span>
-      <span class="state state-on">The Spacedown extension is on.</span>
-      <span class="state state-off">The Spacedown extension is off. You can turn it on in Safari Settings.</span>
-      <span class="state state-unknown">You can turn on the Spacedown extension in Safari Settings.</span>
+      <span>The Quick Look preview is installed.</span>
     </div>
 
-    <button class="open-preferences">Quit and Open Safari Settings&#8230;</button>
+    <p class="steps">Select a <code>.md</code> file in Finder and press <kbd>Space</kbd>.</p>
 
-    <p class="hint">Then click its toolbar button and drag a <code>.md</code> file onto the dropzone.</p>
+    <button class="open-extensions">Open Quick Look Settings&#8230;</button>
+
+    <p class="hint">No preview? Turn on Spacedown under System Settings, General, Login Items &amp; Extensions, Quick Look.</p>
+
+    <section class="safari" hidden>
+      <div class="status status-safari" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="state state-on">The Safari extension is on.</span>
+        <span class="state state-off">The Safari extension is off. Turn it on in Safari Settings.</span>
+        <span class="state state-unknown">Turn on the Safari extension in Safari Settings.</span>
+      </div>
+      <button class="open-preferences">Quit and Open Safari Settings&#8230;</button>
+      <p class="hint">Then click its toolbar button and drag a <code>.md</code> file onto the drop page.</p>
+    </section>
   </div>
   <footer>&#169; 2026 Dwarves Foundation</footer>
   <script src="../Script.js"></script>
