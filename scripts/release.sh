@@ -109,7 +109,23 @@ if [[ $MAS -eq 1 ]]; then
   codesign --verify --deep --strict "$APP" || die "signature verify failed"
 
   echo "== package"
-  productbuild --component "$APP" /Applications --sign "$INSTALLER_ID" "$PKG" >/dev/null
+  # macOS 26+ tags every file this build writes with com.apple.provenance, which
+  # cannot be removed, and pkgbuild serialises it as ._ AppleDouble entries that the
+  # App Store rejects. Keep productbuild's Distribution and PackageInfo, rebuild the
+  # component Payload with cpio (COPYFILE_DISABLE) and a Bom without the ._ rows,
+  # then flatten and sign again.
+  PW="$(mktemp -d)"
+  productbuild --component "$APP" /Applications "$PW/raw.pkg" >/dev/null 2>&1
+  pkgutil --expand "$PW/raw.pkg" "$PW/x"
+  COMP="$PW/x/$APP_ID.pkg"
+  mkdir "$PW/root"
+  ditto "$APP" "$PW/root/$APP_NAME"
+  ( cd "$PW/root" && find . | COPYFILE_DISABLE=1 cpio -o --format odc -R 0:0 2>/dev/null | gzip -9 -c > "$COMP/Payload" )
+  lsbom "$COMP/Bom" | grep -v '/\._' | sed $'1s/^\\.\t0\t/.\t40755\t/' > "$PW/bom.txt"
+  mkbom -i "$PW/bom.txt" "$COMP/Bom"
+  pkgutil --flatten "$PW/x" "$PW/unsigned.pkg"
+  productsign --sign "$INSTALLER_ID" "$PW/unsigned.pkg" "$PKG" >/dev/null
+  ! has "$(pkgutil --payload-files "$PKG")" "/._" || die "package payload still has AppleDouble entries"
   has "$(pkgutil --check-signature "$PKG")" "Status: signed by a certificate trusted" \
     || has "$(pkgutil --check-signature "$PKG")" "3rd Party Mac Developer Installer" \
     || die "package signature check failed"
