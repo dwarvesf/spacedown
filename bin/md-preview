@@ -66,6 +66,11 @@ Flags:
                     monospace everywhere). read: proportional serif prose for
                     long-form reading, monospace kept for code/tables.
                     Env: MD_PREVIEW_FONT_MODE.
+
+Env:
+  MD_PREVIEW_THEME_CSS=FILE  a plain CSS theme that replaces the paper theme
+                    (same contract as assets/paper-theme.css). read and mono
+                    are unaffected.
   --no-standalone   Disable pandoc --standalone (rare; for embedding).
   --help            Print this.
   --version         Print version + dep status.
@@ -203,6 +208,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$FILE" ]] || die 64 "missing required <file> arg (see --help)"
+if [[ -n "${MD_PREVIEW_THEME_CSS:-}" ]]; then
+  [[ -f "$MD_PREVIEW_THEME_CSS" ]] || die 64 "MD_PREVIEW_THEME_CSS not found: $MD_PREVIEW_THEME_CSS"
+  PAPER_CSS="$MD_PREVIEW_THEME_CSS"
+fi
 
 # ---- folder mode ----
 # `md-preview <dir>` renders every top-level *.md / *.markdown in <dir> and writes an
