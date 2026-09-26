@@ -1,6 +1,6 @@
 # Third-party notices
 
-md-preview bundles or references the third-party works below. Each keeps its own license. The upstream projects hold the full license texts.
+Spacedown and the md-preview CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts.
 
 ## Bundled code
 
@@ -19,7 +19,7 @@ md-preview bundles or references the third-party works below. Each keeps its own
 | KaTeX (CDN copy) | Math in CLI output pages, loaded by pandoc from a CDN | MIT | https://github.com/KaTeX/KaTeX |
 | entr | Optional file watching for `--watch` | ISC | https://github.com/eradman/entr |
 
-md-preview runs pandoc and entr as separate programs and includes none of their code.
+The md-preview CLI runs pandoc and entr as separate programs and includes none of their code.
 
 ## Fonts (referenced, not bundled)
 

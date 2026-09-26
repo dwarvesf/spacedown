@@ -7,7 +7,7 @@
 // content and it renders from a temp copy. Markdown files are tiny, well under
 // native messaging's 1MB message ceiling.
 
-const HOST = "foundation.d.mdpreview";
+const HOST = "foundation.d.spacedown";
 
 // navigator.vendor is "Apple Computer, Inc." in Safari/WebKit and "Google Inc."
 // in Chromium (Blink). Used to branch the native-messaging call, whose signature

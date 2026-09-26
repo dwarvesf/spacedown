@@ -1,6 +1,6 @@
 //
 //  MarkdownPreviewProvider.swift
-//  MarkdownPreviewQL
+//  SpacedownQL
 //
 //  Quick Look preview extension: spacebar a .md in Finder/Spotlight -> rendered preview.
 //  Renders in-process with marked.js + KaTeX (NOT pandoc, which a sandboxed appex cannot
@@ -22,7 +22,7 @@ final class MarkdownRenderer {
     private init() {
         guard let ctx = ctx else { return }
         ctx.exceptionHandler = { _, exc in
-            NSLog("MarkdownPreviewQL JS error: \(String(describing: exc))")
+            NSLog("SpacedownQL JS error: \(String(describing: exc))")
         }
         let bundle = Bundle(for: MarkdownRenderer.self)
         loadScript(ctx, bundle, "marked.min", "js", nil)
@@ -36,7 +36,7 @@ final class MarkdownRenderer {
     private func loadScript(_ ctx: JSContext, _ b: Bundle, _ name: String, _ ext: String, _ sub: String?) {
         guard let url = b.url(forResource: name, withExtension: ext, subdirectory: sub),
               let js = try? String(contentsOf: url, encoding: .utf8) else {
-            NSLog("MarkdownPreviewQL: missing resource \(sub ?? "")/\(name).\(ext)")
+            NSLog("SpacedownQL: missing resource \(sub ?? "")/\(name).\(ext)")
             return
         }
         ctx.evaluateScript(js)
@@ -124,7 +124,7 @@ func inlineLocalImages(_ html: String, relativeTo docURL: URL) -> String {
         guard let data = try? Data(contentsOf: url.standardizedFileURL) else {
             // Almost always a sandbox denial on a sibling file, which reads in the
             // panel as a broken image with no other clue. Say so in the log.
-            NSLog("MarkdownPreviewQL: cannot read image %@", url.path)
+            NSLog("SpacedownQL: cannot read image %@", url.path)
             continue
         }
         guard data.count <= imageMaxSingle, spent + data.count <= imageBudget else { continue }
@@ -133,7 +133,7 @@ func inlineLocalImages(_ html: String, relativeTo docURL: URL) -> String {
         if let r = Range(m.range(at: 1), in: out) { out.replaceSubrange(r, with: uri) }
         inlined += 1
     }
-    NSLog("MarkdownPreviewQL: inlined %d/%d images, %d bytes", inlined, matches.count, spent)
+    NSLog("SpacedownQL: inlined %d/%d images, %d bytes", inlined, matches.count, spent)
     return out
 }
 
@@ -169,7 +169,7 @@ class MarkdownPreviewProvider: QLPreviewProvider, QLPreviewingController {
     func providePreview(for request: QLFilePreviewRequest) async throws -> QLPreviewReply {
         let md = (try? String(contentsOf: request.fileURL, encoding: .utf8)) ?? ""
         let data = buildPreviewHTML(md, fileURL: request.fileURL)
-        NSLog("MarkdownPreviewQL: rendered %@ -> %d bytes HTML",
+        NSLog("SpacedownQL: rendered %@ -> %d bytes HTML",
               request.fileURL.lastPathComponent, data.count)
         return QLPreviewReply(dataOfContentType: .html,
                               contentSize: CGSize(width: 820, height: 1040)) { _ in

@@ -1,8 +1,8 @@
 function show(enabled, useSettingsInsteadOfPreferences) {
     if (useSettingsInsteadOfPreferences) {
-        document.getElementsByClassName('state-on')[0].innerText = "Markdown Preview is on and ready.";
-        document.getElementsByClassName('state-off')[0].innerText = "Markdown Preview is off. Turn it on in the Extensions section of Safari Settings.";
-        document.getElementsByClassName('state-unknown')[0].innerText = "Turn on Markdown Preview in the Extensions section of Safari Settings.";
+        document.getElementsByClassName('state-on')[0].innerText = "Spacedown is on and ready.";
+        document.getElementsByClassName('state-off')[0].innerText = "Spacedown is off. Turn it on in the Extensions section of Safari Settings.";
+        document.getElementsByClassName('state-unknown')[0].innerText = "Turn on Spacedown in the Extensions section of Safari Settings.";
         document.getElementsByClassName('open-preferences')[0].innerText = "Quit and Open Safari Settings…";
     }
 

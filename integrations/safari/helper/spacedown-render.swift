@@ -1,5 +1,5 @@
 //
-//  mdpreview-render.swift
+//  spacedown-render.swift
 //  Unsandboxed, launch-on-demand XPC helper for the Safari drag-drop extension.
 //
 //  Why this exists: a Safari Web Extension MUST be App-Sandboxed to load, and a
@@ -7,7 +7,7 @@
 //  an unsandboxed helper that launchd starts on demand (user LaunchAgent +
 //  MachServices) when the sandboxed appex opens an XPC connection.
 //
-//  Build: swiftc -O mdpreview-render.swift -o mdpreview-render   (Foundation only)
+//  Build: swiftc -O spacedown-render.swift -o spacedown-render   (Foundation only)
 //  The render logic is the exact md-open spawn moved verbatim from the old
 //  SafariWebExtensionHandler.
 
@@ -15,12 +15,12 @@ import Foundation
 
 // Protocol is duplicated (not shared via a file) in the appex handler so the
 // Xcode project needs zero edits; they match by the @objc name.
-@objc(MdPreviewRenderService)
-protocol MdPreviewRenderService {
+@objc(SpacedownRenderService)
+protocol SpacedownRenderService {
     func render(name: String, content: String, withReply reply: @escaping (Bool, String) -> Void)
 }
 
-final class RenderImpl: NSObject, MdPreviewRenderService {
+final class RenderImpl: NSObject, SpacedownRenderService {
     func render(name rawName: String, content: String, withReply reply: @escaping (Bool, String) -> Void) {
         // Keep only the basename; ensure a .md/.markdown extension.
         var name = (rawName as NSString).lastPathComponent
@@ -80,7 +80,7 @@ final class RenderImpl: NSObject, MdPreviewRenderService {
 // the grace period.
 final class IdleExit {
     static let shared = IdleExit()
-    private let q = DispatchQueue(label: "foundation.d.mdpreview.render.idle")
+    private let q = DispatchQueue(label: "foundation.d.spacedown.render.idle")
     private var timer: DispatchSourceTimer?
     private let grace: TimeInterval = 30
     func bump() {
@@ -98,7 +98,7 @@ final class IdleExit {
 final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
         IdleExit.shared.bump()
-        newConnection.exportedInterface = NSXPCInterface(with: MdPreviewRenderService.self)
+        newConnection.exportedInterface = NSXPCInterface(with: SpacedownRenderService.self)
         newConnection.exportedObject = RenderImpl()
         newConnection.invalidationHandler = { IdleExit.shared.bump() }
         newConnection.resume()
@@ -108,7 +108,7 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
 
 // MachService name must match the LaunchAgent plist's MachServices key and the
 // extension's mach-lookup temporary-exception entitlement.
-let serviceName = "foundation.d.mdpreview.render"
+let serviceName = "foundation.d.spacedown.render"
 let delegate = ListenerDelegate()
 let listener = NSXPCListener(machServiceName: serviceName)
 listener.delegate = delegate

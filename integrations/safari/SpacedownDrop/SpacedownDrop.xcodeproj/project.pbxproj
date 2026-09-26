@@ -15,7 +15,7 @@
 		9B2B34C82FDBE0E1007C5476 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2B34C72FDBE0E1007C5476 /* ViewController.swift */; };
 		9B2B34CB2FDBE0E1007C5476 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34C92FDBE0E1007C5476 /* Main.storyboard */; };
 		9B2B34CD2FDBE0E2007C5476 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34CC2FDBE0E2007C5476 /* Assets.xcassets */; };
-		9B2B34D42FDBE0E2007C5476 /* MdPreviewDrop Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9B2B34D32FDBE0E2007C5476 /* MdPreviewDrop Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		9B2B34D42FDBE0E2007C5476 /* SpacedownDrop Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9B2B34D32FDBE0E2007C5476 /* SpacedownDrop Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		9B2B34D92FDBE0E2007C5476 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2B34D82FDBE0E2007C5476 /* SafariWebExtensionHandler.swift */; };
 		9B2B34EA2FDBE0E2007C5476 /* dropzone.js in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34E52FDBE0E2007C5476 /* dropzone.js */; };
 		9B2B34EB2FDBE0E2007C5476 /* dropzone.html in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34E62FDBE0E2007C5476 /* dropzone.html */; };
@@ -30,7 +30,7 @@
 			containerPortal = 9B2B34B02FDBE0E1007C5476 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 9B2B34D22FDBE0E2007C5476;
-			remoteInfo = "MdPreviewDrop Extension";
+			remoteInfo = "SpacedownDrop Extension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -41,7 +41,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				9B2B34D42FDBE0E2007C5476 /* MdPreviewDrop Extension.appex in Embed Foundation Extensions */,
+				9B2B34D42FDBE0E2007C5476 /* SpacedownDrop Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -49,7 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		9B2B34B82FDBE0E1007C5476 /* MdPreviewDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MdPreviewDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B2B34B82FDBE0E1007C5476 /* SpacedownDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpacedownDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B2B34BB2FDBE0E1007C5476 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9B2B34BF2FDBE0E1007C5476 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
 		9B2B34C12FDBE0E1007C5476 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
@@ -59,7 +59,7 @@
 		9B2B34CA2FDBE0E1007C5476 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		9B2B34CC2FDBE0E2007C5476 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9B2B34CE2FDBE0E2007C5476 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9B2B34D32FDBE0E2007C5476 /* MdPreviewDrop Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "MdPreviewDrop Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B2B34D32FDBE0E2007C5476 /* SpacedownDrop Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SpacedownDrop Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B2B34D82FDBE0E2007C5476 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		9B2B34DA2FDBE0E2007C5476 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9B2B34E52FDBE0E2007C5476 /* dropzone.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = dropzone.js; path = Resources/dropzone.js; sourceTree = "<group>"; };
@@ -90,8 +90,8 @@
 		9B2B34AF2FDBE0E1007C5476 = {
 			isa = PBXGroup;
 			children = (
-				9B2B34BA2FDBE0E1007C5476 /* MdPreviewDrop */,
-				9B2B34D72FDBE0E2007C5476 /* MdPreviewDrop Extension */,
+				9B2B34BA2FDBE0E1007C5476 /* SpacedownDrop */,
+				9B2B34D72FDBE0E2007C5476 /* SpacedownDrop Extension */,
 				9B2B34B92FDBE0E1007C5476 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -99,13 +99,13 @@
 		9B2B34B92FDBE0E1007C5476 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9B2B34B82FDBE0E1007C5476 /* MdPreviewDrop.app */,
-				9B2B34D32FDBE0E2007C5476 /* MdPreviewDrop Extension.appex */,
+				9B2B34B82FDBE0E1007C5476 /* SpacedownDrop.app */,
+				9B2B34D32FDBE0E2007C5476 /* SpacedownDrop Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9B2B34BA2FDBE0E1007C5476 /* MdPreviewDrop */ = {
+		9B2B34BA2FDBE0E1007C5476 /* SpacedownDrop */ = {
 			isa = PBXGroup;
 			children = (
 				9B2B34BB2FDBE0E1007C5476 /* AppDelegate.swift */,
@@ -115,7 +115,7 @@
 				9B2B34CE2FDBE0E2007C5476 /* Info.plist */,
 				9B2B34BD2FDBE0E1007C5476 /* Resources */,
 			);
-			path = MdPreviewDrop;
+			path = SpacedownDrop;
 			sourceTree = "<group>";
 		};
 		9B2B34BD2FDBE0E1007C5476 /* Resources */ = {
@@ -129,14 +129,14 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		9B2B34D72FDBE0E2007C5476 /* MdPreviewDrop Extension */ = {
+		9B2B34D72FDBE0E2007C5476 /* SpacedownDrop Extension */ = {
 			isa = PBXGroup;
 			children = (
 				9B2B34E42FDBE0E2007C5476 /* Resources */,
 				9B2B34D82FDBE0E2007C5476 /* SafariWebExtensionHandler.swift */,
 				9B2B34DA2FDBE0E2007C5476 /* Info.plist */,
 			);
-			path = "MdPreviewDrop Extension";
+			path = "SpacedownDrop Extension";
 			sourceTree = "<group>";
 		};
 		9B2B34E42FDBE0E2007C5476 /* Resources */ = {
@@ -149,15 +149,15 @@
 				9B2B34E92FDBE0E2007C5476 /* sw.js */,
 			);
 			name = Resources;
-			path = "MdPreviewDrop Extension";
+			path = "SpacedownDrop Extension";
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9B2B34B72FDBE0E1007C5476 /* MdPreviewDrop */ = {
+		9B2B34B72FDBE0E1007C5476 /* SpacedownDrop */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9B2B34E12FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "MdPreviewDrop" */;
+			buildConfigurationList = 9B2B34E12FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "SpacedownDrop" */;
 			buildPhases = (
 				9B2B34B42FDBE0E1007C5476 /* Sources */,
 				9B2B34B52FDBE0E1007C5476 /* Frameworks */,
@@ -169,16 +169,16 @@
 			dependencies = (
 				9B2B34D62FDBE0E2007C5476 /* PBXTargetDependency */,
 			);
-			name = MdPreviewDrop;
+			name = SpacedownDrop;
 			packageProductDependencies = (
 			);
-			productName = MdPreviewDrop;
-			productReference = 9B2B34B82FDBE0E1007C5476 /* MdPreviewDrop.app */;
+			productName = SpacedownDrop;
+			productReference = 9B2B34B82FDBE0E1007C5476 /* SpacedownDrop.app */;
 			productType = "com.apple.product-type.application";
 		};
-		9B2B34D22FDBE0E2007C5476 /* MdPreviewDrop Extension */ = {
+		9B2B34D22FDBE0E2007C5476 /* SpacedownDrop Extension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9B2B34DD2FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "MdPreviewDrop Extension" */;
+			buildConfigurationList = 9B2B34DD2FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "SpacedownDrop Extension" */;
 			buildPhases = (
 				9B2B34CF2FDBE0E2007C5476 /* Sources */,
 				9B2B34D02FDBE0E2007C5476 /* Frameworks */,
@@ -188,11 +188,11 @@
 			);
 			dependencies = (
 			);
-			name = "MdPreviewDrop Extension";
+			name = "SpacedownDrop Extension";
 			packageProductDependencies = (
 			);
-			productName = "MdPreviewDrop Extension";
-			productReference = 9B2B34D32FDBE0E2007C5476 /* MdPreviewDrop Extension.appex */;
+			productName = "SpacedownDrop Extension";
+			productReference = 9B2B34D32FDBE0E2007C5476 /* SpacedownDrop Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -213,7 +213,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 9B2B34B32FDBE0E1007C5476 /* Build configuration list for PBXProject "MdPreviewDrop" */;
+			buildConfigurationList = 9B2B34B32FDBE0E1007C5476 /* Build configuration list for PBXProject "SpacedownDrop" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -227,8 +227,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9B2B34B72FDBE0E1007C5476 /* MdPreviewDrop */,
-				9B2B34D22FDBE0E2007C5476 /* MdPreviewDrop Extension */,
+				9B2B34B72FDBE0E1007C5476 /* SpacedownDrop */,
+				9B2B34D22FDBE0E2007C5476 /* SpacedownDrop Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -284,7 +284,7 @@
 /* Begin PBXTargetDependency section */
 		9B2B34D62FDBE0E2007C5476 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9B2B34D22FDBE0E2007C5476 /* MdPreviewDrop Extension */;
+			target = 9B2B34D22FDBE0E2007C5476 /* SpacedownDrop Extension */;
 			targetProxy = 9B2B34D52FDBE0E2007C5476 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -436,8 +436,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MdPreviewDrop Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Markdown Preview";
+				INFOPLIST_FILE = "SpacedownDrop Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -450,7 +450,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.mdpreview.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -470,8 +470,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MdPreviewDrop Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Markdown Preview";
+				INFOPLIST_FILE = "SpacedownDrop Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -484,7 +484,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.mdpreview.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -508,8 +508,8 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MdPreviewDrop/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Markdown Preview";
+				INFOPLIST_FILE = SpacedownDrop/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -524,8 +524,8 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.mdpreview;
-				PRODUCT_NAME = "Markdown Preview";
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown;
+				PRODUCT_NAME = "Spacedown";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -549,8 +549,8 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MdPreviewDrop/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Markdown Preview";
+				INFOPLIST_FILE = SpacedownDrop/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -565,8 +565,8 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.mdpreview;
-				PRODUCT_NAME = "Markdown Preview";
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown;
+				PRODUCT_NAME = "Spacedown";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -580,7 +580,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9B2B34B32FDBE0E1007C5476 /* Build configuration list for PBXProject "MdPreviewDrop" */ = {
+		9B2B34B32FDBE0E1007C5476 /* Build configuration list for PBXProject "SpacedownDrop" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9B2B34DB2FDBE0E2007C5476 /* Debug */,
@@ -589,7 +589,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9B2B34DD2FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "MdPreviewDrop Extension" */ = {
+		9B2B34DD2FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "SpacedownDrop Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9B2B34DE2FDBE0E2007C5476 /* Debug */,
@@ -598,7 +598,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9B2B34E12FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "MdPreviewDrop" */ = {
+		9B2B34E12FDBE0E2007C5476 /* Build configuration list for PBXNativeTarget "SpacedownDrop" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9B2B34E22FDBE0E2007C5476 /* Debug */,

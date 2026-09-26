@@ -14,14 +14,14 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>foundation.d.mdpreview.render</string>
+    <string>foundation.d.spacedown.render</string>
     <key>ProgramArguments</key>
     <array>
         <string>__HELPER_BIN__</string>
     </array>
     <key>MachServices</key>
     <dict>
-        <key>foundation.d.mdpreview.render</key>
+        <key>foundation.d.spacedown.render</key>
         <true/>
     </dict>
     <key>ProcessType</key>

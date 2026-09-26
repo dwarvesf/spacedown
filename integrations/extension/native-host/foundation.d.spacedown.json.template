@@ -1,5 +1,5 @@
 {
-  "name": "foundation.d.mdpreview",
+  "name": "foundation.d.spacedown",
   "description": "md-preview native host: renders dropped markdown via the local CLI",
   "path": "__HOST_PATH__",
   "type": "stdio",

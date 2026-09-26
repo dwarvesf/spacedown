@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # build-safari.sh: build + install the full native macOS bundle in ONE pass:
 #
-#   ~/Applications/Markdown Preview.app
-#     ├─ MdPreviewDrop Extension.appex   Safari Web Extension (drag-drop)  [sandboxed]
-#     └─ MarkdownPreviewQL.appex         Quick Look spacebar preview        [sandboxed]
-#   ~/.local/libexec/mdpreview-render                           unsandboxed XPC render helper
-#   ~/Library/LaunchAgents/foundation.d.mdpreview.render.plist  launch-on-demand
+#   ~/Applications/Spacedown.app
+#     ├─ SpacedownDrop Extension.appex   Safari Web Extension (drag-drop)  [sandboxed]
+#     └─ SpacedownQL.appex         Quick Look spacebar preview        [sandboxed]
+#   ~/.local/libexec/spacedown-render                           unsandboxed XPC render helper
+#   ~/Library/LaunchAgents/foundation.d.spacedown.render.plist  launch-on-demand
 #
 # Everything is signed adhoc (`-`) + hardened runtime + per-target entitlements;
 # no Apple Developer team dependency.
@@ -17,7 +17,7 @@
 #
 # Architecture (why the helper exists): a Safari Web Extension MUST be sandboxed
 # to load, and a sandboxed handler cannot Process-spawn pandoc. So the spawn
-# moved to mdpreview-render, reached over XPC via a per-user LaunchAgent Mach
+# moved to spacedown-render, reached over XPC via a per-user LaunchAgent Mach
 # service that launchd starts on demand.
 #
 # Usage: ./build-safari.sh [--with-safari]
@@ -43,43 +43,46 @@ case "${1:-}" in
 esac
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJ="${HERE}/safari/MdPreviewDrop"
+PROJ="${HERE}/safari/SpacedownDrop"
 QLDIR="${HERE}/safari/quick-look"
 ENT="${HERE}/safari/entitlements"
-HELPER_SRC="${HERE}/safari/helper/mdpreview-render.swift"
-PLIST_SRC="${HERE}/safari/helper/foundation.d.mdpreview.render.plist"
-APP_NAME="Markdown Preview.app"
+HELPER_SRC="${HERE}/safari/helper/spacedown-render.swift"
+PLIST_SRC="${HERE}/safari/helper/foundation.d.spacedown.render.plist"
+APP_NAME="Spacedown.app"
 APP_DEST="${HOME}/Applications"
-HELPER_DEST="${HOME}/.local/libexec/mdpreview-render"
-AGENT_LABEL="foundation.d.mdpreview.render"
+HELPER_DEST="${HOME}/.local/libexec/spacedown-render"
+AGENT_LABEL="foundation.d.spacedown.render"
 PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
-QL_ID="foundation.d.mdpreview.quicklook"
+QL_ID="foundation.d.spacedown.quicklook"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 UID_NUM="$(id -u)"
 
 command -v xcodebuild >/dev/null 2>&1 || { echo "build-safari: xcodebuild not found (install Xcode)" >&2; exit 1; }
 command -v swiftc     >/dev/null 2>&1 || { echo "build-safari: swiftc not found (install Xcode)" >&2; exit 1; }
 command -v xcodegen   >/dev/null 2>&1 || { echo "build-safari: xcodegen not found (brew install xcodegen)" >&2; exit 1; }
-[[ -d "$PROJ/MdPreviewDrop.xcodeproj" ]] || { echo "build-safari: project missing at $PROJ" >&2; exit 1; }
+[[ -d "$PROJ/SpacedownDrop.xcodeproj" ]] || { echo "build-safari: project missing at $PROJ" >&2; exit 1; }
 
 mkdir -p "$PROJ/build"
 if [[ $SAFARI -eq 1 ]]; then
-  # md-open must be on PATH for the helper to find it at runtime.
-  mkdir -p "${HOME}/.local/bin"
-  ln -sfn "${HERE}/md-open" "${HOME}/.local/bin/md-open"
-  echo "build-safari: symlinked md-open -> ~/.local/bin/md-open"
+  # md-open must be on PATH for the helper to find it at runtime. An install step,
+  # so a NO_INSTALL build leaves the user's link alone.
+  if [[ "$NO_INSTALL" != "1" ]]; then
+    mkdir -p "${HOME}/.local/bin"
+    ln -sfn "${HERE}/md-open" "${HOME}/.local/bin/md-open"
+    echo "build-safari: symlinked md-open -> ~/.local/bin/md-open"
+  fi
 
   # 1. Unsandboxed XPC render helper (adhoc signed, no entitlements, no runtime so
   #    its pandoc/python child processes stay unconstrained).
   echo "build-safari: compiling render helper..."
-  swiftc -O "$HELPER_SRC" -o "$PROJ/build/mdpreview-render"
-  codesign --force --sign - --timestamp=none "$PROJ/build/mdpreview-render"
+  swiftc -O "$HELPER_SRC" -o "$PROJ/build/spacedown-render"
+  codesign --force --sign - --timestamp=none "$PROJ/build/spacedown-render"
 fi
 
 # 2. Container app + Safari extension, UNSIGNED (signed manually in step 5).
 echo "build-safari: building app + Safari extension..."
-xcodebuild -project "$PROJ/MdPreviewDrop.xcodeproj" \
-  -scheme MdPreviewDrop -configuration Release \
+xcodebuild -project "$PROJ/SpacedownDrop.xcodeproj" \
+  -scheme SpacedownDrop -configuration Release \
   -derivedDataPath "$PROJ/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   INFOPLIST_KEY_NSHumanReadableCopyright="© 2026 Dwarves Foundation" \
@@ -95,18 +98,18 @@ if command -v node >/dev/null 2>&1; then
   ( cd "$QLDIR" && node test-render.js >/dev/null ) || { echo "build-safari: ql-render test FAILED" >&2; exit 1; }
 fi
 ( cd "$QLDIR" && xcodegen generate >/dev/null )
-xcodebuild -project "${QLDIR}/MarkdownPreviewQL.xcodeproj" \
-  -scheme MarkdownPreviewQL -configuration Release \
+xcodebuild -project "${QLDIR}/SpacedownQL.xcodeproj" \
+  -scheme SpacedownQL -configuration Release \
   -derivedDataPath "${QLDIR}/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   build >/dev/null
-QL_APPEX="${QLDIR}/build/Build/Products/Release/MarkdownPreviewQL.appex"
+QL_APPEX="${QLDIR}/build/Build/Products/Release/SpacedownQL.appex"
 [[ -d "$QL_APPEX" ]] || { echo "build-safari: QL appex build produced nothing" >&2; exit 1; }
 
 # 4. Embed the QL appex into the app.
 mkdir -p "${APP}/Contents/PlugIns"
 rsync -a --delete "$QL_APPEX" "${APP}/Contents/PlugIns/"
-SAFARI_APPEX="${APP}/Contents/PlugIns/MdPreviewDrop Extension.appex"
+SAFARI_APPEX="${APP}/Contents/PlugIns/SpacedownDrop Extension.appex"
 if [[ $SAFARI -eq 0 && -d "$SAFARI_APPEX" ]]; then
   # The Xcode project always builds the Safari target; set it aside in the build dir.
   mkdir -p "$PROJ/build/set-aside"
@@ -125,7 +128,7 @@ fi
 echo "build-safari: signing (${SIGN_ID} + runtime + entitlements)..."
 # The ${a[@]+...} form keeps an empty array safe under set -u on macOS's bash 3.2.
 sign() { codesign --force --sign "$SIGN_ID" --options runtime ${TIMESTAMP[@]+"${TIMESTAMP[@]}"} --entitlements "$1" "$2"; }
-sign "${QLDIR}/MarkdownPreviewQL.entitlements" "${APP}/Contents/PlugIns/MarkdownPreviewQL.appex"
+sign "${QLDIR}/SpacedownQL.entitlements" "${APP}/Contents/PlugIns/SpacedownQL.appex"
 [[ $SAFARI -eq 1 ]] && sign "${ENT}/extension.entitlements" "$SAFARI_APPEX"
 sign "$APP_ENT"                                 "${APP}"
 codesign --verify --deep --strict "$APP" || { echo "build-safari: signature verify failed" >&2; exit 1; }
@@ -142,7 +145,7 @@ echo "build-safari: installed -> ${APP_DEST}/${APP_NAME}"
 # 7. Install the helper binary + LaunchAgent (launch-on-demand Mach service).
 if [[ $SAFARI -eq 1 ]]; then
   mkdir -p "$(dirname "$HELPER_DEST")"
-  cp -f "$PROJ/build/mdpreview-render" "$HELPER_DEST"
+  cp -f "$PROJ/build/spacedown-render" "$HELPER_DEST"
   chmod +x "$HELPER_DEST"
   sed "s|__HELPER_BIN__|$HELPER_DEST|g" "$PLIST_SRC" > "$PLIST_DEST"
   launchctl bootout "gui/$UID_NUM/${AGENT_LABEL}" 2>/dev/null || true
@@ -157,7 +160,7 @@ fi
 
 # 9. Register + enable Quick Look. The explicit add matters: an OS upgrade has been
 #    seen to drop the registration while leaving the app in place.
-pluginkit -a "${APP_DEST}/${APP_NAME}/Contents/PlugIns/MarkdownPreviewQL.appex" 2>/dev/null || true
+pluginkit -a "${APP_DEST}/${APP_NAME}/Contents/PlugIns/SpacedownQL.appex" 2>/dev/null || true
 pluginkit -e use -i "$QL_ID" >/dev/null 2>&1 || true
 if [[ $SAFARI -eq 0 ]]; then
   echo "build-safari: Quick Look ready. Select a .md in Finder and press space."
@@ -173,9 +176,9 @@ Finish in Safari (one-time):
   1. Safari > Settings... > Developer > tick "Allow unsigned extensions"
      (adhoc-signed = unsigned to Safari; resets each Safari restart until notarized)
   2. QUIT and relaunch Safari (it only rescans dev extensions at launch).
-  3. Safari > Settings... > Extensions > tick "Markdown Preview".
+  3. Safari > Settings... > Extensions > tick "Spacedown".
   4. Click its toolbar button -> a dropzone tab opens -> drag a .md in.
 
 Quick Look (spacebar preview) is enabled automatically; a fresh macOS may still need:
-  System Settings > General > Login Items & Extensions > Quick Look > tick "Markdown Preview".
+  System Settings > General > Login Items & Extensions > Quick Look > tick "Spacedown".
 EOF

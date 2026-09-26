@@ -12,7 +12,7 @@
 #   TEAM_ID=W777S7V8TN
 #   SIGN_ID="Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)"
 #   NOTARY_PROFILE=DWARVES_NOTARY
-#   REPO=dwarvesf/md-preview
+#   REPO=dwarvesf/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
 #
@@ -22,7 +22,7 @@ set -euo pipefail
 TEAM_ID="${TEAM_ID:-W777S7V8TN}"
 SIGN_ID="${SIGN_ID:-Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-DWARVES_NOTARY}"
-REPO="${REPO:-dwarvesf/md-preview}"
+REPO="${REPO:-dwarvesf/spacedown}"
 DRAFT="${DRAFT:-0}"
 PUBLISH="${PUBLISH:-1}"
 
@@ -30,8 +30,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="${1:-$(awk -F'"' '/MARKETING_VERSION/ {print $2; exit}' "$ROOT/integrations/safari/quick-look/project.yml")}"
 TAG="v$VERSION"
 DIST="$ROOT/build/release/$VERSION"
-APP_NAME="Markdown Preview.app"
-ZIP="$DIST/Markdown-Preview-$VERSION-macos.zip"
+APP_NAME="Spacedown.app"
+ZIP="$DIST/Spacedown-$VERSION-macos.zip"
 
 die() { echo "release: $*" >&2; exit 1; }
 # Capture, then match: `cmd | grep -q` under pipefail fails when grep exits early and
@@ -85,8 +85,8 @@ DRAFT_FLAG=()
 if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
   die "release $TAG already exists on $REPO"
 fi
-gh release create "$TAG" "$ZIP" --repo "$REPO" --title "Markdown Preview $VERSION" \
-  --notes "Quick Look preview for Markdown on macOS 13 and later. Unzip, move Markdown Preview.app to Applications, open it once, then press space on any .md file in Finder.
+gh release create "$TAG" "$ZIP" --repo "$REPO" --title "Spacedown $VERSION" \
+  --notes "Quick Look preview for Markdown on macOS 13 and later. Unzip, move Spacedown.app to Applications, open it once, then press space on any .md file in Finder.
 
 sha256: \`$SHA\`" ${DRAFT_FLAG[@]+"${DRAFT_FLAG[@]}"}
 echo "done: $TAG on $REPO"

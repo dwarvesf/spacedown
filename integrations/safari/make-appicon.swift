@@ -1,6 +1,6 @@
 import AppKit
 
-// Render a "Markdown Preview" app icon: indigo squircle, white "M↓" mark.
+// Render a "Spacedown" app icon: indigo squircle, white "M↓" mark.
 func icon(_ px: Int) -> Data {
     let p = CGFloat(px)
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px,
