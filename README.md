@@ -12,9 +12,11 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 
 ## Download
 
-Get the notarized `Spacedown-<version>-macos.zip` from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Unzip it, move `Spacedown.app` to Applications, open it once, then select a `.md` file in Finder and press space.
+Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`.
 
 ## Screenshots
+
+![The Quick Look panel previewing a Markdown file from Finder](docs/images/quicklook-panel.png)
 
 | Light | Dark |
 |---|---|
@@ -160,7 +162,14 @@ spacedown tests/fixture/fixture.md                   # synthetic document that e
 
 `assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.
 
-Releases: `scripts/release.sh [version]` builds the Quick Look app, signs it with the Dwarves Foundation Developer ID, notarizes, staples, zips and publishes a GitHub release. It needs the Developer ID identity in the keychain and a `notarytool` keychain profile (default `DWARVES_NOTARY`); the script header lists every setting.
+### Releasing
+
+The Releases page carries one release: each new version replaces the previous one.
+
+1. Bump the version in `integrations/safari/quick-look/project.yml` (`MARKETING_VERSION`), the Xcode project (`MARKETING_VERSION`) and `bin/spacedown` (`VERSION`). Merge.
+2. `scripts/release.sh` on a clean `main`: builds the Quick Look app, signs it with the Dwarves Foundation Developer ID, notarizes and staples it, builds the `.zip` and a notarized `.dmg`, and publishes the GitHub release. It then deletes the older releases and their tags. `KEEP_OLD_RELEASES=1` skips that step. It needs the Developer ID identity in the keychain and a `notarytool` keychain profile (default `DWARVES_NOTARY`); the script header lists every setting.
+3. Bump `Casks/spacedown.rb` in [dwarvesf/homebrew-tools](https://github.com/dwarvesf/homebrew-tools) to the new version and the zip's sha256.
+4. Mac App Store: `scripts/release.sh --mas` builds the signed store package; upload it to App Store Connect, attach the build to a new version and submit it for review.
 
 ## Limitations
 

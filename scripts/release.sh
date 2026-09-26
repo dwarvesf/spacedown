@@ -15,6 +15,9 @@
 #   REPO=dwarvesf/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
+#   KEEP_OLD_RELEASES=0     1 = keep older GitHub releases; by default a published release
+#                           replaces them (they and their tags are deleted), so the Releases
+#                           page lists only the latest version
 #
 # Mac App Store mode (--mas): builds the Quick Look-only app, signs it with Apple
 # Distribution plus the Mac App Store provisioning profiles, packages a signed .pkg,
@@ -206,4 +209,14 @@ gh release create "$TAG" "$ZIP" "$DMG" --repo "$REPO" --title "Spacedown $VERSIO
   --notes "Quick Look preview for Markdown on macOS 13 and later. Open the .dmg (or unzip the .zip), drag Spacedown to Applications, open it once, then press space on any .md file in Finder.
 
 sha256: \`$SHA\`" ${DRAFT_FLAG[@]+"${DRAFT_FLAG[@]}"}
+
+# --- stack: the new release replaces the older ones -------------------------------
+if [[ "${KEEP_OLD_RELEASES:-0}" != "1" && "$DRAFT" != "1" ]]; then
+  OLD_TAGS="$(gh release list --repo "$REPO" --limit 100 --json tagName -q '.[].tagName')"
+  for old in $OLD_TAGS; do
+    [[ "$old" == "$TAG" ]] && continue
+    gh release delete "$old" --repo "$REPO" --yes --cleanup-tag
+    echo "removed older release $old"
+  done
+fi
 echo "done: $TAG on $REPO"
