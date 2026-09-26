@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # release.sh: build the Quick Look app, sign it with Developer ID, notarize, staple,
-# zip, and publish it as a GitHub release. Same shape as Hacker Bar's
+# zip + dmg, and publish both as a GitHub release. Same shape as Hacker Bar's
 # scripts/release-direct.sh, without Sparkle (Homebrew handles updates).
 #
 # Preconditions (checked, not created):
@@ -48,6 +48,7 @@ TAG="v$VERSION"
 DIST="$ROOT/build/release/$VERSION"
 APP_NAME="Spacedown.app"
 ZIP="$DIST/Spacedown-$VERSION-macos.zip"
+DMG="$DIST/Spacedown-$VERSION.dmg"
 
 die() { echo "release: $*" >&2; exit 1; }
 # Capture, then match: `cmd | grep -q` under pipefail fails when grep exits early and
@@ -180,6 +181,20 @@ SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
 echo "zip: $ZIP"
 echo "sha256: $SHA"
 
+# --- dmg: drag-to-Applications image, itself signed, notarized and stapled --------
+echo "== dmg"
+DSTAGE="$(mktemp -d)"
+ditto "$APP" "$DSTAGE/$APP_NAME"
+ln -s /Applications "$DSTAGE/Applications"
+hdiutil create -volname Spacedown -srcfolder "$DSTAGE" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
+codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
+DRESULT="$(xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1 || true)"
+has "$DRESULT" "status: Accepted" || { echo "$DRESULT" >&2; die "dmg notarization not accepted"; }
+xcrun stapler staple "$DMG" >/dev/null
+has "$(spctl -a -vv -t open --context context:primary-signature "$DMG" 2>&1 || true)" "source=Notarized Developer ID" \
+  || die "Gatekeeper does not accept the dmg"
+echo "dmg: $DMG"
+
 # --- github release -------------------------------------------------------------
 [[ "$PUBLISH" == "1" ]] || { echo "release: PUBLISH=0, stopping before the GitHub release"; exit 0; }
 DRAFT_FLAG=()
@@ -187,8 +202,8 @@ DRAFT_FLAG=()
 if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
   die "release $TAG already exists on $REPO"
 fi
-gh release create "$TAG" "$ZIP" --repo "$REPO" --title "Spacedown $VERSION" \
-  --notes "Quick Look preview for Markdown on macOS 13 and later. Unzip, move Spacedown.app to Applications, open it once, then press space on any .md file in Finder.
+gh release create "$TAG" "$ZIP" "$DMG" --repo "$REPO" --title "Spacedown $VERSION" \
+  --notes "Quick Look preview for Markdown on macOS 13 and later. Open the .dmg (or unzip the .zip), drag Spacedown to Applications, open it once, then press space on any .md file in Finder.
 
 sha256: \`$SHA\`" ${DRAFT_FLAG[@]+"${DRAFT_FLAG[@]}"}
 echo "done: $TAG on $REPO"
