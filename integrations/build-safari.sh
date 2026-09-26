@@ -31,9 +31,13 @@
 #                       timestamp and the release app entitlements (no get-task-allow,
 #                       which notarization rejects).
 #   NO_INSTALL=1        stop after signing and print the built app's path.
+#   SKIN_CSS=<file>     replace the Quick Look reading skin in this build with a
+#                       personal one (same contract as quick-look/Resources/ql-reading.css).
 set -euo pipefail
 SIGN_ID="${SIGN_ID:--}"
 NO_INSTALL="${NO_INSTALL:-0}"
+SKIN_CSS="${SKIN_CSS:-}"
+[[ -z "$SKIN_CSS" || -f "$SKIN_CSS" ]] || { echo "build-safari: SKIN_CSS not found: $SKIN_CSS" >&2; exit 1; }
 
 SAFARI=0
 case "${1:-}" in
@@ -109,6 +113,10 @@ QL_APPEX="${QLDIR}/build/Build/Products/Release/SpacedownQL.appex"
 # 4. Embed the QL appex into the app.
 mkdir -p "${APP}/Contents/PlugIns"
 rsync -a --delete "$QL_APPEX" "${APP}/Contents/PlugIns/"
+if [[ -n "$SKIN_CSS" ]]; then
+  cp -f "$SKIN_CSS" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/ql-reading.css"
+  echo "build-safari: using the reading skin $SKIN_CSS"
+fi
 SAFARI_APPEX="${APP}/Contents/PlugIns/SpacedownDrop Extension.appex"
 if [[ $SAFARI -eq 0 && -d "$SAFARI_APPEX" ]]; then
   # The Xcode project always builds the Safari target; set it aside in the build dir.
