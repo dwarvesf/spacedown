@@ -1,5 +1,11 @@
 # Spacedown
 
+[![Release](https://img.shields.io/github/v/release/dwarvesf/spacedown?label=release)](https://github.com/dwarvesf/spacedown/releases/latest)
+[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](#download)
+[![Homebrew](https://img.shields.io/badge/Homebrew-dwarvesf%2Ftools%2Fspacedown-FBB040?logo=homebrew&logoColor=white)](https://github.com/dwarvesf/homebrew-tools)
+[![Notarized](https://img.shields.io/badge/notarized-Developer%20ID-4f46e5)](https://github.com/dwarvesf/spacedown/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/dwarvesf/spacedown)](LICENSE)
+
 Press space on a Markdown file in Finder and read it rendered: headings, tables, code, callouts, frontmatter and LaTeX math, in a calm reading theme that follows light and dark mode.
 
 Spacedown is a macOS Quick Look extension. It renders in-process with bundled copies of marked, KaTeX and highlight.js, so it needs no network, no pandoc and no setup beyond opening the app once.
