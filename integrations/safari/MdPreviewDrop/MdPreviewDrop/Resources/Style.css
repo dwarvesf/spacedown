@@ -1,0 +1,301 @@
+/* Markdown Preview, Safari extension container onboarding window.
+   Native macOS (Tahoe-era) look: content sits on the window background, no
+   floating web card, system-semantic colors that adapt to light/dark,
+   a single brand-indigo accent (icon, glyph, and button agree). Fits 460x460, no scroll.
+
+   v2 polish pass: app-icon-grade tile depth, Apple title metrics + tracking,
+   flatter inline status capsule, refined native push-button, tighter vertical
+   rhythm, and a whisper-faint window value shift. Brand palette frozen. */
+
+* {
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    cursor: default;
+}
+
+:root {
+    color-scheme: light dark;
+
+    /* Light scheme = macOS system-semantic equivalents.
+       Window bg is the standard light window gray; labels follow the
+       primary/secondary/tertiary label hierarchy. */
+    --bg: #ececec;            /* windowBackgroundColor (light) */
+    --bg-top: #f2f2f2;        /* whisper-faint top value (lighter) */
+    --bg-bottom: #e6e6e8;     /* whisper-faint bottom value (slightly cooler) */
+    --label: #1d1d1f;         /* labelColor */
+    --label-secondary: #5f5f64; /* secondaryLabelColor */
+    --label-tertiary: #93939a;  /* tertiaryLabelColor */
+    --separator: rgba(0, 0, 0, 0.08);
+    --accent: #4f46e5;        /* brand indigo (matches the glyph tile), light */
+    --accent-top: #5b52ee;    /* button gradient top (lifted) */
+    --accent-bottom: #4a40dd; /* button gradient bottom */
+    --accent-press: #4338ca;
+    --status-green: #28a745;  /* systemGreen-ish, quiet */
+    --status-amber: #c7821a;  /* systemOrange, quiet */
+
+    /* App-icon tile (M↓ glyph): indigo BRAND gradient, matches the Dock icon
+       (make-appicon.swift) and the button (--accent). Cohesive indigo throughout;
+       no system blue anywhere in the window. */
+    --tile-top: #6d6bf5;      /* gradient lifted a touch at the very top for sheen */
+    --tile-mid: #6366f1;
+    --tile-bottom: #463acf;
+    --tile-glyph: #ffffff;
+    --tile-hairline: rgba(255, 255, 255, 0.65);
+    --tile-ambient: rgba(70, 58, 207, 0.30);  /* indigo-tinted ambient shadow */
+    --tile-contact: rgba(0, 0, 0, 0.22);
+
+    /* Status capsule (flat, quiet inline pill). */
+    --capsule-bg: rgba(0, 0, 0, 0.045);
+    --capsule-border: rgba(0, 0, 0, 0.06);
+
+    /* Keycap / code chip. */
+    --chip-bg: #ffffff;
+    --chip-border: rgba(0, 0, 0, 0.12);
+    --chip-ink: #3a3a3c;
+    --chip-shadow: rgba(0, 0, 0, 0.06);
+
+    /* Push button. */
+    --btn-text: #ffffff;
+    --focus-ring: rgba(79, 70, 229, 0.40);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #2a2a2c;            /* windowBackgroundColor (dark) */
+        --bg-top: #313134;
+        --bg-bottom: #232325;
+        --label: #f5f5f7;
+        --label-secondary: #a6a6ad;
+        --label-tertiary: #6e6e76;
+        --separator: rgba(255, 255, 255, 0.10);
+        --accent: #6366f1;        /* brand indigo, brighter for dark */
+        --accent-top: #6f72f4;
+        --accent-bottom: #585bee;
+        --accent-press: #7a7df4;
+        --status-green: #30d158;
+        --status-amber: #ffb340;
+
+        --tile-top: #7779f6;
+        --tile-mid: #6366f1;
+        --tile-bottom: #463acf;
+        --tile-glyph: #ffffff;
+        --tile-hairline: rgba(255, 255, 255, 0.42);
+        --tile-ambient: rgba(0, 0, 0, 0.55);
+        --tile-contact: rgba(0, 0, 0, 0.45);
+
+        --capsule-bg: rgba(255, 255, 255, 0.055);
+        --capsule-border: rgba(255, 255, 255, 0.08);
+
+        --chip-bg: rgba(255, 255, 255, 0.10);
+        --chip-border: rgba(255, 255, 255, 0.16);
+        --chip-ink: #e3e3e6;
+        --chip-shadow: rgba(0, 0, 0, 0.40);
+
+        --btn-text: #ffffff;
+        --focus-ring: rgba(99, 102, 241, 0.55);
+    }
+}
+
+html, body { height: 100%; margin: 0; }
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 36px 40px 24px;
+    /* Whisper-faint top-to-bottom value shift; reads more native than a flat fill,
+       without faking vibrancy (WKWebView has none). */
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 52%, var(--bg-bottom) 100%);
+    color: var(--label);
+    /* Apple system type stack. */
+    font-family: system-ui, -apple-system, "SF Pro Text", "SF Pro Display", sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* Content sits directly on the window background, no nested card. */
+.card {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ---- App-icon tile (hero) ---------------------------------------------- */
+
+.logo {
+    position: relative;
+    width: 74px;
+    height: 74px;
+    margin-bottom: 20px;
+    /* macOS app-icon corner continuity (~22.5% of side). */
+    border-radius: 17px;
+    background:
+        /* top-down sheen sitting over the brand gradient for icon-like curvature */
+        radial-gradient(120% 90% at 50% -10%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 46%),
+        linear-gradient(180deg, var(--tile-top) 0%, var(--tile-mid) 46%, var(--tile-bottom) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tile-glyph);
+    font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 39px;
+    letter-spacing: -1.5px;
+    /* Layered like a real app icon: wide soft ambient + tight contact shadow,
+       a 1px inner top-highlight hairline, and a faint inner bottom shade. */
+    box-shadow:
+        0 10px 22px -6px var(--tile-ambient),
+        0 2px 5px -1px var(--tile-contact),
+        inset 0 1px 0 var(--tile-hairline),
+        inset 0 -10px 18px -10px rgba(0, 0, 0, 0.22);
+}
+.logo .glyph {
+    /* tiny optical lift so the wordmark sits dead-center on the cap */
+    display: inline-flex;
+    align-items: baseline;
+    transform: translateY(-0.5px);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.14);
+}
+.logo .arrow {
+    font-weight: 700;
+    margin-left: 1px;
+    font-size: 34px;
+}
+
+/* ---- Type ---------------------------------------------------------------- */
+
+h1 {
+    margin: 0;
+    /* Large title, stable color regardless of extension state.
+       Apple large-title metric: slightly tight tracking at this size. */
+    font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+    font-size: 23px;
+    font-weight: 600;
+    letter-spacing: -0.36px;
+    color: var(--label);
+}
+
+.tagline {
+    margin: 6px 0 0;
+    font-size: 13px;
+    letter-spacing: -0.08px;
+    color: var(--label-secondary);
+}
+
+/* ---- Status row (flat inline capsule: dot + secondary text) ------------- */
+
+.status {
+    margin: 20px 0 0;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 7px;
+    /* Hug the content (Apple inline capsules are snug), wrap only near the edge. */
+    width: fit-content;
+    max-width: 284px;
+    padding: 6px 13px 6px 11px;
+    border-radius: 999px;
+    background: var(--capsule-bg);
+    border: 0.5px solid var(--capsule-border);
+    font-size: 12px;
+    letter-spacing: -0.05px;
+    color: var(--label-secondary);
+    line-height: 1.38;
+    text-align: left;
+}
+
+.status .dot {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    margin-top: 4.5px; /* align to the cap height of the first text line */
+    border-radius: 50%;
+    background: var(--label-tertiary);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+
+/* State drives only the dot color + which status line is shown.
+   The heading never changes color. */
+body.state-on    .status .dot { background: var(--status-green); }
+body.state-off   .status .dot { background: var(--status-amber); }
+body.state-unknown .status .dot,
+body:not(.state-on):not(.state-off) .status .dot { background: var(--label-tertiary); }
+
+.state { margin: 0; }
+
+/* ---- Primary push button (native accent) -------------------------------- */
+
+button.open-preferences {
+    margin-top: 22px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.08px;
+    color: var(--btn-text);
+    /* Subtle top-down gradient + crisp 1px inner highlight = native push-button. */
+    background: linear-gradient(180deg, var(--accent-top) 0%, var(--accent-bottom) 100%);
+    border: none;
+    border-radius: 7px;
+    padding: 0 18px;
+    height: 30px;
+    min-width: 0;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 0 0 0.5px rgba(0, 0, 0, 0.06),
+        0 1px 2px rgba(70, 58, 207, 0.28);
+    transition: filter 0.10s ease, box-shadow 0.10s ease;
+}
+button.open-preferences:hover { filter: brightness(1.06); }
+button.open-preferences:active {
+    filter: brightness(0.93);
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.22),
+        0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+button.open-preferences:focus-visible {
+    outline: none;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 0 0 3.5px var(--focus-ring);
+}
+
+/* ---- Hint + code chip --------------------------------------------------- */
+
+.hint {
+    margin: 20px 0 0;
+    max-width: 282px;
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: -0.03px;
+    color: var(--label-tertiary);
+}
+
+code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    color: var(--chip-ink);
+    background: var(--chip-bg);
+    border: 0.5px solid var(--chip-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    box-shadow: 0 0.5px 0 var(--chip-shadow);
+}
+
+footer {
+    margin-top: 28px;
+    color: var(--label-tertiary);
+    font-size: 11px;
+    letter-spacing: 0.02px;
+}
+
+/* ---- State visibility (mechanism preserved from original) --------------- */
+
+body:not(.state-on):not(.state-off) :is(.state-on, .state-off) { display: none; }
+body.state-on  :is(.state-off, .state-unknown) { display: none; }
+body.state-off :is(.state-on, .state-unknown) { display: none; }

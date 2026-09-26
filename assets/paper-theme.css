@@ -1,0 +1,197 @@
+/* md-preview "paper" reading theme, the default font mode. An original design:
+   warm paper ground, a modest heading scale, soft hairlines, one accent for links.
+
+   TWO uses, same file:
+   1. `md-preview --font-mode=paper`: the CLI wraps this into a temp <style> head
+      partial via --include-in-header.
+   2. VS Code / VSCodium `markdown.styles` entry (plain CSS, no wrapper).
+
+   Fonts: iA Writer Quattro and iA Writer Mono by Information Architects, free
+   under the SIL Open Font License 1.1 (github.com/iaolo/iA-Fonts). Referenced by
+   family name only, so they apply when installed and fall back to system faces
+   when not. No font files are copied or embedded.
+
+   Layout (reading column, TOC sidebar, zoom toolbar) is shared chrome across every
+   font mode. This file sets typography and color only. The Quick Look panel carries
+   the same look in integrations/safari/quick-look/Resources/ql-reading.css. */
+:root {
+  --paper-bg: #fbfaf7;
+  --paper-fg: #242321;
+  --paper-muted: #6e6c67;
+  --paper-rule: #dcd9d2;
+  --paper-rule-strong: #b9b5ac;
+  --paper-link: #2b5f91;
+  --paper-code-bg: #f0eee9;
+  --paper-mark: #f6e7a8;
+  --paper-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --paper-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Set via the shared vars, not on body: reading-chrome-head.html injects after
+     this file and its !important body rule reads these vars through calc(), so a
+     direct body font-size here would lose the source-order tie. */
+  --markdown-font-size: 17px;
+  --markdown-line-height: 27.5px;
+}
+
+html, body {
+  background-color: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--paper-font-sans);
+  font-kerning: normal;
+}
+
+/* A modest scale: size marks the top two levels, weight carries the rest. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--paper-font-sans);
+  font-weight: 650;
+  color: var(--paper-fg);
+  letter-spacing: -0.005em;
+  margin: 2em 0 0.6em;
+  border-bottom: none;  /* suppress base stylesheet's GitHub h1/h2 rule */
+}
+h1 { font-size: 1.6em; line-height: 1.25; margin-top: 0.4em; }
+h2 { font-size: 1.3em; line-height: 1.3; }
+h3 { font-size: 1.1em; line-height: 1.4; }
+h4, h5, h6 { font-size: 1em; line-height: inherit; }
+h6 { color: var(--paper-muted); }
+
+p, ol, ul, dl, figure, blockquote, pre, table {
+  margin: 0 0 1.1em;
+}
+li > p, li > ul, li > ol { margin: 0.2em 0; }
+li + li { margin-top: 0.25em; }
+ul, ol { padding-left: 1.6em; }
+li::marker { color: var(--paper-muted); }
+
+a {
+  color: var(--paper-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--paper-link) 35%, transparent);
+  overflow-wrap: anywhere;
+}
+a:hover { text-decoration-color: var(--paper-link); }
+
+blockquote {
+  margin-left: 0;
+  border-left: 3px solid var(--paper-rule);
+  padding: 0 1em;
+  color: var(--paper-muted);
+  font-style: normal;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--paper-rule);
+  margin: 2em 0;
+}
+
+pre, pre.sourceCode {
+  background-color: var(--paper-code-bg) !important;
+  border-radius: 6px;
+  font-family: var(--paper-font-mono) !important;
+  padding: 0.9rem 1rem;
+  white-space: pre-wrap;
+}
+pre code, pre.sourceCode code {
+  font-family: inherit !important;
+  font-size: 0.9em;
+  line-height: 1.55;
+  background: transparent;
+  padding: 0;
+}
+:not(pre) > code, kbd, samp {
+  font-family: var(--paper-font-mono);
+  font-size: 0.9em;
+  background-color: var(--paper-code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+  color: inherit;
+  /* A long path or url carries no break opportunity, so it runs past the reading
+     column instead of wrapping inside it. */
+  overflow-wrap: anywhere;
+}
+
+/* Tables: a header rule plus soft row hairlines, tabular figures, no card frame,
+   zebra or grid. The base stylesheet renders tables as a rounded scrolling card
+   (display:block, width:max-content, border-radius, uppercase thead chip, zebra
+   fill); every one of those must be explicitly undone here, some at matched
+   specificity. */
+table {
+  display: table;     /* undo card: block+max-content content-sizes the columns */
+  table-layout: auto; /* columns size by content: a keyword column stops eating a prose column's width */
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  font-size: 0.9em;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+th, td {
+  border: none;
+  padding: 0.5em 1em 0.5em 0;
+  vertical-align: top;
+  text-align: left;
+  background-color: transparent;
+}
+/* thead th: match the base chip rule's specificity to undo it. */
+thead th {
+  font-size: 1em;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  color: inherit;
+  border-bottom: 1px solid var(--paper-rule-strong);
+  padding: 0.5em 1em 0.5em 0;
+}
+tbody td { border-bottom: none; }
+tbody tr + tr td { border-top: 1px solid var(--paper-rule); }
+/* Kill the base zebra fill and last-row corner rounding at their own specificity. */
+table:not(.mdp-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
+/* Neutralize the base auto-numeric right-align (.mdp-num, added by script): under
+   this theme it floats numbers to mid-page. Explicit markdown column alignment
+   (style="text-align: right") still wins via the base rule. */
+td.mdp-num, th.mdp-num { text-align: left; }
+tbody tr:last-child td:first-child,
+tbody tr:last-child td:last-child { border-radius: 0; }
+
+/* Column sizing, the same contract the Quick Look panel reads under. The classes come
+   from the base stylesheet's load-time pass; the per-column min-width floors ride on
+   the cells as inline style. */
+.mdp-tight { white-space: nowrap; }   /* a date or id column stays on one line */
+.mdp-narrow { min-width: 22ch; }      /* a label column gets a two-line measure */
+/* A table that cannot hold a readable measure in every column: four or more columns,
+   or two prose columns. It scrolls sideways rather than starving one of them. */
+table.mdp-wide {
+  display: block;      /* the CSS-only way to get overflow-x on a bare table */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+table.mdp-wide th:not(.mdp-tight),
+table.mdp-wide td:not(.mdp-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
+
+/* Figure captions. The house convention is an image alone in its paragraph followed by
+   the caption paragraph (pandoc runs with -implicit_figures so it does not caption the
+   image with its own alt text as well). */
+p:has(> img:only-child) { margin-bottom: 0.6em; }
+p:has(> img:only-child) + p { font-size: 0.85em; line-height: 1.5; color: var(--paper-muted); }
+
+mark { background-color: var(--paper-mark); color: inherit; }
+
+/* Dark: only the tokens flip. Syntax colors stay the base stylesheet's own dark set. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper-bg: #19191b;
+    --paper-fg: #dedcd6;
+    --paper-muted: #9c9a94;
+    --paper-rule: #34343a;
+    --paper-rule-strong: #55555c;
+    --paper-link: #8bb8e8;
+    --paper-code-bg: #242428;
+    --paper-mark: #5c4f1e;
+  }
+}

@@ -1,0 +1,217 @@
+<script>
+/* md-preview reading chrome JS: outline scroll-spy + zoom + copy-source.
+   Injected at end of <body> via pandoc --include-after-body, after the #mdp-src element.
+   Pairs with assets/reading-chrome-head.html. Self-contained, no dependencies. */
+(function () {
+  "use strict";
+  var ZOOMS = [50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300];
+  var DEFAULT_IDX = 5; // 100%
+  var KEY = "mdp-zoom";
+  var doc = document.documentElement;
+  var toc = document.getElementById("TOC");
+
+  // ---- collapsible outline ----
+  var TOC_KEY = "mdp-toc-collapsed";
+  var tocToggle = null;
+  function tocCollapsed() { return doc.classList.contains("mdp-toc-collapsed"); }
+  function applyToc(collapsed) {
+    doc.classList.toggle("mdp-toc-collapsed", collapsed);
+    if (tocToggle) tocToggle.setAttribute("aria-expanded", String(!collapsed));
+    try { localStorage.setItem(TOC_KEY, collapsed ? "1" : "0"); } catch (e) {}
+  }
+  function toggleToc() { applyToc(!tocCollapsed()); }
+  function initialTocCollapsed() {
+    var v = null;
+    try { v = localStorage.getItem(TOC_KEY); } catch (e) {}
+    if (v === "1") return true;
+    if (v === "0") return false;
+    return window.matchMedia("(max-width: 900px)").matches; // first-ever: width decides
+  }
+
+  // Reveal the sidebar + shift the body only when there are real entries; then wire
+  // the collapse toggle (also gated on real entries).
+  if (toc && toc.querySelector("a")) {
+    doc.classList.add("mdp-has-toc");
+    toc.setAttribute("aria-label", "Document outline");
+
+    // Header strip at the top of the sidebar: CSS draws the "Outline" label + divider and
+    // reserves the chrome lane; the (body-child) toggle visually docks into its right edge.
+    var tocHeader = document.createElement("div");
+    tocHeader.className = "mdp-toc-header";
+    toc.insertBefore(tocHeader, toc.firstChild);
+
+    // Set saved/default state BEFORE first paint so it never flashes or animates in.
+    doc.classList.toggle("mdp-toc-collapsed", initialTocCollapsed());
+
+    tocToggle = document.createElement("button");
+    tocToggle.className = "mdp-toc-toggle";
+    tocToggle.setAttribute("aria-label", "Toggle outline");
+    tocToggle.setAttribute("aria-controls", "TOC");
+    tocToggle.setAttribute("aria-expanded", String(!tocCollapsed()));
+    tocToggle.title = "Toggle outline ([)";
+    tocToggle.addEventListener("click", toggleToc);
+    document.body.appendChild(tocToggle);
+
+    // Enable transitions only after first paint: initial state is instant, later toggles animate.
+    requestAnimationFrame(function () { doc.classList.add("mdp-anim-ready"); });
+
+    // Self-correct on resize: the width decision otherwise runs only at load, so a
+    // window dragged below the breakpoint kept an expanded sidebar and crushed the
+    // content to ~300px. Force-collapse without persisting (a responsive squeeze is
+    // not a user preference); never auto-expand on widen (an explicit collapse stays).
+    var mdpResizeT = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(mdpResizeT);
+      mdpResizeT = setTimeout(function () {
+        if (window.matchMedia("(max-width: 900px)").matches && !tocCollapsed()) {
+          doc.classList.add("mdp-toc-collapsed");
+          if (tocToggle) tocToggle.setAttribute("aria-expanded", "false");
+        }
+      }, 150);
+    });
+  }
+
+  // ---- zoom ----
+  function clampIdx(i) { return Math.max(0, Math.min(ZOOMS.length - 1, i)); }
+  function nearestIdx(pct) {
+    var best = DEFAULT_IDX, bd = Infinity;
+    for (var i = 0; i < ZOOMS.length; i++) {
+      var d = Math.abs(ZOOMS[i] - pct);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  var idx = DEFAULT_IDX;
+  try {
+    var saved = parseInt(localStorage.getItem(KEY), 10);
+    if (!isNaN(saved)) idx = nearestIdx(saved);
+  } catch (e) {}
+
+  var pctEl;
+  function apply() {
+    var pct = ZOOMS[idx];
+    doc.style.setProperty("--mdp-zoom", (pct / 100).toString());
+    if (pctEl) pctEl.textContent = pct + "%";
+    try { localStorage.setItem(KEY, String(pct)); } catch (e) {}
+  }
+  function zoomIn() { idx = clampIdx(idx + 1); apply(); }
+  function zoomOut() { idx = clampIdx(idx - 1); apply(); }
+  function zoomReset() { idx = DEFAULT_IDX; apply(); }
+
+  // ---- copy-source (raw markdown, base64-embedded for UTF-8 + file:// safety) ----
+  function decodeSrc() {
+    var el = document.getElementById("mdp-src");
+    if (!el) return "";
+    var b64 = el.textContent.replace(/\s+/g, "");
+    try {
+      var bytes = Uint8Array.from(atob(b64), function (c) { return c.charCodeAt(0); });
+      return new TextDecoder("utf-8").decode(bytes);
+    } catch (e) { return ""; }
+  }
+  function flashDone(btn) {
+    btn.textContent = "Copied"; btn.classList.add("mdp-done");
+    setTimeout(function () {
+      btn.textContent = "Copy source"; btn.classList.remove("mdp-done");
+    }, 1400);
+  }
+  function legacyCopy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  function copySource(btn) {
+    var md = decodeSrc();
+    var done = function () { flashDone(btn); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(done, function () { legacyCopy(md, done); });
+    } else {
+      legacyCopy(md, done);
+    }
+  }
+
+  // ---- build toolbar ----
+  function btn(cls, label, title, fn) {
+    var b = document.createElement("button");
+    b.className = cls; b.textContent = label; b.title = title;
+    b.addEventListener("click", function () { fn(b); });
+    return b;
+  }
+  var bar = document.createElement("div");
+  bar.className = "mdp-toolbar";
+  bar.appendChild(btn("mdp-zoom-out", "A", "Zoom out (Cmd -)", zoomOut));
+  pctEl = document.createElement("span");
+  pctEl.className = "mdp-zoom-pct";
+  pctEl.title = "Reset zoom (Cmd 0)";
+  pctEl.addEventListener("click", zoomReset);
+  bar.appendChild(pctEl);
+  bar.appendChild(btn("mdp-zoom-in", "A", "Zoom in (Cmd +)", zoomIn));
+  var sep = document.createElement("span"); sep.className = "mdp-sep";
+  bar.appendChild(sep);
+  bar.appendChild(btn("mdp-copy", "Copy source", "Copy the raw markdown to the clipboard", copySource));
+  document.body.appendChild(bar);
+
+  apply(); // sets --mdp-zoom + the pct label from saved/default
+
+  // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom) ----
+  window.addEventListener("keydown", function (e) {
+    // outline toggle: bare "[", ignored when modified or while typing in an editable
+    if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      var ae = document.activeElement;
+      var editable = ae && (ae.isContentEditable ||
+        /^(input|textarea|select)$/i.test(ae.tagName));
+      if (!editable && doc.classList.contains("mdp-has-toc")) {
+        e.preventDefault(); toggleToc(); return;
+      }
+    }
+    if (!(e.metaKey || e.ctrlKey)) return;
+    if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomIn(); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomOut(); }
+    else if (e.key === "0") { e.preventDefault(); zoomReset(); }
+  });
+
+  // ---- scroll-spy: highlight the section currently in view ----
+  if (doc.classList.contains("mdp-has-toc")) {
+    var links = {};
+    toc.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      var id = decodeURIComponent(a.getAttribute("href").slice(1));
+      if (id) links[id] = a;
+    });
+    var heads = Object.keys(links)
+      .map(function (id) { return document.getElementById(id); })
+      .filter(Boolean);
+    if ("IntersectionObserver" in window && heads.length) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          var a = links[en.target.id];
+          if (!a) return;
+          for (var k in links) links[k].classList.remove("mdp-active");
+          a.classList.add("mdp-active");
+        });
+      }, { rootMargin: "0px 0px -75% 0px", threshold: 0 });
+      heads.forEach(function (h) { io.observe(h); });
+    }
+  }
+
+  // ---- frontmatter "Show more": clamp long values, reveal on demand ----
+  // CSS line-clamps .mdp-fm-clamp to a few lines. Only add a toggle when the value actually
+  // overflows the clamp (so a value that fits gets no button).
+  document.querySelectorAll("td.mdp-fm-long").forEach(function (td) {
+    var clamp = td.querySelector(".mdp-fm-clamp");
+    if (!clamp) return;
+    if (clamp.scrollHeight - clamp.clientHeight < 4) return; // fits within the clamp, no toggle
+    var btn = document.createElement("button");
+    btn.className = "mdp-fm-more";
+    btn.textContent = "Show more";
+    btn.setAttribute("aria-expanded", "false");
+    btn.addEventListener("click", function () {
+      var open = td.classList.toggle("mdp-fm-expanded");
+      btn.textContent = open ? "Show less" : "Show more";
+      btn.setAttribute("aria-expanded", String(open));
+    });
+    td.appendChild(btn);
+  });
+})();
+</script>

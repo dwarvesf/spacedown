@@ -1,0 +1,22 @@
+<script>
+/* md-preview live-reload (injected ONLY in --watch mode, via --include-after-body).
+   Polls the local server's /__mdp_version (the rendered file's mtime) ~once a second and
+   reloads the page when it changes. The default static render never includes this script.
+   Full-page reload (loses scroll position) is acceptable for v1; a scroll-preserving body
+   swap is a possible later refinement. Pairs with assets/livereload-server.py. */
+(function () {
+  "use strict";
+  var last = null;
+  function check() {
+    fetch("/__mdp_version", { cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (v) {
+        if (last === null) { last = v; return; }
+        if (v !== last) { location.reload(); }
+      })
+      .catch(function () { /* server gone (watch stopped): stop trying noisily */ });
+  }
+  check();                 // set the baseline immediately, not 1s later, so an edit made
+  setInterval(check, 1000); // right after the page opens is not absorbed into the baseline
+})();
+</script>

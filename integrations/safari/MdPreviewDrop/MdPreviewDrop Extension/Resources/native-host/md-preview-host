@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""Native messaging host for the md-preview drop extension.
+
+Protocol (Chrome/Edge native messaging over stdio): each message is a 4-byte
+little-endian uint32 length prefix followed by that many bytes of UTF-8 JSON.
+
+Receives {"filename": str, "content": str}, writes the content to a temp file,
+runs the shared `md-open` wrapper (render + open in browser), and replies
+{"ok": true, "html": "<path>"} or {"ok": false, "error": "<msg>"}.
+"""
+import sys
+import os
+import re
+import json
+import struct
+import tempfile
+import subprocess
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+# native-host/ -> extension/ -> integrations/md-open
+MD_OPEN = os.path.realpath(os.path.join(HERE, "..", "..", "md-open"))
+
+
+def read_message():
+    raw_len = sys.stdin.buffer.read(4)
+    if len(raw_len) < 4:
+        sys.exit(0)  # stdin closed: Edge is done with us
+    (msg_len,) = struct.unpack("<I", raw_len)
+    return json.loads(sys.stdin.buffer.read(msg_len).decode("utf-8"))
+
+
+def send_message(obj):
+    data = json.dumps(obj).encode("utf-8")
+    sys.stdout.buffer.write(struct.pack("<I", len(data)))
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
+
+
+def safe_name(name):
+    """Keep the basename, strip path separators, default to dropped.md."""
+    name = os.path.basename(name or "").strip() or "dropped.md"
+    name = re.sub(r"[^A-Za-z0-9._-]+", "-", name)
+    if not re.search(r"\.(md|markdown)$", name, re.I):
+        name += ".md"
+    return name
+
+
+def main():
+    try:
+        msg = read_message()
+    except Exception as e:  # malformed frame
+        send_message({"ok": False, "error": "bad message: %s" % e})
+        return
+
+    content = msg.get("content", "")
+    filename = safe_name(msg.get("filename", "dropped.md"))
+
+    tmpdir = tempfile.mkdtemp(prefix="md-preview-drop-")
+    src = os.path.join(tmpdir, filename)
+    try:
+        with open(src, "w", encoding="utf-8") as fh:
+            fh.write(content)
+    except Exception as e:
+        send_message({"ok": False, "error": "could not write temp file: %s" % e})
+        return
+
+    # GUI/stdio context has a minimal PATH; md-open re-exports a full PATH, but
+    # set one here too so even MD_OPEN resolution + the python subprocess agree.
+    env = dict(os.environ)
+    env["PATH"] = "/opt/homebrew/bin:%s/.local/bin:/usr/local/bin:/usr/bin:/bin" % os.path.expanduser("~")
+
+    if not os.path.exists(MD_OPEN):
+        send_message({"ok": False, "error": "md-open wrapper not found at %s" % MD_OPEN})
+        return
+
+    try:
+        proc = subprocess.run(
+            [MD_OPEN, src],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        send_message({"ok": False, "error": "md-preview timed out (60s)"})
+        return
+    except Exception as e:
+        send_message({"ok": False, "error": "failed to launch md-open: %s" % e})
+        return
+
+    if proc.returncode != 0:
+        send_message({"ok": False, "error": (proc.stderr or "render failed").strip()[-600:]})
+        return
+
+    html = (proc.stdout or "").strip().splitlines()
+    send_message({"ok": True, "html": html[-1] if html else ""})
+
+
+if __name__ == "__main__":
+    main()

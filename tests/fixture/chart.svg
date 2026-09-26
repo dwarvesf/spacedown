@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#ffffff"/>
+  <g stroke="#e5e7eb" stroke-width="1">
+    <line x1="60" y1="60" x2="60" y2="300"/>
+    <line x1="60" y1="300" x2="600" y2="300"/>
+    <line x1="60" y1="240" x2="600" y2="240"/>
+    <line x1="60" y1="180" x2="600" y2="180"/>
+    <line x1="60" y1="120" x2="600" y2="120"/>
+    <line x1="60" y1="60" x2="600" y2="60"/>
+  </g>
+  <g fill="#4f46e5">
+    <rect x="90" y="120" width="48" height="180" rx="3"/>
+    <rect x="170" y="140" width="48" height="160" rx="3"/>
+    <rect x="250" y="190" width="48" height="110" rx="3"/>
+    <rect x="330" y="200" width="48" height="100" rx="3"/>
+    <rect x="410" y="205" width="48" height="95" rx="3"/>
+    <rect x="490" y="235" width="48" height="65" rx="3"/>
+  </g>
+  <g fill="#6b7280" font-family="Menlo, monospace" font-size="12" text-anchor="middle">
+    <text x="114" y="320">North</text>
+    <text x="194" y="320">East</text>
+    <text x="274" y="320">South</text>
+    <text x="354" y="320">West</text>
+    <text x="434" y="320">Hill</text>
+    <text x="514" y="320">Coast</text>
+  </g>
+  <text x="60" y="36" fill="#111827" font-family="Menlo, monospace" font-size="14" font-weight="bold">Rainfall by station, spring</text>
+</svg>

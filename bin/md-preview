@@ -1,0 +1,600 @@
+#!/usr/bin/env bash
+# md-preview: render markdown (with LaTeX math via KaTeX) to a self-contained
+# HTML file and optionally open it in the default browser.
+#
+# Exit codes: 0 ok | 1 source bad | 2 pandoc fail | 3 entr missing | 64 usage | 130 SIGINT
+#
+# stdout: absolute output path (one line, on success only).
+# stderr: diagnostics, prefixed with "md-preview:".
+
+set -euo pipefail
+
+VERSION="0.2.0"
+
+# Resolve this script's own directory, following symlinks (it is symlinked onto
+# PATH at ~/.local/bin/md-preview). Used to locate the bundled assets/.
+_src="${BASH_SOURCE[0]}"
+while [[ -h "$_src" ]]; do
+  _dir="$(cd -P "$(dirname "$_src")" && pwd)"
+  _src="$(readlink "$_src")"
+  [[ "$_src" != /* ]] && _src="${_dir}/${_src}"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$_src")" && pwd)"
+# Absolute path to this script, used to re-invoke it per-file in folder mode
+# (so each file gets the full single-file render path, fonts and all).
+SELF="${SCRIPT_DIR}/$(basename "$_src")"
+# The VSCodium / VS Code markdown-preview look, injected into the page head.
+# Provenance: assets/REFRESH.md
+STYLE_HEAD="${SCRIPT_DIR}/../assets/vscode-preview-head.html"
+# Reading chrome (outline sidebar + zoom + copy-source): CSS head + JS foot partials.
+CHROME_HEAD="${SCRIPT_DIR}/../assets/reading-chrome-head.html"
+CHROME_FOOT="${SCRIPT_DIR}/../assets/reading-chrome-foot.html"
+# "paper" reading theme (--font-mode=paper, the default). An original design set in
+# the free iA Writer Quattro and Mono fonts (OFL, referenced by name, no embedding).
+# Plain .css (not a pre-wrapped .html head partial like the other assets) so the SAME
+# file also works directly as a VS Code / VSCodium `markdown.styles` entry; the CLI
+# wraps it in <style> at render time (below).
+PAPER_CSS="${SCRIPT_DIR}/../assets/paper-theme.css"
+# Live-reload (watch mode only): a poll script injected into the page + a localhost server.
+LIVERELOAD_FOOT="${SCRIPT_DIR}/../assets/livereload-foot.html"
+LIVERELOAD_SERVER="${SCRIPT_DIR}/../assets/livereload-server.py"
+
+usage() {
+  cat <<'EOF'
+md-preview: render markdown (with LaTeX via KaTeX) to HTML; optionally open in browser.
+Also installed as `mdp` and `markdown-preview` (aliases for this script).
+
+Usage:
+  md-preview <file> [--out PATH] [--no-open] [--watch] [--title STR]
+                    [--font-mode paper|read|mono] [--standalone | --no-standalone]
+                    [--help] [--version]
+  md-preview <dir>  [--out PATH] [--no-open]
+
+Args:
+  <file>            Path to a markdown file.
+  <dir>             A directory: render every top-level *.md / *.markdown in it
+                    and write an index.html linking to each (e.g. `mdp .`).
+
+Flags:
+  --out PATH        Output HTML path. Default: /tmp/md-preview/<slug>.html
+  --no-open         Skip browser. Implied when stdout is not a TTY.
+  --watch           Re-render on save (requires entr). Ctrl-C to exit.
+  --title STR       Title metadata. Default: basename without extension.
+  --font-mode MODE  paper (default): warm reading theme set in the free
+                    iA Writer Quattro and Mono fonts (system fonts when those
+                    are not installed). mono: full editor fidelity (mirrored
+                    monospace everywhere). read: proportional serif prose for
+                    long-form reading, monospace kept for code/tables.
+                    Env: MD_PREVIEW_FONT_MODE.
+  --no-standalone   Disable pandoc --standalone (rare; for embedding).
+  --help            Print this.
+  --version         Print version + dep status.
+
+Exit codes:
+  0  success
+  1  source file not found / not readable / empty
+  2  pandoc missing or failed
+  3  --watch requested but entr missing
+  64 usage error
+  130 SIGINT (Ctrl-C from --watch)
+
+stdout: absolute output path (success only).
+stderr: diagnostics + errors.
+EOF
+}
+
+log() { echo "md-preview: $*" >&2; }
+die() { local code=$1; shift; log "$*"; exit "$code"; }
+
+# Mirror the user's editor markdown-preview fonts so the output matches their
+# VSCodium / VS Code preview pane exactly. Reads markdown.preview.fontFamily /
+# fontSize / lineHeight and editor.fontFamily from settings.json and writes a CSS
+# <style> override (injected AFTER the base stylesheet, so it wins) to $1.
+# Keys not present fall back to the base asset's VS Code defaults.
+# Settings source: $MD_PREVIEW_SETTINGS if set, else VSCodium then VS Code (macOS).
+# Empty output (no settings / no python3 / no keys) => caller skips the include.
+build_font_override() {
+  local out="$1" settings="${MD_PREVIEW_SETTINGS:-}"
+  if [[ -z "$settings" ]]; then
+    local c
+    for c in \
+      "$HOME/Library/Application Support/VSCodium/User/settings.json" \
+      "$HOME/Library/Application Support/Code/User/settings.json"; do
+      [[ -f "$c" ]] && { settings="$c"; break; }
+    done
+  fi
+  [[ -f "$settings" ]] || return 0
+  command -v python3 >/dev/null 2>&1 || return 0
+  # Per-key regex extraction (no full JSONC parse: tolerant of comments + a stray
+  # control char elsewhere in the file). String values may contain single quotes.
+  python3 - "$settings" > "$out" <<'PY'
+import re, sys
+txt = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+def s(key):
+    m = re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % re.escape(key), txt)
+    return m.group(1) if m else None
+def n(key):
+    m = re.search(r'"%s"\s*:\s*([0-9.]+)' % re.escape(key), txt)
+    return m.group(1) if m else None
+rules = []
+ff = s("markdown.preview.fontFamily")
+fs = n("markdown.preview.fontSize")
+lh = n("markdown.preview.lineHeight")
+cf = s("editor.fontFamily")
+if ff: rules.append("  --markdown-font-family: %s;" % ff)
+if fs: rules.append("  --markdown-font-size: %spx;" % fs)
+if lh: rules.append("  --markdown-line-height: %s;" % lh)
+if cf: rules.append("  --vscode-editor-font-family: %s;" % cf)
+if rules:
+    print("<style>")
+    print("/* md-preview: fonts mirrored from %s */" % sys.argv[1])
+    print(":root {")
+    print("\n".join(rules))
+    print("}")
+    print("</style>")
+PY
+}
+
+print_version() {
+  echo "md-preview $VERSION"
+  if command -v pandoc >/dev/null 2>&1; then
+    echo "  pandoc: $(pandoc --version | head -1)"
+  else
+    echo "  pandoc: NOT INSTALLED (brew install pandoc)"
+  fi
+  if command -v entr >/dev/null 2>&1; then
+    echo "  entr: installed (--watch supported)"
+  else
+    echo "  entr: not installed (--watch unavailable; brew install entr)"
+  fi
+}
+
+slugify() {
+  # lowercase, strip .md extension, non-alphanumeric → -, collapse runs, trim
+  local base="${1##*/}"   # basename
+  base="${base%.md}"
+  base="${base%.markdown}"
+  echo "$base" \
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
+}
+
+# ---- parse args ----
+FILE=""
+OUT=""
+NO_OPEN=0
+WATCH=0
+TITLE=""
+STANDALONE=1
+# Body font mode: "paper" (default) = the reading theme; "mono" = full editor fidelity
+# (mirrored mono everywhere); "read" = proportional serif. Override default via
+# $MD_PREVIEW_FONT_MODE.
+FONT_MODE="${MD_PREVIEW_FONT_MODE:-paper}"
+
+if [[ $# -eq 0 ]]; then
+  usage >&2
+  exit 64
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --version|-V) print_version; exit 0 ;;
+    --out) [[ -n "${2:-}" ]] || die 64 "--out requires a path"; OUT="$2"; shift 2 ;;
+    --out=*) OUT="${1#--out=}"; shift ;;
+    --no-open) NO_OPEN=1; shift ;;
+    --watch) WATCH=1; shift ;;
+    --title) [[ -n "${2:-}" ]] || die 64 "--title requires a string"; TITLE="$2"; shift 2 ;;
+    --title=*) TITLE="${1#--title=}"; shift ;;
+    --font-mode) [[ "${2:-}" =~ ^(paper|read|mono)$ ]] || die 64 "--font-mode must be 'paper', 'read', or 'mono'"; FONT_MODE="$2"; shift 2 ;;
+    --font-mode=*) v="${1#--font-mode=}"; [[ "$v" =~ ^(paper|read|mono)$ ]] || die 64 "--font-mode must be 'paper', 'read', or 'mono'"; FONT_MODE="$v"; shift ;;
+    --standalone) STANDALONE=1; shift ;;
+    --no-standalone) STANDALONE=0; shift ;;
+    --) shift; break ;;
+    -*) die 64 "unknown flag: $1 (see --help)" ;;
+    *)
+      if [[ -z "$FILE" ]]; then
+        FILE="$1"; shift
+      else
+        die 64 "unexpected positional arg: $1 (only one file path accepted)"
+      fi
+      ;;
+  esac
+done
+
+[[ -n "$FILE" ]] || die 64 "missing required <file> arg (see --help)"
+
+# ---- folder mode ----
+# `md-preview <dir>` renders every top-level *.md / *.markdown in <dir> and writes an
+# index.html linking to each rendered file. Each per-file render reuses the full
+# single-file path by re-invoking this script with --no-open. Top-level only (no recursion).
+if [[ -d "$FILE" ]]; then
+  command -v pandoc >/dev/null 2>&1 || die 2 "pandoc not installed; brew install pandoc"
+  dir_abs="$(cd "$FILE" && pwd)"
+  dirslug="$(slugify "$(basename "$dir_abs")")"
+  [[ -n "$dirslug" ]] || dirslug="folder"
+  index_out="${OUT:-/tmp/md-preview/${dirslug}-index.html}"
+  mkdir -p "$(dirname "$index_out")"
+  index_dir="$(cd "$(dirname "$index_out")" && pwd)"
+  index_out="${index_dir}/$(basename "$index_out")"
+
+  # Collect top-level markdown portably (bash 3.2 / BSD find+sort; newlines in names unsupported).
+  md_list=()
+  while IFS= read -r _f; do [[ -n "$_f" ]] && md_list+=("$_f"); done < <(
+    find "$dir_abs" -maxdepth 1 -type f \( -iname '*.md' -o -iname '*.markdown' \) | LC_ALL=C sort
+  )
+  [[ ${#md_list[@]} -gt 0 ]] || die 1 "no .md / .markdown files in directory: $FILE"
+
+  rows=""
+  for _f in "${md_list[@]}"; do
+    _base="$(basename "$_f")"
+    if _html="$("$SELF" --no-open "$_f" 2>/dev/null)"; then
+      if [[ "$(dirname "$_html")" == "$index_dir" ]]; then _href="$(basename "$_html")"; else _href="file://${_html}"; fi
+      rows="${rows}    <li><a href=\"${_href}\">${_base}</a></li>"$'\n'
+      log "rendered ${_base}"
+    else
+      rows="${rows}    <li>${_base} <span class=\"fail\">(render failed)</span></li>"$'\n'
+      log "FAILED ${_base}"
+    fi
+  done
+
+  cat > "$index_out" <<HTMLDOC
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>${dirslug}, markdown index</title>
+<style>
+  body { font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: #111827; background: #fafafa; max-width: 680px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 20px; font-weight: 600; }
+  .dir { color: #6b7280; font-size: 13px; font-family: ui-monospace, Menlo, monospace; }
+  ul { padding-left: 1.2em; } li { margin: .35em 0; }
+  a { color: #4f46e5; text-decoration: none; } a:hover { text-decoration: underline; }
+  .fail { color: #b91c1c; font-size: 12px; }
+</style></head><body>
+<h1>Markdown in <span class="dir">${dir_abs}</span></h1>
+<ul>
+${rows}</ul>
+</body></html>
+HTMLDOC
+  log "wrote index ${index_out} (${#md_list[@]} files)"
+  echo "$index_out"
+
+  [[ -t 1 ]] || NO_OPEN=1
+  if [[ "$NO_OPEN" == "0" ]] && command -v open >/dev/null 2>&1; then
+    open "$index_out" 2>/dev/null || true
+  fi
+  exit 0
+fi
+
+# ---- validate source ----
+[[ -e "$FILE" ]] || die 1 "file not found: $FILE"
+[[ -f "$FILE" ]] || die 1 "not a regular file: $FILE"
+[[ -r "$FILE" ]] || die 1 "file not readable: $FILE"
+[[ -s "$FILE" ]] || die 1 "file is empty: $FILE"
+
+# ---- validate pandoc ----
+command -v pandoc >/dev/null 2>&1 || die 2 "pandoc not installed; brew install pandoc"
+
+# ---- resolve output path ----
+if [[ -z "$OUT" ]]; then
+  slug="$(slugify "$FILE")"
+  [[ -n "$slug" ]] || die 1 "could not derive slug from filename: $FILE"
+  OUT="/tmp/md-preview/${slug}.html"
+fi
+
+# Absolutize OUT path (canonical, no relative components).
+out_dir="$(cd "$(dirname "$OUT")" 2>/dev/null && pwd || true)"
+if [[ -z "$out_dir" ]]; then
+  mkdir -p "$(dirname "$OUT")"
+  out_dir="$(cd "$(dirname "$OUT")" && pwd)"
+fi
+OUT="${out_dir}/$(basename "$OUT")"
+
+mkdir -p "$(dirname "$OUT")"
+
+# ---- title ----
+if [[ -z "$TITLE" ]]; then
+  TITLE="$(basename "$FILE")"
+  TITLE="${TITLE%.md}"
+  TITLE="${TITLE%.markdown}"
+fi
+
+# ---- TTY-detect (Claude-Code-friendly): auto --no-open when stdout is not a tty ----
+if [[ ! -t 1 ]]; then
+  NO_OPEN=1
+fi
+
+# ---- pandoc flags ----
+# -f markdown-smart: pandoc markdown reader (same as .md auto-detect, keeps tex_math_dollars
+# so $...$ math still works) but with the `smart` extension OFF, so straight quotes and
+# hyphens stay literal, matching VS Code's markdown-it (typographer off) instead of pandoc's
+# curly-quote / en-dash conversion.
+# +wikilinks_title_after_pipe: Obsidian-style [[target]] / [[target|title]] render as
+# <a class="wikilink"> (styled in the asset) instead of literal brackets. Pure preview:
+# the href is the bare target, not resolved to a file path.
+# +hard_line_breaks: single newline -> <br>, Obsidian's default, so multi-line
+# blockquotes/callouts keep their authored line structure. Matches the Quick Look
+# appex (marked breaks:true).
+# -implicit_figures: pandoc otherwise turns an image alone in a paragraph into a
+# <figure> captioned with the ALT text, and the house convention already writes the
+# caption as the next paragraph, so every figure read its caption twice. Without it
+# the shape matches the Quick Look panel: an image paragraph, then a caption paragraph.
+pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks --katex --syntax-highlighting tango )
+[[ "$STANDALONE" == "1" ]] && pandoc_flags+=( --standalone )
+# Use pagetitle (browser-tab <title>) not title: a `title` metadata makes pandoc
+# emit a centered document-title header block, which VS Code's preview never shows.
+pandoc_flags+=( --metadata "pagetitle:${TITLE}" )
+# Inject the VSCodium markdown-preview stylesheet last into <head> so it wins over
+# pandoc's default template. Only meaningful with --standalone (no <head> otherwise).
+# Degrade gracefully (warn, keep rendering) if the asset is missing.
+if [[ "$STANDALONE" == "1" ]]; then
+  if [[ -f "$STYLE_HEAD" ]]; then
+    pandoc_flags+=( --include-in-header "$STYLE_HEAD" )
+    # Temp head/foot partials built below are tracked here and removed by one EXIT trap.
+    TMPFILES=()
+    trap 'for _t in "${TMPFILES[@]:-}"; do [[ -n "$_t" && -f "$_t" ]] && rm -f "$_t"; done' EXIT
+    # <base> pointing at the SOURCE file's directory. The output lands in /tmp by
+    # default, so a relative image or link in the document resolves against the wrong
+    # directory and every figure renders broken. Python builds the file: URI because
+    # a directory name can carry a space or a diacritic.
+    BASE_HEAD="$(mktemp -t md-preview-base 2>/dev/null || true)"
+    if [[ -n "${BASE_HEAD:-}" ]]; then
+      TMPFILES+=("$BASE_HEAD")
+      src_dir="$(cd "$(dirname "$FILE")" && pwd)"
+      src_uri="$(python3 -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).as_uri())' "$src_dir" 2>/dev/null || printf 'file://%s' "$src_dir")"
+      printf '<base href="%s/">\n' "$src_uri" > "$BASE_HEAD"
+      pandoc_flags+=( --include-in-header "$BASE_HEAD" )
+    fi
+    # Mirror the user's editor preview fonts (VSCodium/VS Code settings.json), injected
+    # AFTER the base stylesheet so its :root vars win. Absent settings -> defaults apply.
+    FONT_HEAD="$(mktemp -t md-preview-fonts 2>/dev/null || true)"
+    if [[ -n "${FONT_HEAD:-}" ]]; then
+      TMPFILES+=("$FONT_HEAD")
+      build_font_override "$FONT_HEAD"
+      [[ -s "$FONT_HEAD" ]] && pandoc_flags+=( --include-in-header "$FONT_HEAD" )
+    fi
+    # Font mode. "read": proportional serif prose for long-form reading, monospace
+    # kept for code / inline code / tables (and KaTeX keeps its math fonts). Injected
+    # after the mirrored fonts so it wins over them. "paper" (default): the reading
+    # theme below. "mono": inject nothing, the mirrored editor fonts above stay, i.e.
+    # full editor fidelity (the escape hatch).
+    if [[ "$FONT_MODE" == "read" ]]; then
+      MODE_HEAD="$(mktemp -t md-preview-mode 2>/dev/null || true)"
+      if [[ -n "${MODE_HEAD:-}" ]]; then
+        TMPFILES+=("$MODE_HEAD")
+        cat > "$MODE_HEAD" <<'MODECSS'
+<style>
+/* md-preview read mode: proportional serif prose, monospace kept where it carries
+   meaning (code, tables). Local fonts only (no web fonts). --font-mode=mono reverts. */
+html, body {
+  /* Georgia first: full Vietnamese coverage (proper horn diacritics on ư/ơ).
+     Charter was dropped: it lacks Vietnamese glyphs, so browsers composed the
+     horns from fallback pieces and they sat visibly offset. ui-serif is skipped:
+     Chromium (Arc/Chrome) doesn't support it, which is what exposed Charter. */
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+code, kbd, samp, pre, pre code,
+table, th, td {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  /* Monospace has a larger x-height than the serif at the same px, so unscaled mono
+     reads visibly bigger than the prose. 13px (~87% of the 15px body) matches the
+     serif's optical size, and equals the editor's own mono size. GitHub uses 85%. */
+  font-size: 13px;
+}
+pre code { font-size: inherit; } /* don't double-shrink code inside pre */
+.katex { font-size: 1.04em; } /* math reads a touch small against serif body */
+/* The base stylesheet sizes inline math for the MONO body (1.23em, x-height gap);
+   Georgia's x-height (~0.48em) sits closer to KaTeX's, so parity is ~1.10em here. */
+.math.inline .katex { font-size: 1.10em; }
+MODECSS
+        echo '</style>' >> "$MODE_HEAD"
+        pandoc_flags+=( --include-in-header "$MODE_HEAD" )
+      fi
+    elif [[ "$FONT_MODE" == "paper" ]]; then
+      # PAPER_CSS is plain CSS, so wrap it in a temp <style> block for pandoc's
+      # --include-in-header. Degrades gracefully (warn, keep the base look) if the
+      # asset is missing, same pattern as STYLE_HEAD/CHROME_HEAD.
+      if [[ -f "$PAPER_CSS" ]]; then
+        PAPER_HEAD="$(mktemp -t md-preview-paper 2>/dev/null || true)"
+        if [[ -n "${PAPER_HEAD:-}" ]]; then
+          TMPFILES+=("$PAPER_HEAD")
+          { echo '<style>'; cat "$PAPER_CSS"; echo '</style>'; } > "$PAPER_HEAD"
+          pandoc_flags+=( --include-in-header "$PAPER_HEAD" )
+        fi
+      else
+        log "paper style asset not found at ${PAPER_CSS}; --font-mode=paper has no effect"
+      fi
+    fi
+    # Reading chrome: outline sidebar + zoom + copy-source. --toc makes
+    # pandoc emit nav#TOC (only when the doc has headings); the head CSS pins it left and
+    # styles the toolbar; the foot JS wires zoom/copy/scroll-spy. Gated on the head asset
+    # so removing it cleanly drops the whole chrome (the negative control).
+    # Gate on BOTH assets: the chrome is one feature (CSS + JS + embedded source), so
+    # removing either partial cleanly drops the whole thing (the negative control). If the
+    # source temp can't be made, head+TOC still inject but the JS is skipped, so the sidebar
+    # stays hidden (its default) and the page degrades to the plain VS Code look, safely.
+    if [[ -f "$CHROME_HEAD" && -f "$CHROME_FOOT" ]]; then
+      pandoc_flags+=( --toc --toc-depth=4 --include-in-header "$CHROME_HEAD" )
+      SRC_FOOT="$(mktemp -t md-preview-src 2>/dev/null || true)"
+      if [[ -n "${SRC_FOOT:-}" ]]; then
+        TMPFILES+=("$SRC_FOOT")
+        # Embed the raw markdown (base64, single line) so copy-source works offline /
+        # file://; base64 dodges every HTML-escaping pitfall and is UTF-8 safe (Vietnamese).
+        # The foot JS decodes #mdp-src. Injected BEFORE the foot so the element exists first.
+        {
+          printf '<script type="application/x-mdp-source" id="mdp-src">'
+          base64 < "$FILE" | tr -d '\n'
+          printf '</script>\n'
+        } > "$SRC_FOOT"
+        pandoc_flags+=( --include-after-body "$SRC_FOOT" --include-after-body "$CHROME_FOOT" )
+      fi
+    fi
+  else
+    log "style asset not found at ${STYLE_HEAD}; rendering with pandoc defaults"
+  fi
+fi
+
+# Live-reload (watch mode only): inject a poll script so the open page auto-refreshes when
+# the watched file is re-rendered. Gated on --watch AND python3 AND the assets existing; the
+# default (non-watch) render injects nothing and starts no server. Without python3, --watch
+# keeps its prior entr + manual-refresh behavior (graceful degradation). The flag is set here
+# (before do_render) so BOTH the initial render and the entr re-renders carry the poll script.
+LIVERELOAD=0
+if [[ "$WATCH" == "1" && "$STANDALONE" == "1" ]] \
+   && command -v python3 >/dev/null 2>&1 \
+   && [[ -f "$LIVERELOAD_FOOT" && -f "$LIVERELOAD_SERVER" ]]; then
+  LIVERELOAD=1
+  pandoc_flags+=( --include-after-body "$LIVERELOAD_FOOT" )
+fi
+
+# If the file opens with a YAML frontmatter block, rewrite the fence delimiters
+# to a ```yaml code fence on stdout, so pandoc renders the frontmatter as a
+# visible, syntax-highlighted block instead of consuming it as document metadata.
+# Pandoc's YAML metadata parser is strict and dies on the unquoted colons common
+# in SKILL.md `description:` fields ("Workflow: (1)..."), which Claude Code's own
+# loader tolerates. Fencing sidesteps that entirely.
+# The block opens on a leading `---` (pandoc never opens on `...`) and closes on
+# either `---` or `...` (both are valid YAML terminators pandoc accepts); a
+# trailing CR is tolerated so CRLF files are handled too. Files with no leading
+# `---`, or an unterminated block, pass through byte-for-byte.
+fence_frontmatter() {
+  awk '
+    NR==1 { c=$0; sub(/\r$/,"",c); if (c=="---") { fm=1; buf[++n]=$0; next } }
+    fm==1 {
+      buf[++n]=$0
+      c=$0; sub(/\r$/,"",c)
+      if (c=="---" || c=="...") {
+        print "```yaml"
+        for (i=2;i<n;i++) print buf[i]
+        print "```"
+        fm=2; next
+      }
+      next
+    }
+    { print }
+    END { if (fm==1) for (i=1;i<=n;i++) print buf[i] }
+  ' "$1"
+}
+export -f fence_frontmatter
+
+# Preferred frontmatter rendering: a leading YAML block becomes an HTML properties
+# table (assets/frontmatter-to-table.py), which reads as metadata distinct from a
+# content table. The python renderer is itself tolerant , it splits on the first
+# `: ` and falls back to a ```yaml fence for anything it can't cleanly parse, so the
+# never-crash guarantee holds. When python3 is absent we degrade to the awk fence
+# above (same graceful-degradation pattern as build_font_override).
+MDP_FM_SCRIPT="${SCRIPT_DIR}/../assets/frontmatter-to-table.py"
+export MDP_FM_SCRIPT
+render_frontmatter() {
+  if command -v python3 >/dev/null 2>&1 && [[ -f "$MDP_FM_SCRIPT" ]]; then
+    python3 "$MDP_FM_SCRIPT" "$1" && return 0
+  fi
+  fence_frontmatter "$1"
+}
+export -f render_frontmatter
+
+# Callouts: "> [!type] title" blocks become classed fenced divs with a styled head
+# (assets/callouts-to-html.py; same contract as the Quick Look appex's JS pass).
+# Without python3 the filter degrades to cat and the literal marker shows, as before.
+MDP_CALLOUT_SCRIPT="${SCRIPT_DIR}/../assets/callouts-to-html.py"
+export MDP_CALLOUT_SCRIPT
+render_callouts() {
+  if command -v python3 >/dev/null 2>&1 && [[ -f "$MDP_CALLOUT_SCRIPT" ]]; then
+    python3 "$MDP_CALLOUT_SCRIPT"
+  else
+    cat
+  fi
+}
+export -f render_callouts
+
+# ---- the render function (used by both single + watch paths) ----
+do_render() {
+  local size_in size_out
+  size_in="$(wc -c < "$FILE" | tr -d ' ')"
+  log "rendering ${FILE} (${size_in} bytes) via pandoc..."
+  # Feed via render_frontmatter (stdin) so a metadata block can't crash pandoc.
+  if ! render_frontmatter "$FILE" | render_callouts | pandoc "${pandoc_flags[@]}" -o "$OUT"; then
+    return 2
+  fi
+  size_out="$(wc -c < "$OUT" | tr -d ' ')"
+  log "wrote ${OUT} (${size_out} bytes)"
+}
+
+# ---- single render ----
+if ! do_render; then
+  die 2 "pandoc failed (see stderr above)"
+fi
+
+# Emit absolute path on stdout (the contract).
+echo "$OUT"
+
+# ---- live-reload server (watch mode) ----
+# Serve $OUT at / and its mtime at /__mdp_version on localhost:<ephemeral>. The injected poll
+# script reloads the page when the mtime changes (entr re-renders $OUT on each save). The server
+# is reaped on exit alongside the temp files. If it fails to start, fall back to manual refresh.
+SERVE_URL=""
+if [[ "$LIVERELOAD" == "1" ]]; then
+  LR_PORT_FILE="$(mktemp -t md-preview-lrport 2>/dev/null || true)"
+  if [[ -n "${LR_PORT_FILE:-}" ]]; then
+    TMPFILES+=("$LR_PORT_FILE")
+    python3 "$LIVERELOAD_SERVER" "$OUT" "$LR_PORT_FILE" &
+    LR_PID=$!
+    # Reap the server on exit; keep the temp-file cleanup from the earlier trap.
+    trap 'kill "${LR_PID:-0}" 2>/dev/null; for _t in "${TMPFILES[@]:-}"; do [[ -n "$_t" && -f "$_t" ]] && rm -f "$_t"; done' EXIT
+    for _i in $(seq 1 60); do [[ -s "$LR_PORT_FILE" ]] && break; sleep 0.05; done
+    LR_PORT="$(cat "$LR_PORT_FILE" 2>/dev/null || true)"
+    if [[ -n "$LR_PORT" ]]; then
+      SERVE_URL="http://127.0.0.1:${LR_PORT}/"
+      log "live-reload on ${SERVE_URL} (edits auto-refresh the page; Ctrl-C to stop)"
+    else
+      log "live-reload server did not start; falling back to manual refresh"
+      LIVERELOAD=0
+      kill "${LR_PID:-0}" 2>/dev/null || true
+    fi
+  fi
+fi
+
+# ---- open browser unless suppressed ----
+# Prefer a Chromium-based browser: md-preview's CSS targets VS Code's Chromium rendering,
+# and Safari (WebKit) mis-renders the JetBrains Mono variable font. Fall back to the
+# system default if no Chromium browser is installed. Override the preference list with
+# MD_PREVIEW_BROWSER="App Name".
+# In live-reload mode open the server URL (so the poll script can reach /__mdp_version);
+# otherwise open the file directly.
+OPEN_TARGET="${SERVE_URL:-$OUT}"
+if [[ "$NO_OPEN" == "0" ]]; then
+  if command -v open >/dev/null 2>&1; then
+    opened=0
+    for app in "${MD_PREVIEW_BROWSER:-}" "Arc" "Google Chrome" "Microsoft Edge" "Brave Browser"; do
+      [[ -n "$app" && -d "/Applications/${app}.app" ]] || continue
+      if open -a "$app" "$OPEN_TARGET" 2>/dev/null; then log "opened in ${app}"; opened=1; break; fi
+    done
+    if [[ "$opened" == "0" ]]; then
+      open "$OPEN_TARGET"
+      log "opened in default browser (no Chromium browser found; Safari may mis-render the font)"
+    fi
+  else
+    log "open(1) not available; skipping browser launch"
+  fi
+fi
+
+# ---- watch mode ----
+if [[ "$WATCH" == "1" ]]; then
+  command -v entr >/dev/null 2>&1 || die 3 "--watch requires entr; brew install entr"
+  log "watching ${FILE} for changes (Ctrl-C to stop)"
+  # SIGINT in the entr loop bubbles up to us; trap and exit 130 cleanly.
+  trap 'log "stopped"; exit 130' INT
+  # Re-render loop. -n = non-interactive (don't try to clear screen / read stdin).
+  while true; do
+    echo "$FILE" | entr -n -p bash -c "
+      render_frontmatter \"$FILE\" | render_callouts | pandoc ${pandoc_flags[*]@Q} -o \"$OUT\" \
+        && echo \"md-preview: wrote ${OUT}\" >&2 \
+        || echo \"md-preview: pandoc failed (exit \$?)\" >&2
+    " || true
+    # entr exits 0 when it processed an event; loop forever until Ctrl-C.
+    log "change detected, re-rendering..."
+  done
+fi
+
+exit 0

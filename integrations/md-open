@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# md-open: render a markdown file via `md-preview`, then open the resulting HTML
+# in a Chromium browser. Shared by BOTH integrations:
+#   - finder-app/MdPreview.app  (Finder double-click / "Open With")
+#   - extension/native-host/    (browser drag-drop via native messaging)
+#
+# Why a wrapper and not `md-preview` directly: md-preview only self-opens the
+# browser when stdout is a TTY (so the Bash tool / pipes never hijack it). Both
+# of our callers are non-TTY (LaunchServices, native-messaging stdio), so
+# md-preview renders but will NOT open. This wrapper does the open step, keeping
+# the browser-preference logic in ONE place.
+#
+# Usage:   md-open <markdown-file>
+# stdout:  absolute path to the rendered HTML (last line), same as md-preview.
+# Exit:    passes through md-preview's exit code on render failure.
+set -euo pipefail
+
+# GUI-launched contexts (Finder, native messaging host) get a minimal PATH that
+# omits Homebrew + ~/.local/bin, so `md-preview` and its `pandoc` dep are not
+# found. Prepend the real locations explicitly.
+export PATH="/opt/homebrew/bin:${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+MD_PREVIEW="${MD_PREVIEW_BIN:-md-preview}"
+
+[[ $# -ge 1 ]] || { echo "md-open: usage: md-open <markdown-file>" >&2; exit 64; }
+FILE="$1"
+
+# Render. md-preview prints the HTML path on its last stdout line; capture it.
+html="$("$MD_PREVIEW" "$FILE" | tail -n1)"
+[[ -n "$html" && -f "$html" ]] || { echo "md-open: render produced no HTML for $FILE" >&2; exit 1; }
+
+# Open in the first available Chromium browser (md-preview's CSS targets
+# Chromium; Safari/WebKit mis-renders the JetBrains Mono variable font). Edge
+# first. Override with MD_PREVIEW_BROWSER="App Name".
+for app in "${MD_PREVIEW_BROWSER:-}" "Microsoft Edge" "Arc" "Google Chrome" "Brave Browser"; do
+  [[ -n "$app" && -d "/Applications/${app}.app" ]] || continue
+  if open -a "$app" "$html" 2>/dev/null; then
+    echo "$html"
+    exit 0
+  fi
+done
+
+# No Chromium browser found: fall back to the system default.
+open "$html" 2>/dev/null || true
+echo "$html"

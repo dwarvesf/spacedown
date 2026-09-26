@@ -1,0 +1,28 @@
+name: MarkdownPreviewQL
+options:
+  bundleIdPrefix: foundation.d.mdpreview
+  deploymentTarget:
+    macOS: "12.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: W777S7V8TN
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    PRODUCT_NAME: MarkdownPreviewQL
+    INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Dwarves Foundation"
+targets:
+  MarkdownPreviewQL:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: Resources   # xcodegen auto-adds non-source files here to a resources copy phase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: foundation.d.mdpreview.quicklook
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Info.plist
+        CODE_SIGN_ENTITLEMENTS: MarkdownPreviewQL.entitlements

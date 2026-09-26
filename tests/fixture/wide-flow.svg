@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="200" viewBox="0 0 1400 200">
+  <rect width="1400" height="200" fill="#ffffff"/>
+  <g fill="none" stroke="#374151" stroke-width="1.5">
+    <rect x="30" y="70" width="180" height="60" rx="6"/>
+    <rect x="330" y="70" width="180" height="60" rx="6"/>
+    <rect x="630" y="70" width="180" height="60" rx="6"/>
+    <rect x="930" y="70" width="180" height="60" rx="6"/>
+    <rect x="1200" y="70" width="170" height="60" rx="6"/>
+    <line x1="210" y1="100" x2="322" y2="100"/>
+    <line x1="510" y1="100" x2="622" y2="100"/>
+    <line x1="810" y1="100" x2="922" y2="100"/>
+    <line x1="1110" y1="100" x2="1192" y2="100"/>
+  </g>
+  <g fill="#374151">
+    <polygon points="322,95 332,100 322,105"/>
+    <polygon points="622,95 632,100 622,105"/>
+    <polygon points="922,95 932,100 922,105"/>
+    <polygon points="1192,95 1202,100 1192,105"/>
+  </g>
+  <g fill="#111827" font-family="Menlo, monospace" font-size="14" text-anchor="middle">
+    <text x="120" y="105">readings.csv</text>
+    <text x="420" y="105">clean</text>
+    <text x="720" y="105">dedup</text>
+    <text x="1020" y="105">aggregate</text>
+    <text x="1285" y="105">report</text>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Safari Web Extension appex: sandboxed (required to load), plus a self-asserted
+  mach-lookup exception so the sandboxed handler can reach the unsandboxed render
+  helper's user LaunchAgent Mach service. The exception name MUST match the
+  helper's NSXPCListener machServiceName and the LaunchAgent MachServices key.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.get-task-allow</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+    <array>
+        <string>foundation.d.mdpreview.render</string>
+    </array>
+</dict>
+</plist>

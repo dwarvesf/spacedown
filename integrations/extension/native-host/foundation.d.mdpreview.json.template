@@ -1,0 +1,9 @@
+{
+  "name": "foundation.d.mdpreview",
+  "description": "md-preview native host: renders dropped markdown via the local CLI",
+  "path": "__HOST_PATH__",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://__EXTENSION_ID__/"
+  ]
+}

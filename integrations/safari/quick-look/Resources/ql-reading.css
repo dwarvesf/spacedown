@@ -1,0 +1,176 @@
+/* Quick Look reading skin: the "paper" look, the panel's copy of
+   assets/paper-theme.css (the browser default). Injected AFTER md-style.html (the
+   shared VS Code look), so everything here wins.
+
+   Fonts: iA Writer Quattro and iA Writer Mono by Information Architects, free under
+   the SIL Open Font License 1.1 (github.com/iaolo/iA-Fonts). Referenced by family
+   name; the Quick Look webview resolves them when installed, else system faces.
+
+   Tunables live in :root. To go back to the VS Code sans look, set
+   --ql-body-font to var(--markdown-font-family).
+
+   Smoke 38d pairs this file's dark ground with assets/paper-theme.css. */
+:root {
+  --ql-body-font: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ql-head-font: var(--ql-body-font);
+  --ql-mono-font: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  --ql-size: 17px;
+  --ql-leading: 1.62;
+  --ql-measure: 40rem;
+  --ql-paper: #fbfaf7;
+  --ql-ink: #242321;
+  --ql-ink-soft: #6e6c67;
+  --ql-rule: #dcd9d2;
+  --ql-rule-strong: #b9b5ac;
+  --ql-accent: #2b5f91;
+  --ql-code-bg: #f0eee9;
+}
+
+html, body {
+  background-color: var(--ql-paper);
+  font-family: var(--ql-body-font);
+  font-size: var(--ql-size);
+  line-height: var(--ql-leading);
+  color: var(--ql-ink);
+}
+body {
+  max-width: var(--ql-measure);
+  margin: 0 auto;
+  padding: 2.2rem 1.6rem 4rem;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+p { margin: 0 0 1.1em; }
+
+/* A modest scale: size marks the top two levels, weight carries the rest. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ql-head-font);
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  color: var(--ql-ink);
+  margin: 2em 0 0.6em;
+  padding: 0;
+  border-bottom: none;
+}
+h1 { font-size: 1.6em; line-height: 1.25; margin-top: 0; }
+h2 { font-size: 1.3em; line-height: 1.3; }
+h3 { font-size: 1.1em; line-height: 1.4; }
+h4, h5, h6 { font-size: 1em; line-height: inherit; }
+h6 { color: var(--ql-ink-soft); }
+
+blockquote {
+  margin: 0 0 1.1em;
+  padding: 0 1em;
+  border-left: 3px solid var(--ql-rule);
+  color: var(--ql-ink-soft);
+  font-style: normal;
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+a {
+  color: var(--ql-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--ql-accent) 35%, transparent);
+}
+
+ul, ol { padding-left: 1.6em; margin: 0 0 1.1em; }
+li { margin: 0.25em 0; }
+li::marker { color: var(--ql-ink-soft); }
+
+hr { border: 0; border-top: 1px solid var(--ql-rule); margin: 2em 0; }
+
+/* Tables: a header rule plus soft row hairlines, tabular figures, no card frame,
+   zebra or grid. The base stylesheet renders a table as a rounded scrolling card
+   (display:block, width:max-content, border-radius, uppercase thead chip, zebra
+   fill); every one of those must be undone here, some at matched specificity. */
+table {
+  display: table;     /* undo card: block+max-content content-sizes the columns */
+  table-layout: auto; /* columns size by content: a keyword column stops eating a prose column's width */
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  font-size: 0.9em;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+th, td {
+  border: none;
+  padding: 0.5em 1em 0.5em 0;
+  text-align: left;
+  vertical-align: top;
+  background-color: transparent;
+}
+/* thead th: match the base chip rule's specificity to undo it. */
+thead th {
+  font-size: 1em;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  color: inherit;
+  border-bottom: 1px solid var(--ql-rule-strong);
+  padding: 0.5em 1em 0.5em 0;
+}
+tbody td { border-bottom: none; }
+tbody tr + tr td { border-top: 1px solid var(--ql-rule); }
+/* Kill the base zebra fill and last-row corner rounding at their own specificity. */
+table:not(.mdp-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
+tbody tr:last-child td:first-child,
+tbody tr:last-child td:last-child { border-radius: 0; }
+/* Short columns keep their cells on one line, so auto layout cannot collapse a date
+   or id column to its longest word. ql-render.js marks them (see tightColumns). */
+.mdp-tight { white-space: nowrap; }
+/* A label column ("What gets the child into work") is too long for one line but should
+   not be starved down to its longest word either. Floor it at a two-line measure. */
+.mdp-narrow { min-width: 22ch; }
+
+/* A table that cannot hold a readable measure in every column inside the reading
+   column: four or more columns, or two prose columns that would otherwise split the
+   width by how much text each holds. ql-render.js marks it. Every non-tight cell gets
+   a floor and the table scrolls sideways rather than squeezing a column to a few words. */
+table.mdp-wide {
+  display: block;      /* the CSS-only way to get overflow-x on a bare table */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+/* Per-column floors ride on the cells as inline min-width, sized to each column's own
+   content by ql-render.js. This rule is the fallback if that pass ever misses one. */
+table.mdp-wide th:not(.mdp-tight),
+table.mdp-wide td:not(.mdp-tight) { min-width: 22ch; }
+
+/* Neutralize the base auto-numeric right-align (.mdp-num, added by script): in
+   fixed equal-width columns it floats numbers to mid-page. Explicit markdown
+   column alignment (style="text-align: right") still wins via the base rule. */
+td.mdp-num, th.mdp-num { text-align: left; }
+
+/* Figure captions: the house convention is an image alone in its paragraph followed
+   by the caption paragraph. Markdown emits no <figure>, so the structure is the only
+   signal. Caption reads as subordinate metadata, and sits closer to its image. */
+p:has(> img:only-child) { margin-bottom: 0.6em; }
+p:has(> img:only-child) + p { font-size: 0.85em; line-height: 1.5; color: var(--ql-ink-soft); }
+
+code, pre, kbd, samp { font-family: var(--ql-mono-font); }
+:not(pre) > code { font-size: 0.9em; background-color: var(--ql-code-bg); border-radius: 4px; padding: 0.1em 0.3em; }
+pre { font-size: 0.9em; line-height: 1.55; border-radius: 6px; background-color: var(--ql-code-bg); }
+
+/* Math keeps KaTeX's own faces; only match the surrounding size. */
+.katex { font-size: 1.04em; }
+
+/* Dark mode follows the Mac's system appearance (the Quick Look webview inherits
+   it). Only the tokens flip; syntax colors stay the bundled GitHub-dark hljs theme. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ql-paper: #19191b;
+    --ql-ink: #dedcd6;
+    --ql-ink-soft: #9c9a94;
+    --ql-rule: #34343a;
+    --ql-rule-strong: #55555c;
+    --ql-accent: #8bb8e8;
+    --ql-code-bg: #242428;
+  }
+}

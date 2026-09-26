@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Markdown Preview Quick Look</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<!-- Required for a QLPreviewProvider (data-based) extension; without it macOS
+			     attaches the appex as a UI view service and never calls providePreview,
+			     leaving Finder's spacebar preview on an infinite spinner. -->
+			<key>QLIsDataBasedPreview</key>
+			<true/>
+			<key>QLSupportedContentTypes</key>
+			<array>
+				<string>net.daringfireball.markdown</string>
+				<string>public.markdown</string>
+				<!-- .mdx and .qmd resolve to net.ia.markdown on a Mac with iA Writer
+				     installed (it declares the type); public.mdx and org.quarto.qmd do not exist. Both
+				     carry markdown bodies, so they preview correctly here, and their
+				     JSX or R blocks render as plain fenced code. -->
+				<string>net.ia.markdown</string>
+			</array>
+			<key>QLSupportsSearchableItems</key>
+			<false/>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.quicklook.preview</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).MarkdownPreviewProvider</string>
+	</dict>
+</dict>
+</plist>
