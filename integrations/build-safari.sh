@@ -7,8 +7,8 @@
 #   ~/.local/libexec/spacedown-render                           unsandboxed XPC render helper
 #   ~/Library/LaunchAgents/dfoundation.spacedown.render.plist  launch-on-demand
 #
-# Everything is signed adhoc (`-`) + hardened runtime + per-target entitlements;
-# no Apple Developer team dependency.
+# Signed adhoc (`-`) by default + hardened runtime + per-target entitlements, so no
+# Apple Developer team is needed; SIGN_ID and NOTARIZE below make a Developer ID build.
 #
 # Why one script: the Safari ext and the QL appex live in the SAME app bundle.
 # Two separate installers `rsync --delete`-stomped each other and re-signed the
@@ -28,14 +28,20 @@
 #
 # Env (used by scripts/release.sh):
 #   SIGN_ID=<identity>  sign with this identity instead of adhoc, with a secure
-#                       timestamp and the release app entitlements (no get-task-allow,
-#                       which notarization rejects).
+#                       timestamp and no get-task-allow (notarization rejects it).
+#   NOTARIZE=<profile>  with a Developer ID SIGN_ID: notarize and staple the app with
+#                       this notarytool keychain profile before install. Safari hides a
+#                       Developer ID extension that is not notarized ("does not have a
+#                       code signature" in its log), so a --with-safari build needs this
+#                       to appear in Settings > Extensions without "Allow unsigned".
+#   APP_DEST=<dir>      install location (default ~/Applications).
 #   NO_INSTALL=1        stop after signing and print the built app's path.
 #   SKIN_CSS=<file>     replace the Quick Look reading skin in this build with a
 #                       personal one (same contract as quick-look/Resources/ql-reading.css).
 set -euo pipefail
 SIGN_ID="${SIGN_ID:--}"
 NO_INSTALL="${NO_INSTALL:-0}"
+NOTARIZE="${NOTARIZE:-}"
 SKIN_CSS="${SKIN_CSS:-}"
 [[ -z "$SKIN_CSS" || -f "$SKIN_CSS" ]] || { echo "build-safari: SKIN_CSS not found: $SKIN_CSS" >&2; exit 1; }
 
@@ -53,7 +59,7 @@ ENT="${HERE}/safari/entitlements"
 HELPER_SRC="${HERE}/safari/helper/spacedown-render.swift"
 PLIST_SRC="${HERE}/safari/helper/dfoundation.spacedown.render.plist"
 APP_NAME="Spacedown.app"
-APP_DEST="${HOME}/Applications"
+APP_DEST="${APP_DEST:-${HOME}/Applications}"
 HELPER_DEST="${HOME}/.local/libexec/spacedown-render"
 AGENT_LABEL="dfoundation.spacedown.render"
 PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
@@ -128,18 +134,34 @@ fi
 # 5. Sign adhoc + hardened runtime, OUTSIDE-IN (nested appex first, then the app
 #    re-seals PlugIns). Safari appex carries the sandbox + mach-lookup exception.
 APP_ENT="${ENT}/app.entitlements"
+EXT_ENT="${ENT}/extension.entitlements"
 TIMESTAMP=()
 if [[ "$SIGN_ID" != "-" ]]; then
   APP_ENT="${ENT}/app.release.entitlements"
+  EXT_ENT="$PROJ/build/extension.release.entitlements"
+  cp -f "${ENT}/extension.entitlements" "$EXT_ENT"
+  /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$EXT_ENT" 2>/dev/null || true
   TIMESTAMP=(--timestamp)
 fi
 echo "build-safari: signing (${SIGN_ID} + runtime + entitlements)..."
 # The ${a[@]+...} form keeps an empty array safe under set -u on macOS's bash 3.2.
 sign() { codesign --force --sign "$SIGN_ID" --options runtime ${TIMESTAMP[@]+"${TIMESTAMP[@]}"} --entitlements "$1" "$2"; }
 sign "${QLDIR}/SpacedownQL.entitlements" "${APP}/Contents/PlugIns/SpacedownQL.appex"
-[[ $SAFARI -eq 1 ]] && sign "${ENT}/extension.entitlements" "$SAFARI_APPEX"
+[[ $SAFARI -eq 1 ]] && sign "$EXT_ENT" "$SAFARI_APPEX"
 sign "$APP_ENT"                                 "${APP}"
 codesign --verify --deep --strict "$APP" || { echo "build-safari: signature verify failed" >&2; exit 1; }
+# xcodebuild registered this build-products copy with LaunchServices. Left registered,
+# it can outlive its directory and Safari resolves the extension id to a missing bundle.
+"$LSREGISTER" -u "$APP" 2>/dev/null || true
+
+if [[ -n "$NOTARIZE" ]]; then
+  [[ "$SIGN_ID" != "-" ]] || { echo "build-safari: NOTARIZE needs a Developer ID SIGN_ID" >&2; exit 1; }
+  echo "build-safari: notarizing (profile $NOTARIZE)..."
+  ditto -c -k --keepParent "$APP" "$PROJ/build/notarize.zip"
+  NOTARY_OUT="$(xcrun notarytool submit "$PROJ/build/notarize.zip" --keychain-profile "$NOTARIZE" --wait 2>&1)" || true
+  [[ "$NOTARY_OUT" == *"status: Accepted"* ]] || { echo "build-safari: notarization not accepted" >&2; echo "$NOTARY_OUT" >&2; exit 1; }
+  xcrun stapler staple "$APP" >/dev/null
+fi
 if [[ "$NO_INSTALL" == "1" ]]; then
   echo "$APP"
   exit 0
@@ -161,9 +183,7 @@ if [[ $SAFARI -eq 1 ]]; then
   echo "build-safari: installed helper + bootstrapped LaunchAgent (on-demand)"
 fi
 
-# 8. Duplicate-row gotcha: xcodebuild already registered the
-#    DerivedData app copy, so without this Safari shows the extension twice.
-"$LSREGISTER" -u "$APP" 2>/dev/null || true
+# 8. Register the installed copy (the build-products copy left LaunchServices above).
 "$LSREGISTER" -f "${APP_DEST}/${APP_NAME}"
 
 # 9. Register + enable Quick Look. The explicit add matters: an OS upgrade has been
