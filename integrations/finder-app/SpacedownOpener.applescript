@@ -1,5 +1,5 @@
--- MdPreview.app: a thin AppleScript "open handler" so that double-clicking a
--- .md in Finder (or "Open With > MdPreview", or dragging a .md onto the app
+-- Spacedown Opener.app: a thin AppleScript "open handler" so that double-clicking a
+-- .md in Finder (or "Open With > Spacedown Opener", or dragging a .md onto the app
 -- icon) renders it through the local md-preview CLI and opens the HTML.
 --
 -- macOS delivers opened files to an app via the Apple Event `odoc`, surfaced

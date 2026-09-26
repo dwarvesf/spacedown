@@ -25,7 +25,7 @@ if (!file) {
 const outIdx = args.indexOf("--out");
 const outPath = outIdx >= 0 ? args[outIdx + 1] : null;
 const dir = args.includes("--app")
-  ? path.join(process.env.HOME, "Applications/Markdown Preview.app/Contents/PlugIns/MarkdownPreviewQL.appex/Contents/Resources")
+  ? path.join(process.env.HOME, "Applications/Spacedown.app/Contents/PlugIns/SpacedownQL.appex/Contents/Resources")
   : path.join(__dirname, "Resources");
 
 const ctx = {};

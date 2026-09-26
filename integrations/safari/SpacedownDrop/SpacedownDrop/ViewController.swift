@@ -1,13 +1,13 @@
 //
 //  ViewController.swift
-//  MdPreviewDrop
+//  SpacedownDrop
 //
 
 import Cocoa
 import SafariServices
 import WebKit
 
-let extensionBundleIdentifier = "foundation.d.mdpreview.Extension"
+let extensionBundleIdentifier = "foundation.d.spacedown.Extension"
 
 class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHandler {
 
@@ -15,10 +15,10 @@ class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHan
 
     override func viewWillAppear() {
         super.viewWillAppear()
-        // The storyboard window title defaults to the product name ("MdPreviewDrop");
+        // The storyboard window title defaults to the product name ("SpacedownDrop");
         // override with the display name, and size the window so the card + footer
         // fit without the WKWebView scrolling.
-        self.view.window?.title = "Markdown Preview"
+        self.view.window?.title = "Spacedown"
         self.view.window?.setContentSize(NSSize(width: 460, height: 460))
     }
 

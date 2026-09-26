@@ -1,14 +1,18 @@
-# md-preview
+# Spacedown
 
-md-preview renders Markdown, including LaTeX math, into a clean, self-contained HTML page. It ships in three parts:
+Press space on a Markdown file in Finder and read it rendered: headings, tables, code, callouts, frontmatter and LaTeX math, in a calm reading theme that follows light and dark mode.
+
+Spacedown is a macOS Quick Look extension. It renders in-process with bundled copies of marked, KaTeX and highlight.js, so it needs no network, no pandoc and no setup beyond opening the app once.
 
 | Part | What it does | Needs |
 |---|---|---|
-| `bin/md-preview` | Command-line renderer: Markdown to HTML via pandoc and KaTeX, then opens the page in a browser | macOS or any Unix shell, `pandoc` |
-| Quick Look extension | Press space on a `.md` file in Finder to see it rendered, math and code included | macOS, built from source with Xcode |
-| Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | macOS, Xcode, the CLI and `pandoc` |
+| `Spacedown.app` | Quick Look preview for `.md` files | macOS 13 or later |
+| `md-preview` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser | any Unix shell, `pandoc` |
+| Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | build from source, the CLI and `pandoc` |
 
-The Quick Look extension renders in-process with bundled copies of marked, KaTeX and highlight.js, so it needs no network and no pandoc.
+## Download
+
+Get the notarized `Spacedown-<version>-macos.zip` from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Unzip it, move `Spacedown.app` to Applications, open it once, then select a `.md` file in Finder and press space.
 
 ## Screenshots
 
@@ -30,17 +34,17 @@ _Screenshots coming soon: the paper theme in light and dark, the outline sidebar
 - **Live reload.** `--watch` re-renders on save and refreshes the open page.
 - **Editor fonts.** Font settings from VS Code or VSCodium carry over to the page (see below).
 
-## Install the CLI
+## Install the md-preview CLI
 
-The CLI is a single bash script plus the `assets/` folder next to it.
+The CLI is a single bash script plus the `assets/` folder next to it. It shares the `paper` theme with the Quick Look panel.
 
 ```bash
 brew install pandoc        # required
 brew install entr          # optional, only for --watch
 # python3 is optional: it powers the frontmatter table, callouts and live reload.
 
-git clone <this repository> md-preview
-cd md-preview
+git clone https://github.com/dwarvesf/spacedown.git
+cd spacedown
 mkdir -p ~/.local/bin
 ln -sfn "$PWD/bin/md-preview" ~/.local/bin/md-preview
 ln -sfn "$PWD/bin/md-preview" ~/.local/bin/mdp     # optional short alias
@@ -116,7 +120,7 @@ md-preview reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `ma
 
 ## Build the app from source
 
-The Quick Look and Safari extensions live in one app bundle, `Markdown Preview.app`. One script builds, signs (ad hoc) and installs it.
+The Quick Look and Safari extensions live in one app bundle, `Spacedown.app`. One script builds, signs (ad hoc) and installs it.
 
 Requirements: Xcode (for `xcodebuild` and `swiftc`) and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). `node` is optional: when present, the build first runs the Quick Look render tests.
 
@@ -127,18 +131,18 @@ integrations/build-safari.sh --with-safari  # also the Safari drop extension and
 
 | Installed item | Path | When |
 |---|---|---|
-| `Markdown Preview.app` | `~/Applications/` | always |
-| Render helper (XPC) | `~/.local/libexec/mdpreview-render` | `--with-safari` |
-| LaunchAgent `foundation.d.mdpreview.render` | `~/Library/LaunchAgents/` | `--with-safari` |
+| `Spacedown.app` | `~/Applications/` | always |
+| Render helper (XPC) | `~/.local/libexec/spacedown-render` | `--with-safari` |
+| LaunchAgent `foundation.d.spacedown.render` | `~/Library/LaunchAgents/` | `--with-safari` |
 | `md-open` link | `~/.local/bin/md-open` | `--with-safari` |
 
-After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Markdown Preview** under System Settings > General > Login Items & Extensions > Quick Look.
+After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Spacedown** under System Settings > General > Login Items & Extensions > Quick Look.
 
 The Safari extension must be App-Sandboxed to load, and a sandboxed extension cannot run pandoc. It therefore forwards each dropped file over XPC to a small unsandboxed helper, which launchd starts on demand and which exits when idle. To enable the extension after `--with-safari`:
 
 1. Safari > Settings > Developer: tick **Allow unsigned extensions**. An ad hoc signature counts as unsigned, and this setting resets on every Safari restart until the app is notarized.
 2. Quit and relaunch Safari.
-3. Safari > Settings > Extensions: tick **Markdown Preview**.
+3. Safari > Settings > Extensions: tick **Spacedown**.
 4. Click the toolbar button, then drag a `.md` file onto the drop page.
 
 `integrations/install.sh` sets up two more entry points: a Finder "Open With" app and a native-messaging host for a Chromium drop extension. See [integrations/README.md](integrations/README.md).
@@ -153,12 +157,14 @@ md-preview tests/fixture/fixture.md                   # synthetic document that 
 
 `assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.
 
+Releases: `scripts/release.sh [version]` builds the Quick Look app, signs it with the Dwarves Foundation Developer ID, notarizes, staples, zips and publishes a GitHub release. It needs the Developer ID identity in the keychain and a `notarytool` keychain profile (default `DWARVES_NOTARY`); the script header lists every setting.
+
 ## Limitations
 
 - Pages open with `open(1)`, so browser launch is macOS only. On other systems, use `--no-open` and open the printed path yourself.
 - In browser output, pandoc loads KaTeX from a CDN, so math in those pages needs a network connection. The Quick Look panel bundles KaTeX and works offline.
 - The input is Markdown only.
-- The app is signed ad hoc and not notarized. Gatekeeper and Safari treat it as unsigned.
+- Release downloads are notarized. A build from source is signed ad hoc, so Gatekeeper and Safari treat it as unsigned.
 
 ## Credits
 

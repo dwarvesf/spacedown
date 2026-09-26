@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # md-open: render a markdown file via `md-preview`, then open the resulting HTML
 # in a Chromium browser. Shared by BOTH integrations:
-#   - finder-app/MdPreview.app  (Finder double-click / "Open With")
+#   - finder-app/Spacedown Opener.app  (Finder double-click / "Open With")
 #   - extension/native-host/    (browser drag-drop via native messaging)
 #
 # Why a wrapper and not `md-preview` directly: md-preview only self-opens the

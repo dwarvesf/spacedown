@@ -1,10 +1,10 @@
 //
 //  SafariWebExtensionHandler.swift
-//  MdPreviewDrop Extension
+//  SpacedownDrop Extension
 //
 //  Receives {filename, content} from the dropzone page via
 //  browser.runtime.sendNativeMessage and forwards it over XPC to the
-//  unsandboxed, launch-on-demand render helper (mdpreview-render), which runs
+//  unsandboxed, launch-on-demand render helper (spacedown-render), which runs
 //  the shared `md-open` wrapper (pandoc+KaTeX) and opens Safari. Replies
 //  {ok, html} or {ok:false, error}.
 //
@@ -18,14 +18,14 @@ import os.log
 
 // Duplicated (not shared via a file) so the Xcode project needs zero edits; the
 // helper declares the identical @objc protocol and they match by name.
-@objc(MdPreviewRenderService)
-protocol MdPreviewRenderService {
+@objc(SpacedownRenderService)
+protocol SpacedownRenderService {
     func render(name: String, content: String, withReply reply: @escaping (Bool, String) -> Void)
 }
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
-    static let machServiceName = "foundation.d.mdpreview.render"
+    static let machServiceName = "foundation.d.spacedown.render"
 
     func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem
@@ -56,7 +56,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let name = (dict["filename"] as? String) ?? "dropped.md"
 
         let conn = NSXPCConnection(machServiceName: machServiceName)
-        conn.remoteObjectInterface = NSXPCInterface(with: MdPreviewRenderService.self)
+        conn.remoteObjectInterface = NSXPCInterface(with: SpacedownRenderService.self)
         conn.resume()
         defer { conn.invalidate() }
 
@@ -67,7 +67,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             result = ["ok": false, "error": "render helper unreachable: \(err.localizedDescription)"]
             sem.signal()
         }
-        guard let svc = proxy as? MdPreviewRenderService else {
+        guard let svc = proxy as? SpacedownRenderService else {
             return ["ok": false, "error": "could not obtain render service proxy"]
         }
         svc.render(name: name, content: content) { ok, payload in

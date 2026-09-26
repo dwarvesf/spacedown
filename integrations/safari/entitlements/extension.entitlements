@@ -16,7 +16,7 @@
     <true/>
     <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
     <array>
-        <string>foundation.d.mdpreview.render</string>
+        <string>foundation.d.spacedown.render</string>
     </array>
 </dict>
 </plist>

@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  MdPreviewDrop
+//  SpacedownDrop
 //
 
 import Cocoa

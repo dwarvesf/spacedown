@@ -1,6 +1,6 @@
-name: MarkdownPreviewQL
+name: SpacedownQL
 options:
-  bundleIdPrefix: foundation.d.mdpreview
+  bundleIdPrefix: foundation.d.spacedown
   deploymentTarget:
     macOS: "12.0"
   createIntermediateGroups: true
@@ -11,10 +11,10 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
-    PRODUCT_NAME: MarkdownPreviewQL
+    PRODUCT_NAME: SpacedownQL
     INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Dwarves Foundation"
 targets:
-  MarkdownPreviewQL:
+  SpacedownQL:
     type: app-extension
     platform: macOS
     sources:
@@ -22,7 +22,7 @@ targets:
       - path: Resources   # xcodegen auto-adds non-source files here to a resources copy phase
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: foundation.d.mdpreview.quicklook
+        PRODUCT_BUNDLE_IDENTIFIER: foundation.d.spacedown.quicklook
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Info.plist
-        CODE_SIGN_ENTITLEMENTS: MarkdownPreviewQL.entitlements
+        CODE_SIGN_ENTITLEMENTS: SpacedownQL.entitlements

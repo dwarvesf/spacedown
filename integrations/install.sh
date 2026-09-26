@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh: wire up the two md-preview "just open it" integrations on macOS.
 #
-#   1. Finder app  -> compiles MdPreview.app (an Apple-Event open-handler) and,
+#   1. Finder app  -> compiles Spacedown Opener.app (an Apple-Event open-handler) and,
 #                     with --set-default, registers it as the default .md handler.
 #   2. Extension   -> installs the native-messaging host manifest into every
 #                     installed Chromium browser's NativeMessagingHosts dir, with
@@ -12,27 +12,26 @@
 #
 # Usage:
 #   ./install.sh                  # install app + native host; offer once (TTY) to set default
-#   ./install.sh --set-default    # explicitly make Markdown Preview the default .md app
+#   ./install.sh --set-default    # explicitly make Spacedown Opener the default .md app
 #   ./install.sh --revert-default # restore the .md handler we replaced (one command)
 #   ./install.sh --uninstall      # remove app, manifests, and (if set) the default
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MD_OPEN="${HERE}/md-open"
-APP_SRC="${HERE}/finder-app/MdPreview.applescript"
-# The bundle is named "Markdown Preview.app": macOS's default-handler / Open-With dialogs
+APP_SRC="${HERE}/finder-app/SpacedownOpener.applescript"
+# The bundle is named "Spacedown Opener.app": macOS's default-handler / Open-With dialogs
 # use the bundle FILENAME (not CFBundleDisplayName), so the name must live in the filename.
-APP_OUT="${HERE}/finder-app/Markdown Preview.app"
-LEGACY_APP="${HERE}/finder-app/MdPreview.app"   # pre-rename bundle, cleaned up if present
+APP_OUT="${HERE}/finder-app/Spacedown Opener.app"
 HOST_BIN="${HERE}/extension/native-host/md-preview-host"
-HOST_TPL="${HERE}/extension/native-host/foundation.d.mdpreview.json.template"
-HOST_NAME="foundation.d.mdpreview"
+HOST_TPL="${HERE}/extension/native-host/foundation.d.spacedown.json.template"
+HOST_NAME="foundation.d.spacedown"
 EXTENSION_ID="mhifeggicglofancjnjmkgihedkddnpn"  # derived from extension/manifest.json "key"
 MD_UTI="net.daringfireball.markdown"
 # The .md extension can resolve through either UTI depending on the machine, and our app
 # claims both, so set/revert must cover both or the `md` binding won't flip cleanly.
 MD_UTIS=( "net.daringfireball.markdown" "public.markdown" )
-HANDLER_BUNDLE="foundation.d.mdpreview.opener"            # the Finder Open-With app, set on MdPreview.app below
+HANDLER_BUNDLE="foundation.d.spacedown.opener"            # the Finder Open-With app, set on Spacedown Opener.app below
 STATE_DIR="${HOME}/.config/md-preview"
 FIRSTRUN_MARKER="${STATE_DIR}/handler-offered"    # so the first-run offer asks exactly once
 PREV_HANDLER_FILE="${STATE_DIR}/prev-md-handler"  # snapshot of the handler we replaced, for revert
@@ -63,7 +62,7 @@ set_default_handler() {
     printf '%s\n' "$prev" > "$PREV_HANDLER_FILE"
   fi
   local uti; for uti in "${MD_UTIS[@]}"; do duti -s "$HANDLER_BUNDLE" "$uti" all; done
-  log "Markdown Preview is now the DEFAULT app for .md files (handler: ${HANDLER_BUNDLE})."
+  log "Spacedown Opener is now the DEFAULT app for .md files (handler: ${HANDLER_BUNDLE})."
   if [[ -n "$prev" && "$prev" != "$HANDLER_BUNDLE" ]]; then
     log "Revert in one command:  ./install.sh --revert-default   (restores ${prev})"
     log "  or manually:  duti -s ${prev} ${MD_UTI} all"
@@ -85,7 +84,7 @@ revert_default_handler() {
 }
 
 uninstall() {
-  log "removing Markdown Preview.app"
+  log "removing Spacedown Opener.app"
   rm -rf "$APP_OUT" "$LEGACY_APP"
   for entry in "${BROWSERS[@]}"; do
     sub="${entry#*|}"
@@ -112,23 +111,23 @@ command -v osacompile >/dev/null 2>&1 || die "osacompile not found (ships with m
 chmod +x "$MD_OPEN" "$HOST_BIN"
 
 # --- 1. compile the Finder app with the md-open path injected ---
-log "compiling Markdown Preview.app"
-tmp_scpt="$(mktemp -t MdPreview).applescript"
+log "compiling Spacedown Opener.app"
+tmp_scpt="$(mktemp -t SpacedownOpener).applescript"
 sed "s#__MD_OPEN__#${MD_OPEN}#g" "$APP_SRC" > "$tmp_scpt"
-rm -rf "$APP_OUT" "$LEGACY_APP"   # drop any pre-rename bundle so LS stops offering "MdPreview"
+rm -rf "$APP_OUT"
 osacompile -o "$APP_OUT" "$tmp_scpt"
 rm -f "$tmp_scpt"
 # Declare the app as a viewer/editor for markdown + plain text so it shows up in
 # Finder's "Open With" and is eligible as a default handler.
 plist="${APP_OUT}/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string foundation.d.mdpreview.opener" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier foundation.d.mdpreview.opener" "$plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Markdown Preview" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Markdown Preview" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string foundation.d.spacedown.opener" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier foundation.d.spacedown.opener" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Spacedown Opener" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Spacedown Opener" "$plist"
 # CFBundleName too, so every surface (Get Info, Open With, the change-all dialog) reads
-# "Markdown Preview", never the "MdPreview" filename stem.
-/usr/libexec/PlistBuddy -c "Add :CFBundleName string Markdown Preview" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleName Markdown Preview" "$plist"
+# "Spacedown Opener", never the "SpacedownOpener" source filename stem.
+/usr/libexec/PlistBuddy -c "Add :CFBundleName string Spacedown Opener" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleName Spacedown Opener" "$plist"
 # Declare the app as a markdown document handler. Without CFBundleDocumentTypes /
 # LSItemContentTypes, LaunchServices ignores `duti -s` (an app can only be the default
 # for a type it claims to open). The fresh osacompile bundle has none, so plain Add works.
@@ -141,7 +140,7 @@ plist="${APP_OUT}/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDocumentTypes:0:LSItemContentTypes array" "$plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDocumentTypes:0:LSItemContentTypes:0 string ${MD_UTI}" "$plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDocumentTypes:0:LSItemContentTypes:1 string public.markdown" "$plist"
-log "built $APP_OUT (display name: Markdown Preview; declares ${MD_UTI})"
+log "built $APP_OUT (display name: Spacedown Opener; declares ${MD_UTI})"
 # Register it with LaunchServices so Finder sees it immediately.
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP_OUT" 2>/dev/null || true
 
@@ -167,7 +166,7 @@ if [[ "${1:-}" == "--set-default" ]]; then
   set_default_handler
 elif [[ -t 0 && -t 1 && ! -f "$FIRSTRUN_MARKER" ]]; then
   mkdir -p "$STATE_DIR"; : > "$FIRSTRUN_MARKER"
-  printf 'install: make "Markdown Preview" the default app for .md files? [y/N] ' >&2
+  printf 'install: make "Spacedown Opener" the default app for .md files? [y/N] ' >&2
   read -r reply
   if [[ "$reply" =~ ^[Yy] ]]; then
     set_default_handler
@@ -175,9 +174,9 @@ elif [[ -t 0 && -t 1 && ! -f "$FIRSTRUN_MARKER" ]]; then
     log "Left your current .md handler untouched. Set it later:  ./install.sh --set-default"
   fi
 else
-  log "Markdown Preview installed but NOT set as default (double-click still opens your editor)."
+  log "Spacedown Opener installed but NOT set as default (double-click still opens your editor)."
   log "To make it the default .md app:  ./install.sh --set-default   (revert: --revert-default)"
-  log "Either way it now appears under Finder right-click > Open With > Markdown Preview."
+  log "Either way it now appears under Finder right-click > Open With > Spacedown Opener."
 fi
 
 cat <<EOF
