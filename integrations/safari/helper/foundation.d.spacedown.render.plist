@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  LaunchAgent for the md-preview Safari render helper.
+  LaunchAgent for the spacedown Safari render helper.
   Launch-on-demand: launchd advertises the Mach service and starts the helper
   only when the sandboxed Safari extension connects; no KeepAlive, no RunAtLoad.
   __HELPER_BIN__ is replaced with the absolute installed path by build-safari.sh.

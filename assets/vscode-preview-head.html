@@ -1,5 +1,5 @@
 <style>
-/* md-preview: VSCodium / VS Code "Light Modern" markdown-preview look.
+/* spacedown: VSCodium / VS Code "Light Modern" Markdown preview look.
    This block is injected last into the page head via pandoc --include-in-header,
    so it overrides pandoc's default-template body styling.
    Structure: (1) theme variables, (2) base overrides, (3) inline-code chip,
@@ -20,40 +20,40 @@
   --vscode-textCodeBlock-background: #f3f3f3;
   --vscode-widget-border: #e5e5e5;
 
-  --mdp-link: #006ab1;                    /* VS Code Light Modern textLink.foreground */
-  --mdp-link-underline: rgba(0, 106, 177, 0.35);
-  --mdp-code-chip-bg: rgba(0, 0, 0, 0.06);
-  --mdp-border: rgba(0, 0, 0, 0.18);      /* h1/h2/hr/td rules */
-  --mdp-border-strong: rgba(0, 0, 0, 0.69);
-  --mdp-rule: #d8dce1;                    /* table frame + header rule */
-  --mdp-rule-soft: #eef0f3;               /* row hairline, frontmatter hairline */
-  --mdp-rail: #ececec;                    /* derivation-chain rail */
-  --mdp-zebra: #f6f8fa;
-  --mdp-quote-rule: #d1d5db;
-  --mdp-scrollbar: #d1d5db;
-  --mdp-ink-muted: #6e7681;               /* keys, captions, thead labels */
-  --mdp-ink-soft: #4b5563;                /* blockquote text */
-  --mdp-ink-faint: #8a8a8a;               /* derivation annotation */
-  --mdp-ink-strong: #18181b;
-  --mdp-marker: #6b7280;                  /* list markers, footnotes */
-  --mdp-neg: #b91c1c;
-  --mdp-pos: #047857;
-  --mdp-callout-note: #0969da;
-  --mdp-callout-tip: #1a7f37;
-  --mdp-callout-important: #8250df;
-  --mdp-callout-warning: #9a6700;
-  --mdp-callout-caution: #cf222e;
+  --sd-link: #006ab1;                    /* VS Code Light Modern textLink.foreground */
+  --sd-link-underline: rgba(0, 106, 177, 0.35);
+  --sd-code-chip-bg: rgba(0, 0, 0, 0.06);
+  --sd-border: rgba(0, 0, 0, 0.18);      /* h1/h2/hr/td rules */
+  --sd-border-strong: rgba(0, 0, 0, 0.69);
+  --sd-rule: #d8dce1;                    /* table frame + header rule */
+  --sd-rule-soft: #eef0f3;               /* row hairline, frontmatter hairline */
+  --sd-rail: #ececec;                    /* derivation-chain rail */
+  --sd-zebra: #f6f8fa;
+  --sd-quote-rule: #d1d5db;
+  --sd-scrollbar: #d1d5db;
+  --sd-ink-muted: #6e7681;               /* keys, captions, thead labels */
+  --sd-ink-soft: #4b5563;                /* blockquote text */
+  --sd-ink-faint: #8a8a8a;               /* derivation annotation */
+  --sd-ink-strong: #18181b;
+  --sd-marker: #6b7280;                  /* list markers, footnotes */
+  --sd-neg: #b91c1c;
+  --sd-pos: #047857;
+  --sd-callout-note: #0969da;
+  --sd-callout-tip: #1a7f37;
+  --sd-callout-important: #8250df;
+  --sd-callout-warning: #9a6700;
+  --sd-callout-caution: #cf222e;
 
   /* Pandoc emits the tango syntax palette ABOVE this block, so section (10b)
      restates each tango group through a token and wins on source order. */
-  --mdp-syn-alert: #ef2929;
-  --mdp-syn-comment: #8f5902;
-  --mdp-syn-keyword: #204a87;
-  --mdp-syn-number: #0000cf;
-  --mdp-syn-string: #4e9a06;
-  --mdp-syn-error: #a40000;
-  --mdp-syn-operator: #ce5c00;
-  --mdp-syn-var: #000000;
+  --sd-syn-alert: #ef2929;
+  --sd-syn-comment: #8f5902;
+  --sd-syn-keyword: #204a87;
+  --sd-syn-number: #0000cf;
+  --sd-syn-string: #4e9a06;
+  --sd-syn-error: #a40000;
+  --sd-syn-operator: #ce5c00;
+  --sd-syn-var: #000000;
 }
 
 /* (2) Override pandoc's default template (#fdfdfd bg) + a comfortable reading column.
@@ -84,7 +84,7 @@ pre code { white-space: pre; }
 /* (3) Inline-code chip. markdown.css styles only block code; in VS Code the
    theme paints inline <code>. Approximate with a subtle GitHub/VS-Code-light chip. */
 :not(pre) > code {
-  background-color: var(--mdp-code-chip-bg);
+  background-color: var(--sd-code-chip-bg);
   border-radius: 4px;
   padding: 0.12em 0.34em;
 }
@@ -550,11 +550,11 @@ pre {
 	border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Frontmatter properties table (table.mdp-frontmatter): a clean, borderless, header-less
+/* Frontmatter properties table (table.sd-frontmatter): a clean, borderless, header-less
    metadata block, no outer box, no accent rail (a box outline + color did not read
    clean). Just key/value pairs separated by a faint hairline. Emitted as raw HTML by
    assets/frontmatter-to-table.py. .frontmatter-error below is kept (a valid future hook). */
-table.mdp-frontmatter {
+table.sd-frontmatter {
 	display: table;                 /* override base `table { display:block }` */
 	width: auto;
 	max-width: 100%;
@@ -565,64 +565,64 @@ table.mdp-frontmatter {
 	box-shadow: none;
 	overflow: visible;
 }
-table.mdp-frontmatter col.mdp-fm-col-key { width: 1% !important; }
-table.mdp-frontmatter col.mdp-fm-col-val { width: auto !important; }
-table.mdp-frontmatter td {
+table.sd-frontmatter col.sd-fm-col-key { width: 1% !important; }
+table.sd-frontmatter col.sd-fm-col-val { width: auto !important; }
+table.sd-frontmatter td {
 	padding: 6px 14px;
 	border: none;
-	border-bottom: 1px solid var(--mdp-rule-soft); /* horizontal hairline, content-row tone */
+	border-bottom: 1px solid var(--sd-rule-soft); /* horizontal hairline, content-row tone */
 	vertical-align: top;
 	text-align: left;
 }
-table.mdp-frontmatter tr:last-child td { border-bottom: none; }
-table.mdp-frontmatter td.mdp-fm-key {
+table.sd-frontmatter tr:last-child td { border-bottom: none; }
+table.sd-frontmatter td.sd-fm-key {
 	font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, monospace);
 	font-size: 13px;
-	color: var(--mdp-ink-muted);       /* muted: keys recede, values lead */
+	color: var(--sd-ink-muted);       /* muted: keys recede, values lead */
 	white-space: nowrap;
 	max-width: 240px;
 	overflow-wrap: break-word;
 }
-table.mdp-frontmatter td.mdp-fm-val {
+table.sd-frontmatter td.sd-fm-val {
 	color: var(--vscode-editor-foreground);
 	word-break: break-word;
 	overflow-wrap: anywhere;        /* a 300+ char value wraps freely */
 }
-table.mdp-frontmatter td.mdp-fm-val code { white-space: normal; } /* let inline code wrap */
-table.mdp-frontmatter td.mdp-fm-val .mdp-fm-scalar {
+table.sd-frontmatter td.sd-fm-val code { white-space: normal; } /* let inline code wrap */
+table.sd-frontmatter td.sd-fm-val .sd-fm-scalar {
 	font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, monospace);
 	color: var(--vscode-editor-foreground); /* typed scalar: mono, no chip */
 }
 
-/* Long values (>=160 chars, tagged .mdp-fm-long): open the leading so the wrapped text
+/* Long values (>=160 chars, tagged .sd-fm-long): open the leading so the wrapped text
    reads as a paragraph; the explicit (1)/(2)/(3) enumeration is broken onto lines by the
    renderer. Short scalar rows are untouched. */
-table.mdp-frontmatter td.mdp-fm-val.mdp-fm-long {
+table.sd-frontmatter td.sd-fm-val.sd-fm-long {
 	line-height: 1.6;
 	hyphens: none;                  /* never hyphenate code/slashes like docs/<topic>/ */
 }
 /* Clamp a long value to a few lines by default (metadata, not the main content); the foot JS
-   adds a "Show more" toggle that sets .mdp-fm-expanded to reveal the rest. */
-table.mdp-frontmatter td.mdp-fm-long .mdp-fm-clamp {
+   adds a "Show more" toggle that sets .sd-fm-expanded to reveal the rest. */
+table.sd-frontmatter td.sd-fm-long .sd-fm-clamp {
 	display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5;
 	overflow: hidden;
 }
-table.mdp-frontmatter td.mdp-fm-long.mdp-fm-expanded .mdp-fm-clamp {
+table.sd-frontmatter td.sd-fm-long.sd-fm-expanded .sd-fm-clamp {
 	display: block; -webkit-line-clamp: unset; overflow: visible;
 }
-.mdp-fm-more {
+.sd-fm-more {
 	margin-top: 5px; padding: 0; border: 0; background: none; cursor: pointer;
 	font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, monospace);
-	font-size: 12px; color: var(--mdp-ink-muted); /* neutral grey, no accent */
+	font-size: 12px; color: var(--sd-ink-muted); /* neutral grey, no accent */
 }
-.mdp-fm-more:hover { color: var(--mdp-ink-strong); text-decoration: underline; }
+.sd-fm-more:hover { color: var(--sd-ink-strong); text-decoration: underline; }
 
 /* When the table carries a long value, cap the WHOLE table so the value wraps at a
    comfortable measure (~700px column) instead of a full-width wall, and give it a real
    width so the value column never collapses to a sliver. Short-only frontmatter (no long
    row) keeps the compact width:auto aside. The key column stays narrow via the colgroup. */
-table.mdp-frontmatter.mdp-fm-has-long { width: 100%; max-width: 820px; }
-table.mdp-frontmatter.mdp-fm-has-long td.mdp-fm-key { vertical-align: top; }
+table.sd-frontmatter.sd-fm-has-long { width: 100%; max-width: 820px; }
+table.sd-frontmatter.sd-fm-has-long td.sd-fm-key { vertical-align: top; }
 
 .frontmatter-error {
 	margin-bottom: 16px;
@@ -642,12 +642,12 @@ table.mdp-frontmatter.mdp-fm-has-long td.mdp-fm-key { vertical-align: top; }
 
 /* (5) markdown.css scopes border colors under .vscode-light; the standalone
    preview body carries no theme class, so re-assert the light values unscoped. */
-h1, h2, hr, td { border-color: var(--mdp-border); }
-th { border-color: var(--mdp-border-strong); }
-hr { border-bottom-color: var(--mdp-border); }
-a { color: var(--mdp-link); }
+h1, h2, hr, td { border-color: var(--sd-border); }
+th { border-color: var(--sd-border-strong); }
+hr { border-bottom-color: var(--sd-border); }
+a { color: var(--sd-link); }
 
-/* (6) md-preview tables: clean VS Code baseline + one accent (header rule), and
+/* (6) spacedown tables: clean VS Code baseline + one accent (header rule), and
    horizontal scroll for wide tables instead of squashing the reading column.
    Design reviewed by a UX pass: dropped header-fill / hover (data-grid noise on a
    static reading surface); kept the header rule + row hairlines. Zebra was dropped
@@ -674,11 +674,11 @@ table {
   overflow-x: auto;
   border-collapse: separate; /* collapse can void border-radius on table boxes */
   border-spacing: 0;
-  border: 1px solid var(--mdp-rule); /* matches the header rule: frame >= strongest internal line */
+  border: 1px solid var(--sd-rule); /* matches the header rule: frame >= strongest internal line */
   border-radius: 6px;
   margin: 0 0 20px;
   scrollbar-width: thin;
-  scrollbar-color: var(--mdp-scrollbar) transparent;
+  scrollbar-color: var(--sd-scrollbar) transparent;
 }
 th, td { padding: 6px 14px; text-align: left; vertical-align: top; border: none; } /* 6px: scan-density for data tables (designer pass 2026-07-12) */
 thead th {
@@ -686,27 +686,27 @@ thead th {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--mdp-ink-muted);
+  color: var(--sd-ink-muted);
   white-space: nowrap;
   padding-top: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--mdp-rule);
+  border-bottom: 1px solid var(--sd-rule);
 }
-tbody td { border-bottom: 1px solid var(--mdp-rule-soft); }
+tbody td { border-bottom: 1px solid var(--sd-rule-soft); }
 tbody tr:last-child td { border-bottom: none; } /* the frame closes the bottom */
 /* Zebra stripes: data-heavy tables need the row guide. Even rows get a whisper fill; last-row corners stay inside the frame. */
-table:not(.mdp-frontmatter) tbody tr:nth-child(even) td { background: var(--mdp-zebra); } /* scoped: frontmatter stays hairline-only */
+table:not(.sd-frontmatter) tbody tr:nth-child(even) td { background: var(--sd-zebra); } /* scoped: frontmatter stays hairline-only */
 tbody tr:last-child td:first-child { border-bottom-left-radius: 5px; }
 tbody tr:last-child td:last-child { border-bottom-right-radius: 5px; }
 td code { white-space: nowrap; } /* backticked keywords never wrap mid-token */
 /* Respect markdown right-aligned (numeric) columns: tabular figures + right edge. */
 th[style*="right"], td[style*="right"] { text-align: right; font-variant-numeric: tabular-nums; }
 /* Numeric columns detected at load time (script after this style block). */
-td.mdp-num, th.mdp-num { text-align: right; font-variant-numeric: tabular-nums; }
+td.sd-num, th.sd-num { text-align: right; font-variant-numeric: tabular-nums; }
 /* Percent cells carry sign semantics (finance tables): muted red/green, readable on
    both the white row and the zebra fill. Zero stays neutral. */
-td.mdp-neg { color: var(--mdp-neg); }
-td.mdp-pos { color: var(--mdp-pos); }
+td.sd-neg { color: var(--sd-neg); }
+td.sd-pos { color: var(--sd-pos); }
 
 /* (7) Reading-surface refinements (world-class-UX review pass). Font-independent;
    they apply in both mono and proportional font modes. */
@@ -727,7 +727,7 @@ body .katex-display > .katex { text-align: left; }
 /* thin, quiet scrollbar for equations that overflow (instead of chunky default) */
 body .katex-display { scrollbar-width: thin; }
 body .katex-display::-webkit-scrollbar { height: 6px; }
-body .katex-display::-webkit-scrollbar-thumb { background: var(--mdp-scrollbar); border-radius: 3px; } /* one thumb tone page-wide */
+body .katex-display::-webkit-scrollbar-thumb { background: var(--sd-scrollbar); border-radius: 3px; } /* one thumb tone page-wide */
 
 /* Inline math: KaTeX Main's x-height (~0.431em) is far below SF Mono's (~0.53em), so
    1.0em math reads visibly undersized (worst on inline fractions, whose numerals drop
@@ -735,29 +735,29 @@ body .katex-display::-webkit-scrollbar-thumb { background: var(--mdp-scrollbar);
 .math.inline .katex { font-size: 1.23em; }
 
 /* Links: quiet but persistent underline (a link is a real signal in technical text). */
-a { text-decoration: underline; text-decoration-color: var(--mdp-link-underline); text-underline-offset: 0.15em; }
-a:hover { text-decoration-color: var(--mdp-link); }
+a { text-decoration: underline; text-decoration-color: var(--sd-link-underline); text-underline-offset: 0.15em; }
+a:hover { text-decoration-color: var(--sd-link); }
 
 /* Lists: muted markers + hanging indent + tighter nesting. Content leads, not bullets. */
 ul, ol { padding-left: 1.4em; }
 li { margin: 0.2em 0; }
-li::marker { color: var(--mdp-marker); }
+li::marker { color: var(--sd-marker); }
 li > ul, li > ol { margin: 0.2em 0; }
 
 /* Blockquote: an aside, not an alert. Thin rule + lighter text, no fill. */
-blockquote { border-left: 3px solid var(--mdp-quote-rule); border-radius: 0; padding: 0 0 0 1em; margin: 0 0 16px; color: var(--mdp-ink-soft); background: transparent; }
+blockquote { border-left: 3px solid var(--sd-quote-rule); border-radius: 0; padding: 0 0 0 1em; margin: 0 0 16px; color: var(--sd-ink-soft); background: transparent; }
 
 /* Figures: kill the browser-default 40px side margins so images share the text spine;
    captions read as subordinate metadata (small, muted), not an orphan sentence. */
 figure { margin: 0 0 16px; }
-figcaption { font-size: 0.85em; color: var(--mdp-ink-muted); margin-top: 0.5em; }
+figcaption { font-size: 0.85em; color: var(--sd-ink-muted); margin-top: 0.5em; }
 
 /* Task-list checkboxes: OS-default accent is the loudest mark on the page; reuse the
    locked link blue instead of introducing system blue. */
-input[type="checkbox"] { accent-color: var(--mdp-link); }
+input[type="checkbox"] { accent-color: var(--sd-link); }
 
 /* Footnote apparatus is subordinate: smaller and muted. */
-.footnotes { font-size: 0.9em; color: var(--mdp-marker); }
+.footnotes { font-size: 0.9em; color: var(--sd-marker); }
 
 /* Numeric columns align. */
 th, td { font-variant-numeric: tabular-nums; }
@@ -781,10 +781,10 @@ body > h1, body > h2, body > h3, body > h4, body > h5, body > h6 {
    Scrollbar matches the quiet treatment tables and display math already have. */
 pre {
   width: max-content; max-width: 100%; margin-bottom: 16px; box-sizing: border-box;
-  scrollbar-width: thin; scrollbar-color: var(--mdp-scrollbar) transparent;
+  scrollbar-width: thin; scrollbar-color: var(--sd-scrollbar) transparent;
 }
 pre::-webkit-scrollbar { height: 8px; }
-pre::-webkit-scrollbar-thumb { background: var(--mdp-scrollbar); border-radius: 4px; }
+pre::-webkit-scrollbar-thumb { background: var(--sd-scrollbar); border-radius: 4px; }
 /* ONE scroll container per code block. Pandoc's own template CSS makes its highlight
    wrapper scroll (div.sourceCode { overflow: auto }) while the upstream VS Code pre
    inside scrolls too, so a long line painted TWO stacked horizontal scrollbars.
@@ -822,11 +822,11 @@ p:has(.katex-display) + p:has(.katex-display) {
   font-size: 0.85rem;
   font-style: italic;
   line-height: 1.45;
-  color: var(--mdp-ink-faint);
+  color: var(--sd-ink-faint);
   /* Continuous hairline rail: because inter-step margins are zero, each member's
      border joins into ONE unbroken line down the chain, the visual thread that
      says "one argument" (the calm cousin of an `align` environment's block). */
-  border-left: 2px solid var(--mdp-rail);
+  border-left: 2px solid var(--sd-rail);
   padding-left: calc(1.5rem - 2px);
 }
 /* Fuse the chain into one block: no inter-step margins, just a small
@@ -848,18 +848,18 @@ p:has(.katex-display) + p:has(.katex-display) .katex-display {
 /* A breath before the boxed conclusion, and the page's one accent on the box
    itself (body prefix outranks katex.css, which loads later). */
 p:has(.katex-display) + p:has(.fbox) { padding-top: 1.1em; }
-body .katex .fbox { border-color: var(--mdp-link); }
+body .katex .fbox { border-color: var(--sd-link); }
 
 /* (9) Obsidian-style wikilinks ([[target]] via pandoc wikilinks_title_after_pipe).
    Internal references, not web links: accent color, no underline until hover.
    The href is unresolved (bare target), so they're visual references in preview. */
-a.wikilink { color: var(--mdp-link); text-decoration: none; }
-a.wikilink:hover { text-decoration: underline; text-decoration-color: var(--mdp-link-underline); }
+a.wikilink { color: var(--sd-link); text-decoration: none; }
+a.wikilink:hover { text-decoration: underline; text-decoration-color: var(--sd-link-underline); }
 </style>
 <script>
-/* md-preview numeric-table polish: detect columns whose data cells are all numeric
+/* spacedown numeric-table polish: detect columns whose data cells are all numeric
    (bare integers/decimals, optional minus and trailing %), right-align them
-   (.mdp-num, styled above) and insert thousands separators. Column-based so a lone
+   (.sd-num, styled above) and insert thousands separators. Column-based so a lone
    number in a prose column is untouched. Frontmatter tables are skipped. Cells with
    child markup (e.g. backticked code) keep their markup, alignment only. */
 document.addEventListener('DOMContentLoaded', function () {
@@ -872,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return Number(d).toLocaleString('en-US');
     });
   }
-  document.querySelectorAll('table:not(.mdp-frontmatter)').forEach(function (table) {
+  document.querySelectorAll('table:not(.sd-frontmatter)').forEach(function (table) {
     var rows = Array.prototype.slice.call(table.querySelectorAll('tbody tr'));
     if (!rows.length) return;
     var cols = Math.max.apply(null, rows.map(function (r) { return r.cells.length; }));
@@ -884,19 +884,19 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!nonEmpty.length) continue;
       if (!nonEmpty.every(function (t) { return numRe.test(t); })) continue;
       cells.forEach(function (td, i) {
-        td.classList.add('mdp-num');
+        td.classList.add('sd-num');
         if (texts[i] && td.children.length === 0) td.textContent = fmt(texts[i]);
         /* percent cells get sign color: negative red, positive green, zero neutral */
         if (/%$/.test(texts[i]) && parseFloat(texts[i]) !== 0) {
-          td.classList.add(texts[i].charAt(0) === '-' ? 'mdp-neg' : 'mdp-pos');
+          td.classList.add(texts[i].charAt(0) === '-' ? 'sd-neg' : 'sd-pos');
         }
       });
-      if (headRow && headRow.cells[c]) headRow.cells[c].classList.add('mdp-num');
+      if (headRow && headRow.cells[c]) headRow.cells[c].classList.add('sd-num');
     }
   });
 });
 
-/* md-preview table column sizing. Same contract and same thresholds as the Quick Look
+/* spacedown table column sizing. Same contract and same thresholds as the Quick Look
    appex (quick-look/Resources/ql-render.js, tightColumns), which does this at render
    time because the panel executes no scripts. CSS auto layout sizes a column by its
    longest word when a prose column competes for the width, so a date column collapses
@@ -905,7 +905,7 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
   var TIGHT_MAX = 16, TIGHT_BUDGET = 40, NARROW_MAX = 34;
   var WIDE_TOTAL = 100, COL_MIN = 22, COL_MAX = 52;
-  document.querySelectorAll('table:not(.mdp-frontmatter)').forEach(function (table) {
+  document.querySelectorAll('table:not(.sd-frontmatter)').forEach(function (table) {
     var rows = Array.prototype.slice.call(table.querySelectorAll('tr'));
     if (!rows.length) return;
     var cols = Math.max.apply(null, rows.map(function (r) { return r.cells.length; }));
@@ -919,22 +919,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!widths.some(function (w) { return w > NARROW_MAX; })) return;
     var spent = 0;
     var classes = widths.map(function (w) {
-      if (w <= TIGHT_MAX && spent + w <= TIGHT_BUDGET) { spent += w; return 'mdp-tight'; }
-      return w <= NARROW_MAX ? 'mdp-narrow' : '';
+      if (w <= TIGHT_MAX && spent + w <= TIGHT_BUDGET) { spent += w; return 'sd-tight'; }
+      return w <= NARROW_MAX ? 'sd-narrow' : '';
     });
     /* Two prose columns split the width by how much text each holds, so the shorter one
        ends up a few words wide. Four columns run out of room whatever they hold. */
     var wide = cols >= 4 || widths.filter(function (w) { return w > NARROW_MAX; }).length >= 2;
     var share = widths.reduce(function (sum, w, i) {
-      return sum + (classes[i] === 'mdp-tight' ? 0 : w);
+      return sum + (classes[i] === 'sd-tight' ? 0 : w);
     }, 0);
-    if (wide) table.classList.add('mdp-wide');
+    if (wide) table.classList.add('sd-wide');
     rows.forEach(function (r) {
       for (var i = 0; i < cols; i++) {
         var cell = r.cells[i];
         if (!cell) continue;
         if (classes[i]) cell.classList.add(classes[i]);
-        if (!wide || classes[i] === 'mdp-tight' || !share) continue;
+        if (!wide || classes[i] === 'sd-tight' || !share) continue;
         /* Widths in proportion to content are what make a row's columns end level,
            since a cell of length L wrapped at width W is L/W lines tall. */
         var ch = Math.round((widths[i] / share) * WIDE_TOTAL);
@@ -948,33 +948,33 @@ document.addEventListener('DOMContentLoaded', function () {
 /* Callouts ("> [!type] title"). Two shapes share these rules: the pandoc path wraps
    the blockquote in a classed div (assets/callouts-to-html.py); the Quick Look appex
    puts the classes on the blockquote itself (quick-look/Resources/ql-render.js). */
-.mdp-callout-head { font-weight: 600; margin: 0 0 4px; }
-.mdp-callout-head .mdp-callout-title { font-weight: 600; }
-blockquote.mdp-callout-note,      .mdp-callout-note      > blockquote { border-left-color: var(--mdp-callout-note); }
-blockquote.mdp-callout-tip,       .mdp-callout-tip       > blockquote { border-left-color: var(--mdp-callout-tip); }
-blockquote.mdp-callout-important, .mdp-callout-important > blockquote { border-left-color: var(--mdp-callout-important); }
-blockquote.mdp-callout-warning,   .mdp-callout-warning   > blockquote { border-left-color: var(--mdp-callout-warning); }
-blockquote.mdp-callout-caution,   .mdp-callout-caution   > blockquote { border-left-color: var(--mdp-callout-caution); }
-.mdp-callout-note      .mdp-callout-head { color: var(--mdp-callout-note); }
-.mdp-callout-tip       .mdp-callout-head { color: var(--mdp-callout-tip); }
-.mdp-callout-important .mdp-callout-head { color: var(--mdp-callout-important); }
-.mdp-callout-warning   .mdp-callout-head { color: var(--mdp-callout-warning); }
-.mdp-callout-caution   .mdp-callout-head { color: var(--mdp-callout-caution); }
+.sd-callout-head { font-weight: 600; margin: 0 0 4px; }
+.sd-callout-head .sd-callout-title { font-weight: 600; }
+blockquote.sd-callout-note,      .sd-callout-note      > blockquote { border-left-color: var(--sd-callout-note); }
+blockquote.sd-callout-tip,       .sd-callout-tip       > blockquote { border-left-color: var(--sd-callout-tip); }
+blockquote.sd-callout-important, .sd-callout-important > blockquote { border-left-color: var(--sd-callout-important); }
+blockquote.sd-callout-warning,   .sd-callout-warning   > blockquote { border-left-color: var(--sd-callout-warning); }
+blockquote.sd-callout-caution,   .sd-callout-caution   > blockquote { border-left-color: var(--sd-callout-caution); }
+.sd-callout-note      .sd-callout-head { color: var(--sd-callout-note); }
+.sd-callout-tip       .sd-callout-head { color: var(--sd-callout-tip); }
+.sd-callout-important .sd-callout-head { color: var(--sd-callout-important); }
+.sd-callout-warning   .sd-callout-head { color: var(--sd-callout-warning); }
+.sd-callout-caution   .sd-callout-head { color: var(--sd-callout-caution); }
 
 /* (10b) Syntax colors routed through tokens. Pandoc writes the tango palette into
    the page head ABOVE this file, so these rules win on source order at equal
    specificity. The light values ARE tango's, so the light page does not change.
    Tokens are the only way section (10) can reach these: the tango block is
    generated per render, so it cannot be edited. */
-code span.al { color: var(--mdp-syn-alert); }
+code span.al { color: var(--sd-syn-alert); }
 code span.an, code span.cn, code span.co, code span.cv, code span.do,
-code span.in, code span.ot, code span.pp, code span.wa { color: var(--mdp-syn-comment); }
-code span.at, code span.cf, code span.dt, code span.fu, code span.kw { color: var(--mdp-syn-keyword); }
-code span.bn, code span.dv, code span.fl { color: var(--mdp-syn-number); }
-code span.ch, code span.ss, code span.st, code span.vs { color: var(--mdp-syn-string); }
-code span.er { color: var(--mdp-syn-error); }
-code span.op, code span.sc { color: var(--mdp-syn-operator); }
-code span.va { color: var(--mdp-syn-var); }
+code span.in, code span.ot, code span.pp, code span.wa { color: var(--sd-syn-comment); }
+code span.at, code span.cf, code span.dt, code span.fu, code span.kw { color: var(--sd-syn-keyword); }
+code span.bn, code span.dv, code span.fl { color: var(--sd-syn-number); }
+code span.ch, code span.ss, code span.st, code span.vs { color: var(--sd-syn-string); }
+code span.er { color: var(--sd-syn-error); }
+code span.op, code span.sc { color: var(--sd-syn-operator); }
+code span.va { color: var(--sd-syn-var); }
 
 /* (10) Dark appearance. Follows the OS/browser setting, no flag and no toggle.
    Only tokens change; every rule above already reads them. Values match the
@@ -992,38 +992,38 @@ code span.va { color: var(--mdp-syn-var); }
     --vscode-textCodeBlock-background: #2c2f36;
     --vscode-widget-border: #3c404a;
 
-    --mdp-link: #79b8ff;
-    --mdp-link-underline: rgba(121, 184, 255, 0.4);
-    --mdp-code-chip-bg: rgba(255, 255, 255, 0.09);
-    --mdp-border: rgba(255, 255, 255, 0.18);
-    --mdp-border-strong: rgba(255, 255, 255, 0.62);
-    --mdp-rule: #3c404a;
-    --mdp-rule-soft: #32353c;
-    --mdp-rail: #3a3e46;
-    --mdp-zebra: #232327;
-    --mdp-quote-rule: #4a4a50;
-    --mdp-scrollbar: #4a4a50;
-    --mdp-ink-muted: #9a9aa2;
-    --mdp-ink-soft: #b4b4bc;
-    --mdp-ink-faint: #8b8b93;
-    --mdp-ink-strong: #f2f2f4;
-    --mdp-marker: #8b8b93;
-    --mdp-neg: #f2857a;
-    --mdp-pos: #5ec99a;
-    --mdp-callout-note: #58a6ff;
-    --mdp-callout-tip: #56d364;
-    --mdp-callout-important: #bc8cff;
-    --mdp-callout-warning: #e3b341;
-    --mdp-callout-caution: #ff7b72;
+    --sd-link: #79b8ff;
+    --sd-link-underline: rgba(121, 184, 255, 0.4);
+    --sd-code-chip-bg: rgba(255, 255, 255, 0.09);
+    --sd-border: rgba(255, 255, 255, 0.18);
+    --sd-border-strong: rgba(255, 255, 255, 0.62);
+    --sd-rule: #3c404a;
+    --sd-rule-soft: #32353c;
+    --sd-rail: #3a3e46;
+    --sd-zebra: #232327;
+    --sd-quote-rule: #4a4a50;
+    --sd-scrollbar: #4a4a50;
+    --sd-ink-muted: #9a9aa2;
+    --sd-ink-soft: #b4b4bc;
+    --sd-ink-faint: #8b8b93;
+    --sd-ink-strong: #f2f2f4;
+    --sd-marker: #8b8b93;
+    --sd-neg: #f2857a;
+    --sd-pos: #5ec99a;
+    --sd-callout-note: #58a6ff;
+    --sd-callout-tip: #56d364;
+    --sd-callout-important: #bc8cff;
+    --sd-callout-warning: #e3b341;
+    --sd-callout-caution: #ff7b72;
 
-    --mdp-syn-alert: #ff7b72;
-    --mdp-syn-comment: #b9a06a;
-    --mdp-syn-keyword: #8cb4ff;
-    --mdp-syn-number: #a2a0ff;
-    --mdp-syn-string: #9ece6a;
-    --mdp-syn-error: #ff8a80;
-    --mdp-syn-operator: #ffa657;
-    --mdp-syn-var: #e3e3e6;
+    --sd-syn-alert: #ff7b72;
+    --sd-syn-comment: #b9a06a;
+    --sd-syn-keyword: #8cb4ff;
+    --sd-syn-number: #a2a0ff;
+    --sd-syn-string: #9ece6a;
+    --sd-syn-error: #ff8a80;
+    --sd-syn-operator: #ffa657;
+    --sd-syn-var: #e3e3e6;
   }
   /* Images authored for a white page glare on a dark one. */
   img { filter: brightness(0.92); }

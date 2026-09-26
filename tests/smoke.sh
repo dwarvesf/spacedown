@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# md-preview smoke test: exercises the CLI contract, the reading chrome, the
+# spacedown smoke test: exercises the CLI contract, the reading chrome, the
 # frontmatter and callout passes, dark mode, and the Quick Look render core.
 # The --watch path is not covered here because it depends on whether entr is
 # installed on the host.
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-MD_PREVIEW="${SCRIPT_DIR}/bin/md-preview"
+SPACEDOWN="${SCRIPT_DIR}/bin/spacedown"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -23,26 +23,26 @@ no() { echo "  FAIL: $*" >&2; fail=$((fail+1)); }
 
 # 1. --version exits 0
 echo "[1] --version"
-if out=$("$MD_PREVIEW" --version 2>&1) && echo "$out" | grep -q '^md-preview '; then ok "version output"; else no "version output: $out"; fi
+if out=$("$SPACEDOWN" --version 2>&1) && echo "$out" | grep -q '^spacedown '; then ok "version output"; else no "version output: $out"; fi
 
 # 2. --help exits 0
 echo "[2] --help"
-if "$MD_PREVIEW" --help >/dev/null 2>&1; then ok "help exit 0"; else no "help exit"; fi
+if "$SPACEDOWN" --help >/dev/null 2>&1; then ok "help exit 0"; else no "help exit"; fi
 
 # 3. no args → exit 64
 echo "[3] no args → exit 64"
-set +e; "$MD_PREVIEW" >/dev/null 2>&1; rc=$?; set -e
+set +e; "$SPACEDOWN" >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
 
 # 4. nonexistent file → exit 1
 echo "[4] nonexistent file → exit 1"
-set +e; "$MD_PREVIEW" "${TMP}/missing.md" >/dev/null 2>&1; rc=$?; set -e
+set +e; "$SPACEDOWN" "${TMP}/missing.md" >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 1 ]]; then ok "exit 1"; else no "got $rc"; fi
 
 # 5. empty file → exit 1
 echo "[5] empty file → exit 1"
 : > "${TMP}/empty.md"
-set +e; "$MD_PREVIEW" "${TMP}/empty.md" >/dev/null 2>&1; rc=$?; set -e
+set +e; "$SPACEDOWN" "${TMP}/empty.md" >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 1 ]]; then ok "exit 1"; else no "got $rc"; fi
 
 # Prepare a valid markdown fixture with LaTeX math.
@@ -64,19 +64,19 @@ EOF
 
 # 6. valid render with --no-open prints output path on stdout
 echo "[6] valid render --no-open → stdout = path"
-out_path=$("$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/fixture.html" --no-open 2>/dev/null)
+out_path=$("$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/fixture.html" --no-open 2>/dev/null)
 if [[ "$out_path" == "${TMP}/fixture.html" ]]; then ok "stdout=$out_path"; else no "stdout=$out_path expected ${TMP}/fixture.html"; fi
 if [[ -f "${TMP}/fixture.html" ]]; then ok "output file exists"; else no "output file missing"; fi
 
 # 7. piped (no TTY) auto --no-open
 echo "[7] piped (no TTY) auto --no-open"
-out_path=$("$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/fixture2.html" 2>/dev/null | cat)
+out_path=$("$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/fixture2.html" 2>/dev/null | cat)
 if [[ "$out_path" == "${TMP}/fixture2.html" ]]; then ok "piped stdout=$out_path"; else no "piped stdout=$out_path"; fi
 
 # 8. --out into non-existing parent dir creates it
 echo "[8] --out parent dir auto-create"
 nested="${TMP}/deep/nested/dir/out.html"
-out_path=$("$MD_PREVIEW" "${TMP}/fixture.md" --out "$nested" --no-open 2>/dev/null)
+out_path=$("$SPACEDOWN" "${TMP}/fixture.md" --out "$nested" --no-open 2>/dev/null)
 if [[ -f "$nested" ]]; then ok "nested dir created"; else no "nested dir missing"; fi
 
 # 9. rendered HTML contains KaTeX reference
@@ -116,7 +116,7 @@ fi
 echo "[13b] table horizontal scroll"
 if grep -q 'overflow-x: auto' "${TMP}/fixture.html"; then ok "table overflow-x scroll present"; else no "table scroll missing"; fi
 
-# 14. font override: fonts from MD_PREVIEW_SETTINGS are mirrored into the output
+# 14. font override: fonts from SPACEDOWN_SETTINGS are mirrored into the output
 echo "[14] font override from settings"
 cat > "${TMP}/settings.json" <<'JSON'
 {
@@ -125,7 +125,7 @@ cat > "${TMP}/settings.json" <<'JSON'
   "editor.fontFamily": "'Smoke Code', monospace"
 }
 JSON
-MD_PREVIEW_SETTINGS="${TMP}/settings.json" "$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/fonts.html" --no-open >/dev/null 2>&1
+SPACEDOWN_SETTINGS="${TMP}/settings.json" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/fonts.html" --no-open >/dev/null 2>&1
 if grep -q "Smoke Font" "${TMP}/fonts.html" && grep -q '17px' "${TMP}/fonts.html" && grep -q "Smoke Code" "${TMP}/fonts.html"; then
   ok "fonts mirrored from settings (body + size + code)"
 else
@@ -134,19 +134,19 @@ fi
 
 # 15. no settings file -> no override leak (base asset defaults apply)
 echo "[15] font fallback when no settings"
-MD_PREVIEW_SETTINGS="${TMP}/does-not-exist.json" "$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/nofonts.html" --no-open >/dev/null 2>&1
+SPACEDOWN_SETTINGS="${TMP}/does-not-exist.json" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/nofonts.html" --no-open >/dev/null 2>&1
 if grep -q "Smoke Font" "${TMP}/nofonts.html"; then no "override leaked without settings"; else ok "no override; base defaults apply"; fi
 
 # 16. smart typography OFF: straight quotes stay literal (match VS Code's markdown-it, not pandoc curly)
 echo "[16] smart typography disabled"
 printf '%s\n' '> a "quoted" word.' > "${TMP}/smart.md"
-"$MD_PREVIEW" "${TMP}/smart.md" --out "${TMP}/smart.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/smart.md" --out "${TMP}/smart.html" --no-open >/dev/null 2>&1
 if grep -q '"quoted"' "${TMP}/smart.html"; then ok "straight quotes preserved (smart off)"; else no "quotes were smart-converted (curly)"; fi
 
 # 16b. Obsidian-style wikilinks render as anchors with class="wikilink"
 echo "[16b] wikilinks"
 printf '%s\n' 'see [[some-note]] and [[other|Title]].' > "${TMP}/wiki.md"
-"$MD_PREVIEW" "${TMP}/wiki.md" --out "${TMP}/wiki.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/wiki.md" --out "${TMP}/wiki.html" --no-open >/dev/null 2>&1
 if grep -q 'class="wikilink"' "${TMP}/wiki.html" && grep -q '>Title<' "${TMP}/wiki.html"; then
   ok "[[target]] + [[target|title]] render as wikilink anchors"
 else
@@ -155,8 +155,8 @@ fi
 
 # 17. font-mode: the default render carries no serif block; --font-mode=read injects it
 echo "[17] font-mode toggle"
-"$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/default.html" --no-open >/dev/null 2>&1
-"$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/read.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/default.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/read.html" --no-open >/dev/null 2>&1
 if ! grep -q 'read mode: proportional serif' "${TMP}/default.html" && grep -q 'read mode: proportional serif' "${TMP}/read.html"; then
   ok "default has no serif block; read injects serif"
 else
@@ -166,8 +166,8 @@ fi
 # 17e. The default renders the paper theme, --font-mode=paper matches it, and
 #      --font-mode=mono carries no paper tokens (negative control).
 echo "[17e] font-mode paper default"
-"$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=paper --out "${TMP}/paper.html" --no-open >/dev/null 2>&1
-"$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=mono --out "${TMP}/mono.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/fixture.md" --font-mode=paper --out "${TMP}/paper.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/fixture.md" --font-mode=mono --out "${TMP}/mono.html" --no-open >/dev/null 2>&1
 if grep -q -- '--paper-bg' "${TMP}/default.html" \
    && grep -q -- '--paper-bg' "${TMP}/paper.html" \
    && ! grep -q -- '--paper-bg' "${TMP}/mono.html" && ! grep -q -- '--paper-bg' "${TMP}/read.html"; then
@@ -178,21 +178,21 @@ fi
 
 # 17f. an unknown font mode is a usage error
 echo "[17f] unknown font mode -> exit 64"
-set +e; "$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=nope --no-open >/dev/null 2>&1; rc=$?; set -e
+set +e; "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=nope --no-open >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
 
-# 17g. MD_PREVIEW_THEME_CSS replaces the paper theme; read mode ignores it; a missing
+# 17g. SPACEDOWN_THEME_CSS replaces the paper theme; read mode ignores it; a missing
 #      file is a usage error.
-echo "[17g] MD_PREVIEW_THEME_CSS theme hook"
+echo "[17g] SPACEDOWN_THEME_CSS theme hook"
 printf ':root { --custom-theme-bg: #123456; }\n' > "${TMP}/custom.css"
-MD_PREVIEW_THEME_CSS="${TMP}/custom.css" "$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/custom.html" --no-open >/dev/null 2>&1
-MD_PREVIEW_THEME_CSS="${TMP}/custom.css" "$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/custom-read.html" --no-open >/dev/null 2>&1
-set +e; MD_PREVIEW_THEME_CSS="${TMP}/nope.css" "$MD_PREVIEW" "${TMP}/fixture.md" --no-open >/dev/null 2>&1; rc=$?; set -e
+SPACEDOWN_THEME_CSS="${TMP}/custom.css" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/custom.html" --no-open >/dev/null 2>&1
+SPACEDOWN_THEME_CSS="${TMP}/custom.css" "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/custom-read.html" --no-open >/dev/null 2>&1
+set +e; SPACEDOWN_THEME_CSS="${TMP}/nope.css" "$SPACEDOWN" "${TMP}/fixture.md" --no-open >/dev/null 2>&1; rc=$?; set -e
 if grep -q -- '--custom-theme-bg' "${TMP}/custom.html" && ! grep -q -- '--paper-bg' "${TMP}/custom.html" \
    && ! grep -q -- '--custom-theme-bg' "${TMP}/custom-read.html" && [[ $rc -eq 64 ]]; then
   ok "theme file replaces paper; read unaffected; missing file exits 64"
 else
-  no "MD_PREVIEW_THEME_CSS hook not behaving (rc=$rc)"
+  no "SPACEDOWN_THEME_CSS hook not behaving (rc=$rc)"
 fi
 
 # ---- reading chrome: outline sidebar + zoom + copy-source ----
@@ -206,7 +206,7 @@ Para with $x^2$.
 
 Body. Vietnamese: chữ Quốc ngữ.
 EOF
-"$MD_PREVIEW" "${TMP}/chrome.md" --out "${TMP}/chrome.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/chrome.md" --out "${TMP}/chrome.html" --no-open >/dev/null 2>&1
 
 # 18. outline: nav#TOC emitted with an anchored entry per heading
 echo "[18] outline sidebar (nav#TOC anchored entries)"
@@ -218,13 +218,13 @@ else
   no "TOC entries missing"
 fi
 
-# 19. zoom: body text + line-height scale by the --mdp-zoom var
+# 19. zoom: body text + line-height scale by the --sd-zoom var
 echo "[19] zoom var override"
-if grep -q 'var(--mdp-zoom' "${TMP}/chrome.html"; then ok "zoom scale rule present"; else no "zoom rule missing"; fi
+if grep -q 'var(--sd-zoom' "${TMP}/chrome.html"; then ok "zoom scale rule present"; else no "zoom rule missing"; fi
 
 # 20. toolbar CSS + chrome JS both injected
 echo "[20] toolbar + chrome JS"
-if grep -q 'mdp-toolbar' "${TMP}/chrome.html" && grep -q 'mdp-has-toc' "${TMP}/chrome.html"; then
+if grep -q 'sd-toolbar' "${TMP}/chrome.html" && grep -q 'sd-has-toc' "${TMP}/chrome.html"; then
   ok "toolbar style + chrome script present"
 else
   no "toolbar/script missing"
@@ -232,14 +232,14 @@ fi
 
 # 21. copy-source: embedded base64 round-trips to the exact original bytes
 echo "[21] copy-source embedded markdown round-trips"
-src_b64="$(perl -ne 'print $1 if /id="mdp-src">([^<]*)</' "${TMP}/chrome.html")"
+src_b64="$(perl -ne 'print $1 if /id="sd-src">([^<]*)</' "${TMP}/chrome.html")"
 printf '%s' "$src_b64" | base64 -D > "${TMP}/decoded.md" 2>/dev/null || printf '%s' "$src_b64" | base64 --decode > "${TMP}/decoded.md" 2>/dev/null
 if cmp -s "${TMP}/decoded.md" "${TMP}/chrome.md"; then ok "embedded source == original (UTF-8 safe)"; else no "embedded source mismatch"; fi
 
 # 22. no-heading doc: no sidebar (graceful), base render intact
 echo "[22] no-heading doc has no sidebar"
 printf '%s\n' 'Just prose, no headings. Inline $y^2$.' > "${TMP}/noh.md"
-"$MD_PREVIEW" "${TMP}/noh.md" --out "${TMP}/noh.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/noh.md" --out "${TMP}/noh.html" --no-open >/dev/null 2>&1
 if ! grep -q 'id="TOC"' "${TMP}/noh.html" && grep -q 'katex' "${TMP}/noh.html"; then
   ok "no nav#TOC when no headings; katex still renders"
 else
@@ -259,10 +259,10 @@ description: Use when someone asks "X". Workflow: (1) check, (2) answer. NOT for
 
 Prose with $z^2$.
 EOF
-set +e; out_path=$("$MD_PREVIEW" "${TMP}/fm.md" --out "${TMP}/fm.html" --no-open 2>/dev/null); rc=$?; set -e
+set +e; out_path=$("$SPACEDOWN" "${TMP}/fm.md" --out "${TMP}/fm.html" --no-open 2>/dev/null); rc=$?; set -e
 if [[ $rc -eq 0 && -f "${TMP}/fm.html" ]] \
-   && grep -q 'class="mdp-frontmatter"' "${TMP}/fm.html" \
-   && [[ "$(grep -c 'class="mdp-fm-key"' "${TMP}/fm.html")" -ge 2 ]] \
+   && grep -q 'class="sd-frontmatter"' "${TMP}/fm.html" \
+   && [[ "$(grep -c 'class="sd-fm-key"' "${TMP}/fm.html")" -ge 2 ]] \
    && grep -q 'id="body"' "${TMP}/fm.html" \
    && ! grep -q 'sourceCode yaml' "${TMP}/fm.html"; then
   ok "frontmatter is a properties table (>=2 rows); body renders; no yaml fence"
@@ -272,8 +272,8 @@ fi
 
 # 24. no-frontmatter doc is unaffected (no table, no stray yaml fence injected)
 echo "[24] no-frontmatter doc unaffected"
-"$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/nofm.html" --no-open >/dev/null 2>&1
-if ! grep -q 'class="mdp-frontmatter"' "${TMP}/nofm.html" && ! grep -q 'sourceCode yaml' "${TMP}/nofm.html"; then
+"$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/nofm.html" --no-open >/dev/null 2>&1
+if ! grep -q 'class="sd-frontmatter"' "${TMP}/nofm.html" && ! grep -q 'sourceCode yaml' "${TMP}/nofm.html"; then
   ok "no frontmatter table and no yaml fence injected"
 else
   no "stray frontmatter rendering on plain doc"
@@ -282,8 +282,8 @@ fi
 # 25. frontmatter closed with `...` (a valid YAML terminator) renders as a table too
 echo "[25] frontmatter closed with ... renders as table"
 printf -- '---\nname: x\ndescription: A: b. Workflow: (1) c.\n...\n\n# Body\n' > "${TMP}/dots.md"
-set +e; "$MD_PREVIEW" "${TMP}/dots.md" --out "${TMP}/dots.html" --no-open >/dev/null 2>&1; rc=$?; set -e
-if [[ $rc -eq 0 ]] && grep -q 'class="mdp-frontmatter"' "${TMP}/dots.html" && grep -q 'id="body"' "${TMP}/dots.html"; then
+set +e; "$SPACEDOWN" "${TMP}/dots.md" --out "${TMP}/dots.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] && grep -q 'class="sd-frontmatter"' "${TMP}/dots.html" && grep -q 'id="body"' "${TMP}/dots.html"; then
   ok "...-closed frontmatter is a table; body renders"
 else
   no "...-closed frontmatter failed (rc=$rc)"
@@ -292,8 +292,8 @@ fi
 # 26. CRLF frontmatter (Windows line endings) renders as a table
 echo "[26] CRLF frontmatter renders as table"
 printf -- '---\r\nname: x\r\ndescription: A: b.\r\n---\r\n\r\n# Body\r\n' > "${TMP}/crlf.md"
-set +e; "$MD_PREVIEW" "${TMP}/crlf.md" --out "${TMP}/crlf.html" --no-open >/dev/null 2>&1; rc=$?; set -e
-if [[ $rc -eq 0 ]] && grep -q 'class="mdp-frontmatter"' "${TMP}/crlf.html" && grep -q 'id="body"' "${TMP}/crlf.html"; then
+set +e; "$SPACEDOWN" "${TMP}/crlf.md" --out "${TMP}/crlf.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] && grep -q 'class="sd-frontmatter"' "${TMP}/crlf.html" && grep -q 'id="body"' "${TMP}/crlf.html"; then
   ok "CRLF frontmatter is a table; body renders"
 else
   no "CRLF frontmatter failed (rc=$rc)"
@@ -302,9 +302,9 @@ fi
 # 27. nested map flattens to a dotted key; list comma-joins; scalar gets a scalar span
 echo "[27] nested dotted key + list + scalar"
 printf -- '---\nname: x\ndraft: true\ntags: [a, b]\nmeta:\n  type: ref\n---\n\n# Body\n' > "${TMP}/nest.md"
-"$MD_PREVIEW" "${TMP}/nest.md" --out "${TMP}/nest.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/nest.md" --out "${TMP}/nest.html" --no-open >/dev/null 2>&1
 if grep -q 'meta\.type' "${TMP}/nest.html" \
-   && grep -q 'class="mdp-fm-scalar">true' "${TMP}/nest.html" \
+   && grep -q 'class="sd-fm-scalar">true' "${TMP}/nest.html" \
    && grep -q 'a, b' "${TMP}/nest.html"; then
   ok "meta.type dotted key, true scalar span, comma-joined list"
 else
@@ -314,8 +314,8 @@ fi
 # 28. unparseable frontmatter falls back to a yaml fence (never crashes, no table)
 echo "[28] unparseable frontmatter -> yaml fence fallback"
 printf -- '---\nname: ok\nthis line has no colon and is weird\n---\n\n# Body\n' > "${TMP}/bad.md"
-set +e; "$MD_PREVIEW" "${TMP}/bad.md" --out "${TMP}/bad.html" --no-open >/dev/null 2>&1; rc=$?; set -e
-if [[ $rc -eq 0 ]] && grep -q 'sourceCode yaml' "${TMP}/bad.html" && ! grep -q 'class="mdp-frontmatter"' "${TMP}/bad.html"; then
+set +e; "$SPACEDOWN" "${TMP}/bad.md" --out "${TMP}/bad.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] && grep -q 'sourceCode yaml' "${TMP}/bad.html" && ! grep -q 'class="sd-frontmatter"' "${TMP}/bad.html"; then
   ok "unparseable block fell back to fence; no table; no crash"
 else
   no "fallback failed (rc=$rc)"
@@ -323,7 +323,7 @@ fi
 
 # 29. copy-source still embeds the RAW original frontmatter (not the rendered table)
 echo "[29] copy-source embeds raw original frontmatter"
-src_b64="$(perl -ne 'print $1 if /id="mdp-src">([^<]*)</' "${TMP}/fm.html")"
+src_b64="$(perl -ne 'print $1 if /id="sd-src">([^<]*)</' "${TMP}/fm.html")"
 printf '%s' "$src_b64" | base64 -D > "${TMP}/fm-decoded.md" 2>/dev/null || printf '%s' "$src_b64" | base64 --decode > "${TMP}/fm-decoded.md" 2>/dev/null
 if cmp -s "${TMP}/fm-decoded.md" "${TMP}/fm.md"; then ok "embedded source == raw original (frontmatter intact)"; else no "copy-source not raw original"; fi
 
@@ -333,11 +333,11 @@ if cmp -s "${TMP}/fm-decoded.md" "${TMP}/fm.md"; then ok "embedded source == raw
 #     wiring here.)
 echo "[30] collapsible outline: toggle + collapse CSS + anim guard present"
 printf '# H1\n\ntext\n\n## H2\n\nmore\n' > "${TMP}/toc.md"
-"$MD_PREVIEW" "${TMP}/toc.md" --out "${TMP}/toc.html" --no-open >/dev/null 2>&1
-if grep -q 'mdp-toc-toggle' "${TMP}/toc.html" \
-   && grep -q 'mdp-toc-collapsed' "${TMP}/toc.html" \
-   && grep -q 'mdp-anim-ready' "${TMP}/toc.html" \
-   && grep -q 'mdp-has-toc' "${TMP}/toc.html"; then
+"$SPACEDOWN" "${TMP}/toc.md" --out "${TMP}/toc.html" --no-open >/dev/null 2>&1
+if grep -q 'sd-toc-toggle' "${TMP}/toc.html" \
+   && grep -q 'sd-toc-collapsed' "${TMP}/toc.html" \
+   && grep -q 'sd-anim-ready' "${TMP}/toc.html" \
+   && grep -q 'sd-has-toc' "${TMP}/toc.html"; then
   ok "toggle + collapse state + anim guard + has-toc gate all present"
 else
   no "collapsible-outline wiring missing"
@@ -346,16 +346,16 @@ fi
 # 31. no-heading doc: gate stays closed (no nav#TOC), so the toggle CSS never reveals
 echo "[31] no-heading doc has no outline (toggle stays inert)"
 printf 'Just prose, no headings.\n' > "${TMP}/noh2.md"
-"$MD_PREVIEW" "${TMP}/noh2.md" --out "${TMP}/noh2.html" --no-open >/dev/null 2>&1
-if ! grep -q 'id="TOC"' "${TMP}/noh2.html"; then ok "no nav#TOC; .mdp-has-toc never added, toggle stays display:none"; else no "TOC leaked on no-heading doc"; fi
+"$SPACEDOWN" "${TMP}/noh2.md" --out "${TMP}/noh2.html" --no-open >/dev/null 2>&1
+if ! grep -q 'id="TOC"' "${TMP}/noh2.html"; then ok "no nav#TOC; .sd-has-toc never added, toggle stays display:none"; else no "TOC leaked on no-heading doc"; fi
 
 # 32. live-reload is watch-only: a default (non-watch) render injects NO reload poll script
 #     and starts no server. (The --watch auto-refresh behavior is entr and browser dependent,
 #     so it is not covered here; this guards that the default path stays clean.)
 echo "[32] default (non-watch) render injects no live-reload"
 printf '# Doc\n\nhello\n' > "${TMP}/plain.md"
-"$MD_PREVIEW" "${TMP}/plain.md" --out "${TMP}/plain.html" --no-open >/dev/null 2>&1
-if ! grep -q '__mdp_version' "${TMP}/plain.html" && ! grep -q 'md-preview live-reload' "${TMP}/plain.html"; then
+"$SPACEDOWN" "${TMP}/plain.md" --out "${TMP}/plain.html" --no-open >/dev/null 2>&1
+if ! grep -q '__sd_version' "${TMP}/plain.html" && ! grep -q 'spacedown live-reload' "${TMP}/plain.html"; then
   ok "no reload poll script in the default render"
 else
   no "live-reload script leaked into the default (non-watch) render"
@@ -365,22 +365,22 @@ fi
 #     content) and the sidebar carries an "Outline" header strip.
 echo "[33] chrome lane + sidebar header strip"
 printf '# H1\n\ntext\n\n## H2\n\nmore\n' > "${TMP}/lane.md"
-"$MD_PREVIEW" "${TMP}/lane.md" --out "${TMP}/lane.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/lane.md" --out "${TMP}/lane.html" --no-open >/dev/null 2>&1
 # (header strip is built by JS at runtime, so grep the CSS+JS wiring in the asset, not a
 #  runtime element.)
-if grep -q 'padding-top: var(--mdp-chrome-lane)' "${TMP}/lane.html" \
-   && grep -q 'mdp-toc-header' "${TMP}/lane.html"; then
+if grep -q 'padding-top: var(--sd-chrome-lane)' "${TMP}/lane.html" \
+   && grep -q 'sd-toc-header' "${TMP}/lane.html"; then
   ok "top chrome lane reserved (body padding-top) + header strip wired"
 else
   no "chrome lane / header strip missing"
 fi
 
-# 34. long frontmatter value: table tagged .mdp-fm-has-long (so it widens to a readable
+# 34. long frontmatter value: table tagged .sd-fm-has-long (so it widens to a readable
 #     measure) and an explicit (1)/(2)/(3) run is broken onto rows.
 echo "[34] long frontmatter value widens + enumeration breaks into rows"
 printf -- '---\nname: x\ndescription: %s Workflow: (1) alpha, (2) beta, (3) gamma. End.\n---\n\n# B\n' "$(printf 'word %.0s' {1..40})" > "${TMP}/long.md"
-"$MD_PREVIEW" "${TMP}/long.md" --out "${TMP}/long.html" --no-open >/dev/null 2>&1
-if grep -q 'class="mdp-frontmatter mdp-fm-has-long"' "${TMP}/long.html" \
+"$SPACEDOWN" "${TMP}/long.md" --out "${TMP}/long.html" --no-open >/dev/null 2>&1
+if grep -q 'class="sd-frontmatter sd-fm-has-long"' "${TMP}/long.html" \
    && grep -q '<br>(2)' "${TMP}/long.html" \
    && grep -q '<br>(3)' "${TMP}/long.html"; then
   ok "long value tagged has-long; (2)/(3) broken onto rows"
@@ -392,8 +392,8 @@ fi
 #      toggle (the toggle itself is added at runtime when the value overflows the clamp; here
 #      we assert the clamp markup + the JS wiring are present).
 echo "[34b] long value clamp + Show more wiring"
-if grep -q '<div class="mdp-fm-clamp">' "${TMP}/long.html" \
-   && grep -q 'mdp-fm-more' "${TMP}/long.html"; then
+if grep -q '<div class="sd-fm-clamp">' "${TMP}/long.html" \
+   && grep -q 'sd-fm-more' "${TMP}/long.html"; then
   ok "long value clamped; Show-more toggle wired in the foot JS"
 else
   no "clamp container / show-more wiring missing"
@@ -403,8 +403,8 @@ fi
 #     lone "(1)" in prose is NOT broken.
 echo "[35] short frontmatter stays compact; lone (1) not split"
 printf -- '---\nname: x\nnote: see step (1) for details\n---\n\n# B\n' > "${TMP}/sc.md"
-"$MD_PREVIEW" "${TMP}/sc.md" --out "${TMP}/sc.html" --no-open >/dev/null 2>&1
-if ! grep -q 'class="mdp-frontmatter mdp-fm-has-long"' "${TMP}/sc.html" && ! grep -q '<br>(1)' "${TMP}/sc.html"; then
+"$SPACEDOWN" "${TMP}/sc.md" --out "${TMP}/sc.html" --no-open >/dev/null 2>&1
+if ! grep -q 'class="sd-frontmatter sd-fm-has-long"' "${TMP}/sc.html" && ! grep -q '<br>(1)' "${TMP}/sc.html"; then
   ok "short value: no widen, no spurious enum break"
 else
   no "short value wrongly widened or split"
@@ -414,9 +414,9 @@ fi
 #     blockquote stays plain; a marker inside a code fence is left alone.
 echo "[36] callouts"
 printf -- '> [!warning] Watch out\n> Body text here.\n\n> plain quote\n\n```\n> [!note] fenced example\n```\n' > "${TMP}/co.md"
-"$MD_PREVIEW" "${TMP}/co.md" --out "${TMP}/co.html" --no-open >/dev/null 2>&1
-if grep -q 'mdp-callout-warning' "${TMP}/co.html" \
-   && grep -q 'mdp-callout-head' "${TMP}/co.html" \
+"$SPACEDOWN" "${TMP}/co.md" --out "${TMP}/co.html" --no-open >/dev/null 2>&1
+if grep -q 'sd-callout-warning' "${TMP}/co.html" \
+   && grep -q 'sd-callout-head' "${TMP}/co.html" \
    && ! grep -q '\[!warning\]' "${TMP}/co.html" \
    && grep -q '\[!note\]' "${TMP}/co.html"; then
   ok "callout classed + head styled; fenced marker untouched"
@@ -428,7 +428,7 @@ fi
 #     so multi-line callouts keep their authored line structure.
 echo "[37] hard line breaks"
 printf -- '> [!note] History\n> **Wave 1**: a\n> **Wave 2**: b\n' > "${TMP}/br.md"
-"$MD_PREVIEW" "${TMP}/br.md" --out "${TMP}/br.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/br.md" --out "${TMP}/br.html" --no-open >/dev/null 2>&1
 if grep -q '<br' "${TMP}/br.html"; then
   ok "single newline renders as <br>"
 else
@@ -442,8 +442,8 @@ echo "[38] dark-mode token flip in the rendered page"
 # pinning hex values, which turned every tone adjustment into a test edit.
 if [[ "$(grep -c 'prefers-color-scheme: dark' "${TMP}/chrome.html")" -ge 2 ]] \
    && [[ "$(grep -c -- '--vscode-editor-background:' "${TMP}/chrome.html")" -ge 2 ]] \
-   && [[ "$(grep -c -- '--mdp-chrome-bg:' "${TMP}/chrome.html")" -ge 2 ]] \
-   && [[ "$(grep -c -- '--mdp-syn-keyword:' "${TMP}/chrome.html")" -ge 2 ]] \
+   && [[ "$(grep -c -- '--sd-chrome-bg:' "${TMP}/chrome.html")" -ge 2 ]] \
+   && [[ "$(grep -c -- '--sd-syn-keyword:' "${TMP}/chrome.html")" -ge 2 ]] \
    && grep -q 'color-scheme: dark' "${TMP}/chrome.html"; then
   ok "page + chrome + syntax dark tokens present; native widgets follow"
 else
@@ -554,14 +554,14 @@ fi
 #     callout, an image, and a wikilink.
 echo "[40] synthetic fixture renders every feature"
 FIX="${SCRIPT_DIR}/tests/fixture/fixture.md"
-set +e; "$MD_PREVIEW" "$FIX" --out "${TMP}/fx.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+set +e; "$SPACEDOWN" "$FIX" --out "${TMP}/fx.html" --no-open >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 0 ]] \
-   && grep -q 'class="mdp-frontmatter"' "${TMP}/fx.html" \
+   && grep -q 'class="sd-frontmatter"' "${TMP}/fx.html" \
    && grep -q 'class="math inline"' "${TMP}/fx.html" \
    && grep -q 'class="math display"' "${TMP}/fx.html" \
    && [[ "$(grep -c '<table' "${TMP}/fx.html")" -ge 3 ]] \
    && grep -q 'class="sourceCode' "${TMP}/fx.html" \
-   && grep -q 'mdp-callout-warning' "${TMP}/fx.html" \
+   && grep -q 'sd-callout-warning' "${TMP}/fx.html" \
    && grep -q '<img src="chart.svg"' "${TMP}/fx.html" \
    && grep -q 'class="wikilink"' "${TMP}/fx.html"; then
   ok "frontmatter, math, tables, code, callout, image, wikilink all rendered"

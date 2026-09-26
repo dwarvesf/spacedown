@@ -39,49 +39,49 @@ check("[[target|title]] -> title text", wl.includes('<span class="wikilink">the 
 check("wikilink inside a code span stays literal", wl.includes("<code>[[raw]]</code>"));
 check("wikilink text is escaped", ctx.mdToHtml("[[a<b>]]").includes("a&lt;b&gt;"));
 
-// Frontmatter: leading --- block renders as the mdp-frontmatter table (same contract
+// Frontmatter: leading --- block renders as the sd-frontmatter table (same contract
 // as assets/frontmatter-to-table.py), odd shapes fall back to a yaml fence, and a
 // mid-document --- stays a plain thematic break.
 const fmDoc = "---\ntitle: Spring Rainfall Review (Draft)\nstatus: active\ntags: [a, b]\nmeta:\n  depth: 2\n---\n\n# Body\n";
 const fmOut = ctx.mdToHtml(fmDoc);
-check("frontmatter -> mdp-frontmatter table", fmOut.includes('class="mdp-frontmatter"') && fmOut.includes("Spring Rainfall Review"));
+check("frontmatter -> sd-frontmatter table", fmOut.includes('class="sd-frontmatter"') && fmOut.includes("Spring Rainfall Review"));
 check("frontmatter not mashed into a heading", !/<h\d[^>]*>[^<]*title:/.test(fmOut));
 check("inline list + nested key flatten", fmOut.includes("a, b") && fmOut.includes("meta.depth"));
 check("body after frontmatter still renders", /<h1[ >]/.test(fmOut));
 check("odd frontmatter falls back to yaml fence", /<pre|<code/.test(ctx.mdToHtml("---\njust some stray text\n---\nbody\n")));
-check("no frontmatter -> untouched", !ctx.mdToHtml("# Plain\n\n---\n\ntext").includes("mdp-frontmatter"));
+check("no frontmatter -> untouched", !ctx.mdToHtml("# Plain\n\n---\n\ntext").includes("sd-frontmatter"));
 
 // Callouts: "> [!type] title" becomes a classed blockquote with a styled head line;
 // unknown types fall back to note styling; a plain blockquote is untouched.
 const co = ctx.mdToHtml("> [!important] Board narrowed\n> The candidate set is now smaller.\n");
-check("callout -> classed blockquote", co.includes('class="mdp-callout mdp-callout-important"'));
-check("callout head carries label + title", /mdp-callout-head[^>]*>Important<span[^>]*> · Board narrowed/.test(co));
+check("callout -> classed blockquote", co.includes('class="sd-callout sd-callout-important"'));
+check("callout head carries label + title", /sd-callout-head[^>]*>Important<span[^>]*> · Board narrowed/.test(co));
 check("callout body survives", co.includes("candidate set"));
-check("unknown callout type -> note styling", ctx.mdToHtml("> [!zebra] Hm\n> body\n").includes("mdp-callout-note"));
-check("plain blockquote untouched", !ctx.mdToHtml("> just a quote\n").includes('<blockquote class="mdp-callout'));
+check("unknown callout type -> note styling", ctx.mdToHtml("> [!zebra] Hm\n> body\n").includes("sd-callout-note"));
+check("plain blockquote untouched", !ctx.mdToHtml("> just a quote\n").includes('<blockquote class="sd-callout'));
 
-// Short table columns get mdp-tight so auto layout cannot collapse them to their
+// Short table columns get sd-tight so auto layout cannot collapse them to their
 // longest word; the prose column that competes for the width stays wrappable.
 const tt = ctx.mdToHtml("| Date | Event |\n|---|---|\n| 1960s to 1970s | Phototypesetting replaced hot metal across the trade, and the craft went with it |\n");
-check("short column marked tight", /<t[hd] class="mdp-tight">\s*Date/.test(tt) && tt.includes('<td class="mdp-tight">1960s to 1970s'));
+check("short column marked tight", /<t[hd] class="sd-tight">\s*Date/.test(tt) && tt.includes('<td class="sd-tight">1960s to 1970s'));
 check("prose column left wrappable", /<td>Phototypesetting/.test(tt));
 const wide = ctx.mdToHtml("| A | B |\n|---|---|\n| short | tiny |\n");
-check("all-short table untouched", !wide.includes("mdp-tight"));
+check("all-short table untouched", !wide.includes("sd-tight"));
 const long2 = ctx.mdToHtml("| Statement of the position taken | Consequence |\n|---|---|\n| " + "x".repeat(40) + " | " + "y".repeat(40) + " |\n");
-check("no short column, nothing marked", !long2.includes("mdp-tight") && !long2.includes("mdp-narrow"));
+check("no short column, nothing marked", !long2.includes("sd-tight") && !long2.includes("sd-narrow"));
 const label = ctx.mdToHtml("| Element | Coastal weather station |\n|---|---|\n| What keeps the gauge accurate | " + "Nothing at all changes it, and the weekly calibration log shows why. ".repeat(2) + " |\n");
-check("label column marked narrow", label.includes('<td class="mdp-narrow">What keeps the gauge'));
-check("one prose column stays in the reading column", !label.includes("mdp-wide"));
+check("label column marked narrow", label.includes('<td class="sd-narrow">What keeps the gauge'));
+check("one prose column stays in the reading column", !label.includes("sd-wide"));
 const two = "| Pattern | What the week looks like | What it produces |\n|---|---|---|\n| The frontal pattern | " +
   "The week brings long, steady rain from the west. ".repeat(2) + " | " + "The gauges fill slowly and evenly across every station. ".repeat(6) + " |\n";
 const twoOut = ctx.mdToHtml(two);
-check("two prose columns make the table wide", twoOut.includes('<table class="mdp-wide">'));
+check("two prose columns make the table wide", twoOut.includes('<table class="sd-wide">'));
 // Floors follow content: the column holding three times the prose gets the wider floor.
 const floors = (twoOut.match(/min-width:(\d+)ch/g) || []).map((s) => +s.match(/\d+/)[0]);
 check("every column of a wide table carries a floor", floors.length >= 6);
 check("floors ordered by content size", Math.max(...floors) > Math.min(...floors));
 check("floors stay inside the readable band", floors.every((f) => f >= 22 && f <= 52));
-check("label column is not nowrapped", !label.includes('<td class="mdp-tight">What keeps the gauge'));
+check("label column is not nowrapped", !label.includes('<td class="sd-tight">What keeps the gauge'));
 
 // Currency dollars must not be parsed as inline math (pandoc rule: closing $ not
 // followed by a digit; no | inside a candidate), while real inline math still renders.

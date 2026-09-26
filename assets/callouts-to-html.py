@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Rewrite Obsidian/GitHub callouts for md-preview's pandoc path (stdin -> stdout).
+"""Rewrite Obsidian/GitHub callouts for spacedown's pandoc path (stdin -> stdout).
 
 ``> [!type] optional title`` plus its following ``>`` lines become a pandoc fenced
-div (``::: {.mdp-callout .mdp-callout-<type>}``) wrapping the blockquote, with the
-marker line replaced by a raw-HTML head (``<p class="mdp-callout-head">``). The CSS
+div (``::: {.sd-callout .sd-callout-<type>}``) wrapping the blockquote, with the
+marker line replaced by a raw-HTML head (``<p class="sd-callout-head">``). The CSS
 lives in vscode-preview-head.html and also covers the Quick Look appex's shape
 (class on the blockquote itself; see quick-look/Resources/ql-render.js, the same
 contract in JS). Unknown types style as note. Lines inside code fences are left
@@ -22,8 +22,8 @@ KNOWN = {"note", "tip", "important", "warning", "caution"}
 
 def head_html(type_, title):
     label = type_.capitalize()
-    t = ' <span class="mdp-callout-title">&#183; %s</span>' % html.escape(title) if title else ""
-    return '> <p class="mdp-callout-head">%s%s</p>' % (label, t)
+    t = ' <span class="sd-callout-title">&#183; %s</span>' % html.escape(title) if title else ""
+    return '> <p class="sd-callout-head">%s%s</p>' % (label, t)
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
         if m and not in_callout:
             type_ = m.group(2).lower()
             cls = type_ if type_ in KNOWN else "note"
-            out.write("::: {.mdp-callout .mdp-callout-%s}\n\n" % cls)
+            out.write("::: {.sd-callout .sd-callout-%s}\n\n" % cls)
             out.write(head_html(type_, m.group(3).strip()) + "\n")
             in_callout = True
             continue

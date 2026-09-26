@@ -1,5 +1,5 @@
 // Drag a .md file in -> read its text -> hand it to the native messaging host,
-// which writes a temp file, runs `md-preview`, and opens the rendered HTML.
+// which writes a temp file, runs `spacedown`, and opens the rendered HTML.
 //
 // Why send the TEXT and not a path: when a file is dropped into a browser, the
 // File API exposes only the basename, never the absolute filesystem path (a

@@ -1,8 +1,8 @@
-/* md-preview "paper" reading theme, the default font mode. An original design:
+/* spacedown "paper" reading theme, the default font mode. An original design:
    warm paper ground, a modest heading scale, soft hairlines, one accent for links.
 
    TWO uses, same file:
-   1. `md-preview --font-mode=paper`: the CLI wraps this into a temp <style> head
+   1. `spacedown --font-mode=paper`: the CLI wraps this into a temp <style> head
       partial via --include-in-header.
    2. VS Code / VSCodium `markdown.styles` entry (plain CSS, no wrapper).
 
@@ -151,28 +151,28 @@ thead th {
 tbody td { border-bottom: none; }
 tbody tr + tr td { border-top: 1px solid var(--paper-rule); }
 /* Kill the base zebra fill and last-row corner rounding at their own specificity. */
-table:not(.mdp-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
-/* Neutralize the base auto-numeric right-align (.mdp-num, added by script): under
+table:not(.sd-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
+/* Neutralize the base auto-numeric right-align (.sd-num, added by script): under
    this theme it floats numbers to mid-page. Explicit markdown column alignment
    (style="text-align: right") still wins via the base rule. */
-td.mdp-num, th.mdp-num { text-align: left; }
+td.sd-num, th.sd-num { text-align: left; }
 tbody tr:last-child td:first-child,
 tbody tr:last-child td:last-child { border-radius: 0; }
 
 /* Column sizing, the same contract the Quick Look panel reads under. The classes come
    from the base stylesheet's load-time pass; the per-column min-width floors ride on
    the cells as inline style. */
-.mdp-tight { white-space: nowrap; }   /* a date or id column stays on one line */
-.mdp-narrow { min-width: 22ch; }      /* a label column gets a two-line measure */
+.sd-tight { white-space: nowrap; }   /* a date or id column stays on one line */
+.sd-narrow { min-width: 22ch; }      /* a label column gets a two-line measure */
 /* A table that cannot hold a readable measure in every column: four or more columns,
    or two prose columns. It scrolls sideways rather than starving one of them. */
-table.mdp-wide {
+table.sd-wide {
   display: block;      /* the CSS-only way to get overflow-x on a bare table */
   overflow-x: auto;
   scrollbar-width: thin;
 }
-table.mdp-wide th:not(.mdp-tight),
-table.mdp-wide td:not(.mdp-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
+table.sd-wide th:not(.sd-tight),
+table.sd-wide td:not(.sd-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
 
 /* Figure captions. The house convention is an image alone in its paragraph followed by
    the caption paragraph (pandoc runs with -implicit_figures so it does not caption the

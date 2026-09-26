@@ -22,9 +22,9 @@
 #
 # Usage: ./build-safari.sh [--with-safari]
 #   (default)      the app with the Quick Look extension alone. Quick Look needs no
-#                  Safari extension, render helper, LaunchAgent or md-open link.
+#                  Safari extension, render helper, LaunchAgent or spacedown-open link.
 #   --with-safari  also build the Safari drop extension and install its render
-#                  helper + LaunchAgent (needs the md-preview CLI and pandoc).
+#                  helper + LaunchAgent (needs the spacedown CLI and pandoc).
 #
 # Env (used by scripts/release.sh):
 #   SIGN_ID=<identity>  sign with this identity instead of adhoc, with a secure
@@ -68,12 +68,12 @@ command -v xcodegen   >/dev/null 2>&1 || { echo "build-safari: xcodegen not foun
 
 mkdir -p "$PROJ/build"
 if [[ $SAFARI -eq 1 ]]; then
-  # md-open must be on PATH for the helper to find it at runtime. An install step,
+  # spacedown-open must be on PATH for the helper to find it at runtime. An install step,
   # so a NO_INSTALL build leaves the user's link alone.
   if [[ "$NO_INSTALL" != "1" ]]; then
     mkdir -p "${HOME}/.local/bin"
-    ln -sfn "${HERE}/md-open" "${HOME}/.local/bin/md-open"
-    echo "build-safari: symlinked md-open -> ~/.local/bin/md-open"
+    ln -sfn "${HERE}/spacedown-open" "${HOME}/.local/bin/spacedown-open"
+    echo "build-safari: symlinked spacedown-open -> ~/.local/bin/spacedown-open"
   fi
 
   # 1. Unsandboxed XPC render helper (adhoc signed, no entitlements, no runtime so

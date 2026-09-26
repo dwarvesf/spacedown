@@ -119,34 +119,34 @@ thead th {
 tbody td { border-bottom: none; }
 tbody tr + tr td { border-top: 1px solid var(--ql-rule); }
 /* Kill the base zebra fill and last-row corner rounding at their own specificity. */
-table:not(.mdp-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
+table:not(.sd-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
 tbody tr:last-child td:first-child,
 tbody tr:last-child td:last-child { border-radius: 0; }
 /* Short columns keep their cells on one line, so auto layout cannot collapse a date
    or id column to its longest word. ql-render.js marks them (see tightColumns). */
-.mdp-tight { white-space: nowrap; }
+.sd-tight { white-space: nowrap; }
 /* A label column ("What gets the child into work") is too long for one line but should
    not be starved down to its longest word either. Floor it at a two-line measure. */
-.mdp-narrow { min-width: 22ch; }
+.sd-narrow { min-width: 22ch; }
 
 /* A table that cannot hold a readable measure in every column inside the reading
    column: four or more columns, or two prose columns that would otherwise split the
    width by how much text each holds. ql-render.js marks it. Every non-tight cell gets
    a floor and the table scrolls sideways rather than squeezing a column to a few words. */
-table.mdp-wide {
+table.sd-wide {
   display: block;      /* the CSS-only way to get overflow-x on a bare table */
   overflow-x: auto;
   scrollbar-width: thin;
 }
 /* Per-column floors ride on the cells as inline min-width, sized to each column's own
    content by ql-render.js. This rule is the fallback if that pass ever misses one. */
-table.mdp-wide th:not(.mdp-tight),
-table.mdp-wide td:not(.mdp-tight) { min-width: 22ch; }
+table.sd-wide th:not(.sd-tight),
+table.sd-wide td:not(.sd-tight) { min-width: 22ch; }
 
-/* Neutralize the base auto-numeric right-align (.mdp-num, added by script): in
+/* Neutralize the base auto-numeric right-align (.sd-num, added by script): in
    fixed equal-width columns it floats numbers to mid-page. Explicit markdown
    column alignment (style="text-align: right") still wins via the base rule. */
-td.mdp-num, th.mdp-num { text-align: left; }
+td.sd-num, th.sd-num { text-align: left; }
 
 /* Figure captions: the house convention is an image alone in its paragraph followed
    by the caption paragraph. Markdown emits no <figure>, so the structure is the only

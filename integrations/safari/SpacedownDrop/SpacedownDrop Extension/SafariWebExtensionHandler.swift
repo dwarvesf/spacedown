@@ -5,7 +5,7 @@
 //  Receives {filename, content} from the dropzone page via
 //  browser.runtime.sendNativeMessage and forwards it over XPC to the
 //  unsandboxed, launch-on-demand render helper (spacedown-render), which runs
-//  the shared `md-open` wrapper (pandoc+KaTeX) and opens Safari. Replies
+//  the shared `spacedown-open` wrapper (pandoc+KaTeX) and opens Safari. Replies
 //  {ok, html} or {ok:false, error}.
 //
 //  This appex IS App-Sandboxed (required for Safari to load it). A sandboxed

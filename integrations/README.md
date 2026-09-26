@@ -1,20 +1,20 @@
-# md-preview integrations
+# spacedown integrations
 
-Two ways to open a `.md` rendered by `md-preview` without typing the command.
+Two ways to open a `.md` rendered by `spacedown` without typing the command.
 
 | Integration | Trigger | What happens |
 |---|---|---|
-| **Finder app** (`Spacedown Opener.app`) | double-click / "Open With" / drag a `.md` onto the app icon | renders via `md-preview`, opens the HTML in a browser tab |
-| **Browser extension** (`Spacedown`) | drag a `.md` onto the dropzone tab | reads the file, hands it to a native-messaging host that runs `md-preview`, opens the HTML |
+| **Finder app** (`Spacedown Opener.app`) | double-click / "Open With" / drag a `.md` onto the app icon | renders via `spacedown`, opens the HTML in a browser tab |
+| **Browser extension** (`Spacedown`) | drag a `.md` onto the dropzone tab | reads the file, hands it to a native-messaging host that runs `spacedown`, opens the HTML |
 
-Both go through one shared wrapper, [`md-open`](./md-open), which renders then opens a Chromium browser (Edge first). The wrapper exists because `md-preview` only self-opens the browser from a TTY; these callers are not TTYs.
+Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which renders then opens a Chromium browser (Edge first). The wrapper exists because `spacedown` only self-opens the browser from a TTY; these callers are not TTYs.
 
 ```
  Finder double-click ─┐
-                      ├─► md-open ─► md-preview (pandoc+KaTeX) ─► open -a "Microsoft Edge" out.html
+                      ├─► spacedown-open ─► spacedown (pandoc+KaTeX) ─► open -a "Microsoft Edge" out.html
  browser drag-drop ───┘     ▲
    │                        │
-   └─ extension dropzone ─► native-host (md-preview-host) ──┘
+   └─ extension dropzone ─► native-host (spacedown-host) ──┘
         (sends file text over native messaging)
 ```
 
@@ -26,7 +26,7 @@ Both go through one shared wrapper, [`md-open`](./md-open), which renders then o
 ./install.sh --uninstall     # remove app + native host manifests
 ```
 
-`install.sh` is idempotent. It compiles `Spacedown Opener.app` (injecting the absolute `md-open` path), registers it with LaunchServices, and writes the native-messaging host manifest into every installed Chromium browser's `NativeMessagingHosts/` dir.
+`install.sh` is idempotent. It compiles `Spacedown Opener.app` (injecting the absolute `spacedown-open` path), registers it with LaunchServices, and writes the native-messaging host manifest into every installed Chromium browser's `NativeMessagingHosts/` dir.
 
 ### Finish the browser half (one-time, manual)
 
@@ -42,12 +42,12 @@ The extension must be loaded by hand once:
 
 A third integration lives in `safari/`: a Safari Web Extension (same dropzone UI).
 Its sandboxed handler forwards the drop over XPC to an unsandboxed, launch-on-demand
-helper (`spacedown-render`) that runs `md-open`. `build-safari.sh` is the single
+helper (`spacedown-render`) that runs `spacedown-open`. `build-safari.sh` is the single
 installer for the native bundle. Quick Look is the default; Safari is opt-in:
 
 ```bash
 ./build-safari.sh                # app + Quick Look appex only, installed to ~/Applications
-./build-safari.sh --with-safari  # also the Safari ext + helper/LaunchAgent (needs md-preview + pandoc)
+./build-safari.sh --with-safari  # also the Safari ext + helper/LaunchAgent (needs spacedown + pandoc)
 ```
 
 After `--with-safari`, enable it once in Safari:
@@ -59,7 +59,7 @@ After `--with-safari`, enable it once in Safari:
 
 **Why the helper exists (the load bug, fixed):** a Safari Web Extension **must** be
 App-Sandboxed to load; a sandboxed handler **cannot** `Process`-spawn pandoc. The old
-build disabled the sandbox so the handler could spawn `md-open`, which is exactly what
+build disabled the sandbox so the handler could spawn `spacedown-open`, which is exactly what
 kept the extension from ever loading (absent from `Settings > Extensions`, unregistered
 in `pluginkit`). The fix: keep the appex sandboxed (+ adhoc + hardened runtime) and move
 the spawn into the unsandboxed helper, reached via a per-user LaunchAgent whose label and
@@ -93,8 +93,8 @@ duti -s com.visualstudio.code.oss net.daringfireball.markdown all   # back to VS
 
 - **Stable extension ID.** `extension/manifest.json` ships a fixed public `key`, so the unpacked extension always gets ID `mhifeggicglofancjnjmkgihedkddnpn`. That lets the native-host manifest pin `allowed_origins` ahead of time, so the whole thing is reproducible from this repo (no "copy the ID Edge assigned you" step).
 - **Text, not path.** A file dropped into a browser exposes only its basename, never the real filesystem path (browser security). So the extension sends the file *content*; the host writes a temp copy and renders that. Fine for markdown (well under the 1MB native-messaging message ceiling).
-- **PATH.** GUI/stdio contexts (LaunchServices, native messaging) get a minimal PATH without Homebrew or `~/.local/bin`. Both `md-open` and the host re-export a full PATH so `md-preview` and `pandoc` resolve.
-- **Native host is on-demand.** No daemon. Edge spawns `md-preview-host` per message and it exits after replying.
+- **PATH.** GUI/stdio contexts (LaunchServices, native messaging) get a minimal PATH without Homebrew or `~/.local/bin`. Both `spacedown-open` and the host re-export a full PATH so `spacedown` and `pandoc` resolve.
+- **Native host is on-demand.** No daemon. Edge spawns `spacedown-host` per message and it exits after replying.
 
 ## Rebuild from zero
 
@@ -109,11 +109,11 @@ The compiled `Spacedown Opener.app` is a build artifact (gitignored); `install.s
 
 | File | Role |
 |---|---|
-| `md-open` | shared wrapper: render + open browser |
+| `spacedown-open` | shared wrapper: render + open browser |
 | `finder-app/SpacedownOpener.applescript` | source for the open-handler app (path injected at compile) |
 | `extension/manifest.json` | MV3 manifest with the fixed `key` |
 | `extension/sw.js` | opens the dropzone as a full tab on icon click |
 | `extension/dropzone.{html,js}` | the drop UI + native-messaging call |
-| `extension/native-host/md-preview-host` | native-messaging host (Python) |
+| `extension/native-host/spacedown-host` | native-messaging host (Python) |
 | `extension/native-host/foundation.d.spacedown.json.template` | host manifest (path + ID filled by install.sh) |
 | `install.sh` | wires all of the above; `--set-default`, `--uninstall` |

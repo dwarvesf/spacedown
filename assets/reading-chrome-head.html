@@ -1,55 +1,55 @@
 <style>
-/* md-preview reading chrome:
+/* spacedown reading chrome:
    outline sidebar + zoom + copy-source toolbar. Injected AFTER the base VS Code
    stylesheet via pandoc --include-in-header, so it wins. Self-contained, no web fonts.
    The matching JS is assets/reading-chrome-foot.html. */
 
 /* (1) Zoom: scale body text AND line-height by the same factor so the VS Code
-   font/line ratio (14px / 22px) is preserved at every stop. JS sets --mdp-zoom
+   font/line ratio (14px / 22px) is preserved at every stop. JS sets --sd-zoom
    (1 = 100%). !important beats the base `html, body { font-size: var(...) }`,
    which otherwise wins on specificity. Sidebar + toolbar set their own font-size,
    so they are unaffected by the scale. */
 body {
-  font-size: calc(var(--markdown-font-size, 14px) * var(--mdp-zoom, 1)) !important;
-  line-height: calc(var(--markdown-line-height, 22px) * var(--mdp-zoom, 1)) !important;
+  font-size: calc(var(--markdown-font-size, 14px) * var(--sd-zoom, 1)) !important;
+  line-height: calc(var(--markdown-line-height, 22px) * var(--sd-zoom, 1)) !important;
 }
 
 /* (1b) Chrome colors. Tokens only, so section (6) can flip the whole sidebar and
    toolbar under the dark media query without restating a single rule. Light values
    are the originals. */
 :root {
-  --mdp-chrome-bg: #fafafa;
-  --mdp-chrome-border: #e5e5e5;
-  --mdp-chrome-rule: #ececec;
-  --mdp-chrome-ink: #374151;
-  --mdp-chrome-ink-muted: #6b7280;
-  --mdp-chrome-ink-strong: #18181b;
-  --mdp-chrome-hover: rgba(0, 0, 0, 0.05);
-  --mdp-chrome-hover-strong: rgba(0, 0, 0, 0.06);
-  --mdp-chrome-active: rgba(0, 0, 0, 0.07);
-  --mdp-toolbar-bg: rgba(255, 255, 255, 0.72);
-  --mdp-toolbar-bg-opaque: #ffffff;
-  --mdp-toolbar-border: rgba(0, 0, 0, 0.08);
-  --mdp-toolbar-shadow: rgba(0, 0, 0, 0.08);
-  --mdp-toolbar-hairline: rgba(0, 0, 0, 0.04);
-  --mdp-copy-done: #059669;
+  --sd-chrome-bg: #fafafa;
+  --sd-chrome-border: #e5e5e5;
+  --sd-chrome-rule: #ececec;
+  --sd-chrome-ink: #374151;
+  --sd-chrome-ink-muted: #6b7280;
+  --sd-chrome-ink-strong: #18181b;
+  --sd-chrome-hover: rgba(0, 0, 0, 0.05);
+  --sd-chrome-hover-strong: rgba(0, 0, 0, 0.06);
+  --sd-chrome-active: rgba(0, 0, 0, 0.07);
+  --sd-toolbar-bg: rgba(255, 255, 255, 0.72);
+  --sd-toolbar-bg-opaque: #ffffff;
+  --sd-toolbar-border: rgba(0, 0, 0, 0.08);
+  --sd-toolbar-shadow: rgba(0, 0, 0, 0.08);
+  --sd-toolbar-hairline: rgba(0, 0, 0, 0.04);
+  --sd-copy-done: #059669;
 }
 
 /* (1a) Top chrome lane: reserve vertical space so the fixed toolbar + toggle never float
    over the first heading / first outline link / first body line (Apple-HIG: floating
    controls get a reserved lane, they do not occlude content). One variable, shared by the
    body and the sidebar so the first heading and the first outline link start level. */
-:root { --mdp-chrome-lane: 48px; }
-body { padding-top: var(--mdp-chrome-lane); }
+:root { --sd-chrome-lane: 48px; }
+body { padding-top: var(--sd-chrome-lane); }
 
 /* (2) Outline sidebar. pandoc emits nav#TOC only when the doc has headings; JS adds
-   .mdp-has-toc to <html> once it confirms real entries, which reveals it and shifts
+   .sd-has-toc to <html> once it confirms real entries, which reveals it and shifts
    the body. A no-heading doc keeps the plain full-width layout. */
 nav#TOC {
   position: fixed; top: 0; left: 0; bottom: 0; width: 240px;
   box-sizing: border-box; overflow-y: auto;
   margin: 0; padding: 0 14px 24px;   /* no top padding: the header strip owns the top */
-  background: var(--mdp-chrome-bg); border-right: 1px solid var(--mdp-chrome-border);
+  background: var(--sd-chrome-bg); border-right: 1px solid var(--sd-chrome-border);
   /* Inherit the body's mono (matches the editor-preview look). */
   font-size: 13px; line-height: 1.5;
   display: none;
@@ -58,133 +58,133 @@ nav#TOC {
 /* Sidebar header row, the sidebar's own top bar. Sticky at the very top (no negative-margin
    tricks, which previously rendered it BELOW the floating toggle). Holds the "Outline" label
    on the left; the (body-child) hamburger toggle floats into its right edge on the same row. */
-nav#TOC .mdp-toc-header {
+nav#TOC .sd-toc-header {
   position: sticky; top: 0; z-index: 1;
   height: 44px; margin: 0 -14px 8px; padding: 0 12px;
   display: flex; align-items: center;
-  background: var(--mdp-chrome-bg); border-bottom: 1px solid var(--mdp-chrome-rule);
+  background: var(--sd-chrome-bg); border-bottom: 1px solid var(--sd-chrome-rule);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--mdp-chrome-ink-muted);
+  color: var(--sd-chrome-ink-muted);
 }
-nav#TOC .mdp-toc-header::before { content: "Outline"; }
+nav#TOC .sd-toc-header::before { content: "Outline"; }
 nav#TOC ul { list-style: none; margin: 0; padding-left: 12px; }
 nav#TOC > ul { padding-left: 0; }
 nav#TOC li { margin: 2px 0; }
 nav#TOC a {
   display: block; padding: 3px 8px; border-radius: 5px;
-  color: var(--mdp-chrome-ink); text-decoration: none;
+  color: var(--sd-chrome-ink); text-decoration: none;
 }
-nav#TOC a:hover { background: var(--mdp-chrome-hover); color: var(--mdp-chrome-ink-strong); }
+nav#TOC a:hover { background: var(--sd-chrome-hover); color: var(--sd-chrome-ink-strong); }
 /* Active item: neutral grey (no accent color), just a subtle fill + bold. */
-nav#TOC a.mdp-active { background: var(--mdp-chrome-active); color: var(--mdp-chrome-ink-strong); font-weight: 600; }
+nav#TOC a.sd-active { background: var(--sd-chrome-active); color: var(--sd-chrome-ink-strong); font-weight: 600; }
 
-html.mdp-has-toc nav#TOC { display: block; }
-html.mdp-has-toc body { padding-left: 280px; }
+html.sd-has-toc nav#TOC { display: block; }
+html.sd-has-toc body { padding-left: 280px; }
 
 /* (3) Toolbar (zoom + copy-source), fixed top-right, built by JS. Explicit font-size
    so the body zoom scale does not grow the controls. */
-.mdp-toolbar {
+.sd-toolbar {
   position: fixed; top: 10px; right: 14px; z-index: 1000;
   display: flex; align-items: center; gap: 4px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 13px;
   /* Apple translucent material: floats over content without an opaque slab. */
-  background: var(--mdp-toolbar-bg);
+  background: var(--sd-toolbar-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid var(--mdp-toolbar-border); border-radius: 8px;
+  border: 1px solid var(--sd-toolbar-border); border-radius: 8px;
   padding: 4px 6px;
-  box-shadow: 0 1px 3px var(--mdp-toolbar-shadow), 0 0 0 0.5px var(--mdp-toolbar-hairline);
+  box-shadow: 0 1px 3px var(--sd-toolbar-shadow), 0 0 0 0.5px var(--sd-toolbar-hairline);
 }
 /* Engines without backdrop-filter: fall back to opaque white (still readable). */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mdp-toolbar { background: var(--mdp-toolbar-bg-opaque); }
+  .sd-toolbar { background: var(--sd-toolbar-bg-opaque); }
 }
-.mdp-toolbar button {
-  border: 0; background: transparent; color: var(--mdp-chrome-ink); cursor: pointer;
+.sd-toolbar button {
+  border: 0; background: transparent; color: var(--sd-chrome-ink); cursor: pointer;
   font-family: inherit; line-height: 1; border-radius: 5px; padding: 3px 7px;
 }
-.mdp-toolbar button:hover { background: var(--mdp-chrome-hover-strong); }
-.mdp-zoom-out { font-size: 12px; }
-.mdp-zoom-in { font-size: 17px; }
-.mdp-zoom-pct {
-  min-width: 42px; text-align: center; color: var(--mdp-chrome-ink-muted); cursor: pointer;
+.sd-toolbar button:hover { background: var(--sd-chrome-hover-strong); }
+.sd-zoom-out { font-size: 12px; }
+.sd-zoom-in { font-size: 17px; }
+.sd-zoom-pct {
+  min-width: 42px; text-align: center; color: var(--sd-chrome-ink-muted); cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
-.mdp-sep { width: 1px; align-self: stretch; background: var(--mdp-chrome-border); margin: 2px; }
-.mdp-copy { font-size: 12px; }
-.mdp-copy.mdp-done { color: var(--mdp-copy-done); }
+.sd-sep { width: 1px; align-self: stretch; background: var(--sd-chrome-border); margin: 2px; }
+.sd-copy { font-size: 12px; }
+.sd-copy.sd-done { color: var(--sd-copy-done); }
 
-/* (5) Collapsible outline. Strictly downstream of .mdp-has-toc. Slide (transform)
+/* (5) Collapsible outline. Strictly downstream of .sd-has-toc. Slide (transform)
    not shrink (width) so the sidebar transition is compositor-only; body padding-left
-   animates once per toggle. All transitions gated behind .mdp-anim-ready (added on the
+   animates once per toggle. All transitions gated behind .sd-anim-ready (added on the
    frame after first paint) so the saved/initial state never flashes or animates in. */
 
 /* One fixed hamburger control, reachable in both states: docked at the sidebar header's
    right edge when open, floating in the gutter when collapsed. Same glyph both states. */
-.mdp-toc-toggle {
+.sd-toc-toggle {
   position: fixed; top: 8px; left: 10px; z-index: 1001;  /* top:8 -> vertically centered in the 44px header row */
   width: 28px; height: 28px; padding: 0;
-  display: none;                    /* revealed only with .mdp-has-toc, like the sidebar */
+  display: none;                    /* revealed only with .sd-has-toc, like the sidebar */
   align-items: center; justify-content: center;
-  border: 1px solid var(--mdp-chrome-border); border-radius: 6px;
-  background: var(--mdp-toolbar-bg-opaque); color: var(--mdp-chrome-ink); cursor: pointer;
+  border: 1px solid var(--sd-chrome-border); border-radius: 6px;
+  background: var(--sd-toolbar-bg-opaque); color: var(--sd-chrome-ink); cursor: pointer;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 16px; line-height: 1;
-  box-shadow: 0 1px 3px var(--mdp-toolbar-shadow);
+  box-shadow: 0 1px 3px var(--sd-toolbar-shadow);
 }
-.mdp-toc-toggle:hover { background: var(--mdp-chrome-hover-strong); }
-.mdp-toc-toggle::before { content: "\2630"; }   /* hamburger: a single toggle affordance, both states */
-html.mdp-has-toc .mdp-toc-toggle { display: flex; }
+.sd-toc-toggle:hover { background: var(--sd-chrome-hover-strong); }
+.sd-toc-toggle::before { content: "\2630"; }   /* hamburger: a single toggle affordance, both states */
+html.sd-has-toc .sd-toc-toggle { display: flex; }
 
 /* EXPANDED: dock the chevron into the sidebar header strip (right edge of the 240px
    sidebar: 240 - 28 btn - 10 gutter = 202). It stays a <body> child (NOT reparented under
    nav#TOC) so the sidebar's transform/visibility on collapse never traps it. Transparent
    chrome: it sits inside the opaque #fafafa header strip, so no pill. */
-html.mdp-has-toc:not(.mdp-toc-collapsed) .mdp-toc-toggle {
+html.sd-has-toc:not(.sd-toc-collapsed) .sd-toc-toggle {
   left: 202px;
   background: transparent; border-color: transparent; box-shadow: none;
 }
-html.mdp-has-toc:not(.mdp-toc-collapsed) .mdp-toc-toggle:hover {
-  background: var(--mdp-chrome-hover-strong); border-color: var(--mdp-chrome-border);
+html.sd-has-toc:not(.sd-toc-collapsed) .sd-toc-toggle:hover {
+  background: var(--sd-chrome-hover-strong); border-color: var(--sd-chrome-border);
 }
 
 /* COLLAPSED: float the chevron in the reclaimed left gutter, as Apple translucent
    material to match the toolbar (it now floats over body content, not the sidebar). */
-html.mdp-has-toc.mdp-toc-collapsed .mdp-toc-toggle {
+html.sd-has-toc.sd-toc-collapsed .sd-toc-toggle {
   left: 10px;
-  background: var(--mdp-toolbar-bg);
+  background: var(--sd-toolbar-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid var(--mdp-toolbar-border);
+  border: 1px solid var(--sd-toolbar-border);
 }
 
 /* Collapsed: slide sidebar off-canvas, reclaim body width, drop links from tab order. */
-html.mdp-has-toc.mdp-toc-collapsed nav#TOC {
+html.sd-has-toc.sd-toc-collapsed nav#TOC {
   transform: translateX(-100%); opacity: 0;
   pointer-events: none; visibility: hidden;
 }
-html.mdp-has-toc.mdp-toc-collapsed body { padding-left: 26px; }
+html.sd-has-toc.sd-toc-collapsed body { padding-left: 26px; }
 
 /* Transitions live only after first paint. visibility flips after the slide on collapse
    (so links leave the tab order only once hidden), immediately on expand. */
-html.mdp-anim-ready.mdp-has-toc nav#TOC {
+html.sd-anim-ready.sd-has-toc nav#TOC {
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
               visibility 0s linear 200ms;
 }
-html.mdp-anim-ready.mdp-has-toc:not(.mdp-toc-collapsed) nav#TOC {
+html.sd-anim-ready.sd-has-toc:not(.sd-toc-collapsed) nav#TOC {
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
               visibility 0s linear 0s;
 }
-html.mdp-anim-ready.mdp-has-toc body {
+html.sd-anim-ready.sd-has-toc body {
   transition: padding-left 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* Slide the chevron between its docked (202px) and gutter (10px) spots in step with
    the sidebar. Gated behind anim-ready so the initial state never animates in. */
-html.mdp-anim-ready.mdp-has-toc .mdp-toc-toggle {
+html.sd-anim-ready.sd-has-toc .sd-toc-toggle {
   transition: left 200ms cubic-bezier(0.4, 0, 0.2, 1),
               background 200ms, border-color 200ms, box-shadow 200ms;
 }
@@ -194,28 +194,28 @@ html.mdp-anim-ready.mdp-has-toc .mdp-toc-toggle {
    Tokens only: an unflipped sidebar would glow white against the dark page. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --mdp-chrome-bg: #282b31;
-    --mdp-chrome-border: #3c404a;
-    --mdp-chrome-rule: #383c44;
-    --mdp-chrome-ink: #c8c8d0;
-    --mdp-chrome-ink-muted: #9a9aa2;
-    --mdp-chrome-ink-strong: #f2f2f4;
-    --mdp-chrome-hover: rgba(255, 255, 255, 0.07);
-    --mdp-chrome-hover-strong: rgba(255, 255, 255, 0.09);
-    --mdp-chrome-active: rgba(255, 255, 255, 0.12);
-    --mdp-toolbar-bg: rgba(50, 54, 62, 0.72);
-    --mdp-toolbar-bg-opaque: #32363e;
-    --mdp-toolbar-border: rgba(255, 255, 255, 0.12);
-    --mdp-toolbar-shadow: rgba(0, 0, 0, 0.5);
-    --mdp-toolbar-hairline: rgba(255, 255, 255, 0.06);
-    --mdp-copy-done: #5ec99a;
+    --sd-chrome-bg: #282b31;
+    --sd-chrome-border: #3c404a;
+    --sd-chrome-rule: #383c44;
+    --sd-chrome-ink: #c8c8d0;
+    --sd-chrome-ink-muted: #9a9aa2;
+    --sd-chrome-ink-strong: #f2f2f4;
+    --sd-chrome-hover: rgba(255, 255, 255, 0.07);
+    --sd-chrome-hover-strong: rgba(255, 255, 255, 0.09);
+    --sd-chrome-active: rgba(255, 255, 255, 0.12);
+    --sd-toolbar-bg: rgba(50, 54, 62, 0.72);
+    --sd-toolbar-bg-opaque: #32363e;
+    --sd-toolbar-border: rgba(255, 255, 255, 0.12);
+    --sd-toolbar-shadow: rgba(0, 0, 0, 0.5);
+    --sd-toolbar-hairline: rgba(255, 255, 255, 0.06);
+    --sd-copy-done: #5ec99a;
   }
 }
 
 /* (4) Print: drop the chrome (incl. the toggle), restore full width + reclaim the lane. */
 @media print {
-  nav#TOC, .mdp-toolbar, .mdp-toc-toggle { display: none !important; }
-  html.mdp-has-toc body { padding-left: 26px; }
+  nav#TOC, .sd-toolbar, .sd-toc-toggle { display: none !important; }
+  html.sd-has-toc body { padding-left: 26px; }
   body { padding-top: 0 !important; }
 }
 </style>

@@ -90,7 +90,7 @@ ORDER BY rain DESC;
 ```
 
 ```bash
-md-preview tests/fixture/fixture.md --no-open
+spacedown tests/fixture/fixture.md --no-open
 ```
 
 ### Column dictionary
