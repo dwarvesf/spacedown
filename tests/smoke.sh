@@ -181,6 +181,20 @@ echo "[17f] unknown font mode -> exit 64"
 set +e; "$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=nope --no-open >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
 
+# 17g. MD_PREVIEW_THEME_CSS replaces the paper theme; read mode ignores it; a missing
+#      file is a usage error.
+echo "[17g] MD_PREVIEW_THEME_CSS theme hook"
+printf ':root { --custom-theme-bg: #123456; }\n' > "${TMP}/custom.css"
+MD_PREVIEW_THEME_CSS="${TMP}/custom.css" "$MD_PREVIEW" "${TMP}/fixture.md" --out "${TMP}/custom.html" --no-open >/dev/null 2>&1
+MD_PREVIEW_THEME_CSS="${TMP}/custom.css" "$MD_PREVIEW" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/custom-read.html" --no-open >/dev/null 2>&1
+set +e; MD_PREVIEW_THEME_CSS="${TMP}/nope.css" "$MD_PREVIEW" "${TMP}/fixture.md" --no-open >/dev/null 2>&1; rc=$?; set -e
+if grep -q -- '--custom-theme-bg' "${TMP}/custom.html" && ! grep -q -- '--paper-bg' "${TMP}/custom.html" \
+   && ! grep -q -- '--custom-theme-bg' "${TMP}/custom-read.html" && [[ $rc -eq 64 ]]; then
+  ok "theme file replaces paper; read unaffected; missing file exits 64"
+else
+  no "MD_PREVIEW_THEME_CSS hook not behaving (rc=$rc)"
+fi
+
 # ---- reading chrome: outline sidebar + zoom + copy-source ----
 # fixture.md has one heading, so it carries a TOC. Build a multi-heading one too.
 cat > "${TMP}/chrome.md" <<'EOF'
