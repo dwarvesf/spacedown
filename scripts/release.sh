@@ -34,10 +34,13 @@ APP_NAME="Markdown Preview.app"
 ZIP="$DIST/Markdown-Preview-$VERSION-macos.zip"
 
 die() { echo "release: $*" >&2; exit 1; }
+# Capture, then match: `cmd | grep -q` under pipefail fails when grep exits early and
+# the writer takes SIGPIPE, which reads as a failed check on a passing result.
+has() { printf '%s' "$1" | grep -qF -- "$2"; }
 
 # --- preconditions ------------------------------------------------------------
 [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
-security find-identity -v -p codesigning | grep -qF "\"$SIGN_ID\"" \
+has "$(security find-identity -v -p codesigning)" "\"$SIGN_ID\"" \
   || die "signing identity missing: $SIGN_ID"
 xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
   || die "notarytool profile '$NOTARY_PROFILE' missing; run: xcrun notarytool store-credentials $NOTARY_PROFILE"
@@ -50,7 +53,7 @@ BUILT="$(SIGN_ID="$SIGN_ID" NO_INSTALL=1 bash "$ROOT/integrations/build-safari.s
 mkdir -p "$DIST"
 rsync -a --delete "$BUILT" "$DIST/"
 APP="$DIST/$APP_NAME"
-codesign -dvv "$APP" 2>&1 | grep -q "Authority=Developer ID Application" \
+has "$(codesign -dvv "$APP" 2>&1)" "Authority=Developer ID Application" \
   || die "app is not signed with a Developer ID Application identity"
 
 # --- notarize + staple ----------------------------------------------------------
@@ -65,7 +68,7 @@ if [[ "$STATUS" != "Accepted" ]]; then
   die "notarization status: ${STATUS:-unknown}"
 fi
 xcrun stapler staple "$APP"
-spctl -a -vv -t exec "$APP" 2>&1 | grep -q "source=Notarized Developer ID" \
+has "$(spctl -a -vv -t exec "$APP" 2>&1 || true)" "source=Notarized Developer ID" \
   || die "Gatekeeper does not accept the stapled app"
 
 echo "== zip"
