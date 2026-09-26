@@ -45,7 +45,7 @@ xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
 
 # --- build + sign ---------------------------------------------------------------
 echo "== build + sign ($SIGN_ID)"
-BUILT="$(SIGN_ID="$SIGN_ID" NO_INSTALL=1 "$ROOT/integrations/build-safari.sh" | tail -1)"
+BUILT="$(SIGN_ID="$SIGN_ID" NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
 [[ -d "$BUILT" ]] || die "build did not report an app path"
 mkdir -p "$DIST"
 rsync -a --delete "$BUILT" "$DIST/"
