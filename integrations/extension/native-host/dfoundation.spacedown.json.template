@@ -1,5 +1,5 @@
 {
-  "name": "foundation.d.spacedown",
+  "name": "dfoundation.spacedown",
   "description": "spacedown native host: renders dropped markdown via the local CLI",
   "path": "__HOST_PATH__",
   "type": "stdio",

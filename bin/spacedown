@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-VERSION="1.0.2"
+VERSION="1.0.3"
 
 # Resolve this script's own directory, following symlinks (it is symlinked onto
 # PATH at ~/.local/bin/spacedown). Used to locate the bundled assets/.

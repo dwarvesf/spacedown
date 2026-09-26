@@ -1,6 +1,6 @@
 name: SpacedownQL
 options:
-  bundleIdPrefix: foundation.d.spacedown
+  bundleIdPrefix: dfoundation.spacedown
   deploymentTarget:
     macOS: "12.0"
   createIntermediateGroups: true
@@ -9,7 +9,7 @@ settings:
     DEVELOPMENT_TEAM: W777S7V8TN
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0.2"
+    MARKETING_VERSION: "1.0.3"
     CURRENT_PROJECT_VERSION: "1"
     PRODUCT_NAME: SpacedownQL
     INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Dwarves Foundation"
@@ -22,7 +22,7 @@ targets:
       - path: Resources   # xcodegen auto-adds non-source files here to a resources copy phase
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: foundation.d.spacedown.quicklook
+        PRODUCT_BUNDLE_IDENTIFIER: dfoundation.spacedown.quicklook
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Info.plist
         CODE_SIGN_ENTITLEMENTS: SpacedownQL.entitlements
