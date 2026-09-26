@@ -147,7 +147,7 @@ check("reading-skin harness loads every stylesheet headCSS() loads",
 // the Safari drop path returned "render helper unreachable" with nothing else failing.
 const integrations = path.join(__dirname, "..");
 const nameSources = {
-  "helper plist": ["helper", "foundation.d.spacedown.render.plist"],
+  "helper plist": ["helper", "dfoundation.spacedown.render.plist"],
   "helper source": ["helper", "spacedown-render.swift"],
   "extension client": ["SpacedownDrop", "SpacedownDrop Extension", "SafariWebExtensionHandler.swift"],
   "mach-lookup entitlement": ["entitlements", "extension.entitlements"],
@@ -155,7 +155,7 @@ const nameSources = {
 const serviceNames = new Set();
 for (const [label, parts] of Object.entries(nameSources)) {
   const text = fs.readFileSync(path.join(integrations, ...parts), "utf8");
-  const hits = text.match(/\bfoundation\.d\.spacedown[.\w-]*render\b/g) || [];
+  const hits = text.match(/\bdfoundation\.spacedown[.\w-]*render\b/g) || [];
   // The idle-queue label is derived from the service name, so keep the base only.
   hits.forEach((h) => serviceNames.add(h.replace(/\.idle$/, "")));
   check(label + " names a render service", hits.length > 0);

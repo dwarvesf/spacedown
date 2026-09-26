@@ -1,6 +1,6 @@
 name: SpacedownQL
 options:
-  bundleIdPrefix: foundation.d.spacedown
+  bundleIdPrefix: dfoundation.spacedown
   deploymentTarget:
     macOS: "12.0"
   createIntermediateGroups: true
@@ -22,7 +22,7 @@ targets:
       - path: Resources   # xcodegen auto-adds non-source files here to a resources copy phase
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: foundation.d.spacedown.quicklook
+        PRODUCT_BUNDLE_IDENTIFIER: dfoundation.spacedown.quicklook
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Info.plist
         CODE_SIGN_ENTITLEMENTS: SpacedownQL.entitlements

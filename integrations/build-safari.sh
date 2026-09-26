@@ -5,7 +5,7 @@
 #     ├─ SpacedownDrop Extension.appex   Safari Web Extension (drag-drop)  [sandboxed]
 #     └─ SpacedownQL.appex         Quick Look spacebar preview        [sandboxed]
 #   ~/.local/libexec/spacedown-render                           unsandboxed XPC render helper
-#   ~/Library/LaunchAgents/foundation.d.spacedown.render.plist  launch-on-demand
+#   ~/Library/LaunchAgents/dfoundation.spacedown.render.plist  launch-on-demand
 #
 # Everything is signed adhoc (`-`) + hardened runtime + per-target entitlements;
 # no Apple Developer team dependency.
@@ -51,13 +51,13 @@ PROJ="${HERE}/safari/SpacedownDrop"
 QLDIR="${HERE}/safari/quick-look"
 ENT="${HERE}/safari/entitlements"
 HELPER_SRC="${HERE}/safari/helper/spacedown-render.swift"
-PLIST_SRC="${HERE}/safari/helper/foundation.d.spacedown.render.plist"
+PLIST_SRC="${HERE}/safari/helper/dfoundation.spacedown.render.plist"
 APP_NAME="Spacedown.app"
 APP_DEST="${HOME}/Applications"
 HELPER_DEST="${HOME}/.local/libexec/spacedown-render"
-AGENT_LABEL="foundation.d.spacedown.render"
+AGENT_LABEL="dfoundation.spacedown.render"
 PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
-QL_ID="foundation.d.spacedown.quicklook"
+QL_ID="dfoundation.spacedown.quicklook"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 UID_NUM="$(id -u)"
 

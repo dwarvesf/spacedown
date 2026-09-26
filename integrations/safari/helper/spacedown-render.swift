@@ -80,7 +80,7 @@ final class RenderImpl: NSObject, SpacedownRenderService {
 // the grace period.
 final class IdleExit {
     static let shared = IdleExit()
-    private let q = DispatchQueue(label: "foundation.d.spacedown.render.idle")
+    private let q = DispatchQueue(label: "dfoundation.spacedown.render.idle")
     private var timer: DispatchSourceTimer?
     private let grace: TimeInterval = 30
     func bump() {
@@ -108,7 +108,7 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
 
 // MachService name must match the LaunchAgent plist's MachServices key and the
 // extension's mach-lookup temporary-exception entitlement.
-let serviceName = "foundation.d.spacedown.render"
+let serviceName = "dfoundation.spacedown.render"
 let delegate = ListenerDelegate()
 let listener = NSXPCListener(machServiceName: serviceName)
 listener.delegate = delegate

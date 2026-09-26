@@ -24,14 +24,14 @@ APP_SRC="${HERE}/finder-app/SpacedownOpener.applescript"
 # use the bundle FILENAME (not CFBundleDisplayName), so the name must live in the filename.
 APP_OUT="${HERE}/finder-app/Spacedown Opener.app"
 HOST_BIN="${HERE}/extension/native-host/spacedown-host"
-HOST_TPL="${HERE}/extension/native-host/foundation.d.spacedown.json.template"
-HOST_NAME="foundation.d.spacedown"
+HOST_TPL="${HERE}/extension/native-host/dfoundation.spacedown.json.template"
+HOST_NAME="dfoundation.spacedown"
 EXTENSION_ID="mhifeggicglofancjnjmkgihedkddnpn"  # derived from extension/manifest.json "key"
 MD_UTI="net.daringfireball.markdown"
 # The .md extension can resolve through either UTI depending on the machine, and our app
 # claims both, so set/revert must cover both or the `md` binding won't flip cleanly.
 MD_UTIS=( "net.daringfireball.markdown" "public.markdown" )
-HANDLER_BUNDLE="foundation.d.spacedown.opener"            # the Finder Open-With app, set on Spacedown Opener.app below
+HANDLER_BUNDLE="dfoundation.spacedown.opener"            # the Finder Open-With app, set on Spacedown Opener.app below
 STATE_DIR="${HOME}/.config/spacedown"
 FIRSTRUN_MARKER="${STATE_DIR}/handler-offered"    # so the first-run offer asks exactly once
 PREV_HANDLER_FILE="${STATE_DIR}/prev-md-handler"  # snapshot of the handler we replaced, for revert
@@ -120,8 +120,8 @@ rm -f "$tmp_scpt"
 # Declare the app as a viewer/editor for markdown + plain text so it shows up in
 # Finder's "Open With" and is eligible as a default handler.
 plist="${APP_OUT}/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string foundation.d.spacedown.opener" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier foundation.d.spacedown.opener" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string dfoundation.spacedown.opener" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier dfoundation.spacedown.opener" "$plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Spacedown Opener" "$plist" 2>/dev/null || \
   /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Spacedown Opener" "$plist"
 # CFBundleName too, so every surface (Get Info, Open With, the change-all dialog) reads

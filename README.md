@@ -136,7 +136,7 @@ integrations/build-safari.sh --with-safari  # also the Safari drop extension and
 |---|---|---|
 | `Spacedown.app` | `~/Applications/` | always |
 | Render helper (XPC) | `~/.local/libexec/spacedown-render` | `--with-safari` |
-| LaunchAgent `foundation.d.spacedown.render` | `~/Library/LaunchAgents/` | `--with-safari` |
+| LaunchAgent `dfoundation.spacedown.render` | `~/Library/LaunchAgents/` | `--with-safari` |
 | `spacedown-open` link | `~/.local/bin/spacedown-open` | `--with-safari` |
 
 After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Spacedown** under System Settings > General > Login Items & Extensions > Quick Look.

@@ -450,7 +450,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -484,7 +484,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -524,7 +524,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown;
 				PRODUCT_NAME = "Spacedown";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -565,7 +565,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = foundation.d.spacedown;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown;
 				PRODUCT_NAME = "Spacedown";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

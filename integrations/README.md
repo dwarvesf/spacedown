@@ -63,7 +63,7 @@ build disabled the sandbox so the handler could spawn `spacedown-open`, which is
 kept the extension from ever loading (absent from `Settings > Extensions`, unregistered
 in `pluginkit`). The fix: keep the appex sandboxed (+ adhoc + hardened runtime) and move
 the spawn into the unsandboxed helper, reached via a per-user LaunchAgent whose label and
-Mach service are both `foundation.d.spacedown.render`. launchd starts it on demand and it
+Mach service are both `dfoundation.spacedown.render`. launchd starts it on demand and it
 idle-exits after 30 seconds. `quick-look/test-render.js` checks that the plist, the helper,
 the extension client and the mach-lookup entitlement all name the same service.
 
@@ -115,5 +115,5 @@ The compiled `Spacedown Opener.app` is a build artifact (gitignored); `install.s
 | `extension/sw.js` | opens the dropzone as a full tab on icon click |
 | `extension/dropzone.{html,js}` | the drop UI + native-messaging call |
 | `extension/native-host/spacedown-host` | native-messaging host (Python) |
-| `extension/native-host/foundation.d.spacedown.json.template` | host manifest (path + ID filled by install.sh) |
+| `extension/native-host/dfoundation.spacedown.json.template` | host manifest (path + ID filled by install.sh) |
 | `install.sh` | wires all of the above; `--set-default`, `--uninstall` |

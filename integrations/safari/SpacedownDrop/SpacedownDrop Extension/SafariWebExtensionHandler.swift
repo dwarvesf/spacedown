@@ -25,7 +25,7 @@ protocol SpacedownRenderService {
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
-    static let machServiceName = "foundation.d.spacedown.render"
+    static let machServiceName = "dfoundation.spacedown.render"
 
     func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem
