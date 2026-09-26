@@ -16,8 +16,24 @@
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
 #
-# Usage: scripts/release.sh [x.y.z]   (default: MARKETING_VERSION in quick-look/project.yml)
+# Mac App Store mode (--mas): builds the Quick Look-only app, signs it with Apple
+# Distribution plus the Mac App Store provisioning profiles, packages a signed .pkg,
+# and (UPLOAD=1) uploads it to App Store Connect. Extra preconditions and env:
+#   MAS_SIGN_ID="Apple Distribution: Dwarves Foundation Company Limited ($TEAM_ID)"
+#   INSTALLER_ID="3rd Party Mac Developer Installer: Dwarves Foundation Company Limited ($TEAM_ID)"
+#   PROFILE_DIR=~/.local/share/spacedown-signing   holds <bundle id>.provisionprofile
+#                                                   for the app and the Quick Look extension
+#   BUILD_NUMBER=<yyyymmddHHMM>   CFBundleVersion; must grow with every upload
+#   UPLOAD=0                1 = upload with altool; needs ASC_KEY_ID, ASC_ISSUER_ID and
+#                           the key file under API_PRIVATE_KEYS_DIR (altool's lookup)
+# The store build drops the Quick Look extension's read-only home exception, so images
+# next to a previewed file do not render there; the direct download keeps them.
+#
+# Usage: scripts/release.sh [--mas] [x.y.z]   (default: MARKETING_VERSION in quick-look/project.yml)
 set -euo pipefail
+
+MAS=0
+if [[ "${1:-}" == "--mas" ]]; then MAS=1; shift; fi
 
 TEAM_ID="${TEAM_ID:-W777S7V8TN}"
 SIGN_ID="${SIGN_ID:-Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)}"
@@ -37,6 +53,75 @@ die() { echo "release: $*" >&2; exit 1; }
 # Capture, then match: `cmd | grep -q` under pipefail fails when grep exits early and
 # the writer takes SIGPIPE, which reads as a failed check on a passing result.
 has() { printf '%s' "$1" | grep -qF -- "$2"; }
+
+# --- Mac App Store ---------------------------------------------------------------
+if [[ $MAS -eq 1 ]]; then
+  MAS_SIGN_ID="${MAS_SIGN_ID:-Apple Distribution: Dwarves Foundation Company Limited ($TEAM_ID)}"
+  INSTALLER_ID="${INSTALLER_ID:-3rd Party Mac Developer Installer: Dwarves Foundation Company Limited ($TEAM_ID)}"
+  PROFILE_DIR="${PROFILE_DIR:-$HOME/.local/share/spacedown-signing}"
+  BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d%H%M)}"
+  UPLOAD="${UPLOAD:-0}"
+  APP_ID="foundation.d.spacedown"
+  QL_ID="foundation.d.spacedown.quicklook"
+  MDIST="$ROOT/build/release-mas/$VERSION"
+  PKG="$MDIST/Spacedown-$VERSION.pkg"
+  ENT="$ROOT/integrations/safari/entitlements"
+  QL_ENT_SRC="$ROOT/integrations/safari/quick-look/SpacedownQL.entitlements"
+
+  [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
+  idents="$(security find-identity -v)"
+  has "$idents" "\"$MAS_SIGN_ID\"" || die "signing identity missing: $MAS_SIGN_ID"
+  has "$idents" "\"$INSTALLER_ID\"" || die "installer identity missing: $INSTALLER_ID"
+  for id in "$APP_ID" "$QL_ID"; do
+    [[ -f "$PROFILE_DIR/$id.provisionprofile" ]] || die "profile missing: $PROFILE_DIR/$id.provisionprofile"
+  done
+  [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || die "dirty tree; commit first"
+
+  echo "== build (Quick Look only)"
+  BUILT="$(SKIN_CSS= NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
+  [[ -d "$BUILT" ]] || die "build did not report an app path"
+  mkdir -p "$MDIST"
+  rsync -a --delete "$BUILT" "$MDIST/"
+  APP="$MDIST/$APP_NAME"
+  APPEX="$APP/Contents/PlugIns/SpacedownQL.appex"
+
+  echo "== version $VERSION ($BUILD_NUMBER), profiles, entitlements"
+  for plist in "$APP/Contents/Info.plist" "$APPEX/Contents/Info.plist"; do
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
+      -c "Set :CFBundleVersion $BUILD_NUMBER" "$plist"
+  done
+  cp -f "$PROFILE_DIR/$APP_ID.provisionprofile" "$APP/Contents/embedded.provisionprofile"
+  cp -f "$PROFILE_DIR/$QL_ID.provisionprofile" "$APPEX/Contents/embedded.provisionprofile"
+  APP_ENT_MAS="$MDIST/app.entitlements"
+  QL_ENT_MAS="$MDIST/ql.entitlements"
+  cp -f "$ENT/app.release.entitlements" "$APP_ENT_MAS"
+  cp -f "$QL_ENT_SRC" "$QL_ENT_MAS"
+  /usr/libexec/PlistBuddy -c "Delete :com.apple.security.temporary-exception.files.home-relative-path.read-only" "$QL_ENT_MAS" 2>/dev/null || true
+  for pair in "$APP_ENT_MAS:$APP_ID" "$QL_ENT_MAS:$QL_ID"; do
+    f="${pair%%:*}"; bid="${pair#*:}"
+    /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $TEAM_ID.$bid" \
+      -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$f"
+  done
+
+  echo "== sign ($MAS_SIGN_ID)"
+  codesign --force --sign "$MAS_SIGN_ID" --options runtime --entitlements "$QL_ENT_MAS" "$APPEX"
+  codesign --force --sign "$MAS_SIGN_ID" --options runtime --entitlements "$APP_ENT_MAS" "$APP"
+  codesign --verify --deep --strict "$APP" || die "signature verify failed"
+
+  echo "== package"
+  productbuild --component "$APP" /Applications --sign "$INSTALLER_ID" "$PKG" >/dev/null
+  has "$(pkgutil --check-signature "$PKG")" "Status: signed by a certificate trusted" \
+    || has "$(pkgutil --check-signature "$PKG")" "3rd Party Mac Developer Installer" \
+    || die "package signature check failed"
+  echo "pkg: $PKG"
+
+  [[ "$UPLOAD" == "1" ]] || { echo "release: UPLOAD=0, stopping before App Store Connect"; exit 0; }
+  [[ -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" ]] || die "UPLOAD=1 needs ASC_KEY_ID and ASC_ISSUER_ID"
+  echo "== upload"
+  xcrun altool --upload-app -f "$PKG" -t macos --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+  echo "done: $VERSION ($BUILD_NUMBER) uploaded to App Store Connect"
+  exit 0
+fi
 
 # --- preconditions ------------------------------------------------------------
 [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
