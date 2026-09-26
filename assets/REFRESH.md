@@ -1,6 +1,6 @@
 # assets/ provenance
 
-`vscode-preview-head.html` makes md-preview's HTML look like VSCodium / VS Code's
+`vscode-preview-head.html` makes spacedown's HTML look like VSCodium / VS Code's
 built-in markdown preview pane. It is injected into the page `<head>` (last, so it
 wins over pandoc's default template) via `pandoc --include-in-header`.
 
@@ -27,12 +27,12 @@ comes for free and needs no CSS here.
 
 The font values in part 1 (`--markdown-font-family`, `--markdown-font-size`,
 `--markdown-line-height`, `--vscode-editor-font-family`) are only **fallback defaults** (stock VS
-Code). At render time `bin/md-preview` reads the user's real preview fonts
+Code). At render time `bin/spacedown` reads the user's real preview fonts
 (`markdown.preview.fontFamily` / `fontSize` / `lineHeight` + `editor.fontFamily`) from their
 `settings.json` and injects a second `<style>` `:root` override AFTER this block, which wins. So the
-output matches the user's actual editor, not a stock install. See `bin/md-preview`
+output matches the user's actual editor, not a stock install. See `bin/spacedown`
 (`build_font_override`). To test against a controlled file, set
-`MD_PREVIEW_SETTINGS=/path/to/settings.json`.
+`SPACEDOWN_SETTINGS=/path/to/settings.json`.
 
 ## Refreshing the upstream part
 

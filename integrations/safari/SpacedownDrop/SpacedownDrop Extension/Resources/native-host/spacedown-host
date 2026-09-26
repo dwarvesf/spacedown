@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Native messaging host for the md-preview drop extension.
+"""Native messaging host for the spacedown drop extension.
 
 Protocol (Chrome/Edge native messaging over stdio): each message is a 4-byte
 little-endian uint32 length prefix followed by that many bytes of UTF-8 JSON.
 
 Receives {"filename": str, "content": str}, writes the content to a temp file,
-runs the shared `md-open` wrapper (render + open in browser), and replies
+runs the shared `spacedown-open` wrapper (render + open in browser), and replies
 {"ok": true, "html": "<path>"} or {"ok": false, "error": "<msg>"}.
 """
 import sys
@@ -17,8 +17,8 @@ import tempfile
 import subprocess
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-# native-host/ -> extension/ -> integrations/md-open
-MD_OPEN = os.path.realpath(os.path.join(HERE, "..", "..", "md-open"))
+# native-host/ -> extension/ -> integrations/spacedown-open
+MD_OPEN = os.path.realpath(os.path.join(HERE, "..", "..", "spacedown-open"))
 
 
 def read_message():
@@ -55,7 +55,7 @@ def main():
     content = msg.get("content", "")
     filename = safe_name(msg.get("filename", "dropped.md"))
 
-    tmpdir = tempfile.mkdtemp(prefix="md-preview-drop-")
+    tmpdir = tempfile.mkdtemp(prefix="spacedown-drop-")
     src = os.path.join(tmpdir, filename)
     try:
         with open(src, "w", encoding="utf-8") as fh:
@@ -64,13 +64,13 @@ def main():
         send_message({"ok": False, "error": "could not write temp file: %s" % e})
         return
 
-    # GUI/stdio context has a minimal PATH; md-open re-exports a full PATH, but
+    # GUI/stdio context has a minimal PATH; spacedown-open re-exports a full PATH, but
     # set one here too so even MD_OPEN resolution + the python subprocess agree.
     env = dict(os.environ)
     env["PATH"] = "/opt/homebrew/bin:%s/.local/bin:/usr/local/bin:/usr/bin:/bin" % os.path.expanduser("~")
 
     if not os.path.exists(MD_OPEN):
-        send_message({"ok": False, "error": "md-open wrapper not found at %s" % MD_OPEN})
+        send_message({"ok": False, "error": "spacedown-open wrapper not found at %s" % MD_OPEN})
         return
 
     try:
@@ -82,10 +82,10 @@ def main():
             timeout=60,
         )
     except subprocess.TimeoutExpired:
-        send_message({"ok": False, "error": "md-preview timed out (60s)"})
+        send_message({"ok": False, "error": "spacedown timed out (60s)"})
         return
     except Exception as e:
-        send_message({"ok": False, "error": "failed to launch md-open: %s" % e})
+        send_message({"ok": False, "error": "failed to launch spacedown-open: %s" % e})
         return
 
     if proc.returncode != 0:

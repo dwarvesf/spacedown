@@ -1,21 +1,21 @@
 <script>
-/* md-preview reading chrome JS: outline scroll-spy + zoom + copy-source.
-   Injected at end of <body> via pandoc --include-after-body, after the #mdp-src element.
+/* spacedown reading chrome JS: outline scroll-spy + zoom + copy-source.
+   Injected at end of <body> via pandoc --include-after-body, after the #sd-src element.
    Pairs with assets/reading-chrome-head.html. Self-contained, no dependencies. */
 (function () {
   "use strict";
   var ZOOMS = [50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300];
   var DEFAULT_IDX = 5; // 100%
-  var KEY = "mdp-zoom";
+  var KEY = "sd-zoom";
   var doc = document.documentElement;
   var toc = document.getElementById("TOC");
 
   // ---- collapsible outline ----
-  var TOC_KEY = "mdp-toc-collapsed";
+  var TOC_KEY = "sd-toc-collapsed";
   var tocToggle = null;
-  function tocCollapsed() { return doc.classList.contains("mdp-toc-collapsed"); }
+  function tocCollapsed() { return doc.classList.contains("sd-toc-collapsed"); }
   function applyToc(collapsed) {
-    doc.classList.toggle("mdp-toc-collapsed", collapsed);
+    doc.classList.toggle("sd-toc-collapsed", collapsed);
     if (tocToggle) tocToggle.setAttribute("aria-expanded", String(!collapsed));
     try { localStorage.setItem(TOC_KEY, collapsed ? "1" : "0"); } catch (e) {}
   }
@@ -31,20 +31,20 @@
   // Reveal the sidebar + shift the body only when there are real entries; then wire
   // the collapse toggle (also gated on real entries).
   if (toc && toc.querySelector("a")) {
-    doc.classList.add("mdp-has-toc");
+    doc.classList.add("sd-has-toc");
     toc.setAttribute("aria-label", "Document outline");
 
     // Header strip at the top of the sidebar: CSS draws the "Outline" label + divider and
     // reserves the chrome lane; the (body-child) toggle visually docks into its right edge.
     var tocHeader = document.createElement("div");
-    tocHeader.className = "mdp-toc-header";
+    tocHeader.className = "sd-toc-header";
     toc.insertBefore(tocHeader, toc.firstChild);
 
     // Set saved/default state BEFORE first paint so it never flashes or animates in.
-    doc.classList.toggle("mdp-toc-collapsed", initialTocCollapsed());
+    doc.classList.toggle("sd-toc-collapsed", initialTocCollapsed());
 
     tocToggle = document.createElement("button");
-    tocToggle.className = "mdp-toc-toggle";
+    tocToggle.className = "sd-toc-toggle";
     tocToggle.setAttribute("aria-label", "Toggle outline");
     tocToggle.setAttribute("aria-controls", "TOC");
     tocToggle.setAttribute("aria-expanded", String(!tocCollapsed()));
@@ -53,7 +53,7 @@
     document.body.appendChild(tocToggle);
 
     // Enable transitions only after first paint: initial state is instant, later toggles animate.
-    requestAnimationFrame(function () { doc.classList.add("mdp-anim-ready"); });
+    requestAnimationFrame(function () { doc.classList.add("sd-anim-ready"); });
 
     // Self-correct on resize: the width decision otherwise runs only at load, so a
     // window dragged below the breakpoint kept an expanded sidebar and crushed the
@@ -64,7 +64,7 @@
       clearTimeout(mdpResizeT);
       mdpResizeT = setTimeout(function () {
         if (window.matchMedia("(max-width: 900px)").matches && !tocCollapsed()) {
-          doc.classList.add("mdp-toc-collapsed");
+          doc.classList.add("sd-toc-collapsed");
           if (tocToggle) tocToggle.setAttribute("aria-expanded", "false");
         }
       }, 150);
@@ -90,7 +90,7 @@
   var pctEl;
   function apply() {
     var pct = ZOOMS[idx];
-    doc.style.setProperty("--mdp-zoom", (pct / 100).toString());
+    doc.style.setProperty("--sd-zoom", (pct / 100).toString());
     if (pctEl) pctEl.textContent = pct + "%";
     try { localStorage.setItem(KEY, String(pct)); } catch (e) {}
   }
@@ -100,7 +100,7 @@
 
   // ---- copy-source (raw markdown, base64-embedded for UTF-8 + file:// safety) ----
   function decodeSrc() {
-    var el = document.getElementById("mdp-src");
+    var el = document.getElementById("sd-src");
     if (!el) return "";
     var b64 = el.textContent.replace(/\s+/g, "");
     try {
@@ -109,9 +109,9 @@
     } catch (e) { return ""; }
   }
   function flashDone(btn) {
-    btn.textContent = "Copied"; btn.classList.add("mdp-done");
+    btn.textContent = "Copied"; btn.classList.add("sd-done");
     setTimeout(function () {
-      btn.textContent = "Copy source"; btn.classList.remove("mdp-done");
+      btn.textContent = "Copy source"; btn.classList.remove("sd-done");
     }, 1400);
   }
   function legacyCopy(text, done) {
@@ -139,20 +139,20 @@
     return b;
   }
   var bar = document.createElement("div");
-  bar.className = "mdp-toolbar";
-  bar.appendChild(btn("mdp-zoom-out", "A", "Zoom out (Cmd -)", zoomOut));
+  bar.className = "sd-toolbar";
+  bar.appendChild(btn("sd-zoom-out", "A", "Zoom out (Cmd -)", zoomOut));
   pctEl = document.createElement("span");
-  pctEl.className = "mdp-zoom-pct";
+  pctEl.className = "sd-zoom-pct";
   pctEl.title = "Reset zoom (Cmd 0)";
   pctEl.addEventListener("click", zoomReset);
   bar.appendChild(pctEl);
-  bar.appendChild(btn("mdp-zoom-in", "A", "Zoom in (Cmd +)", zoomIn));
-  var sep = document.createElement("span"); sep.className = "mdp-sep";
+  bar.appendChild(btn("sd-zoom-in", "A", "Zoom in (Cmd +)", zoomIn));
+  var sep = document.createElement("span"); sep.className = "sd-sep";
   bar.appendChild(sep);
-  bar.appendChild(btn("mdp-copy", "Copy source", "Copy the raw markdown to the clipboard", copySource));
+  bar.appendChild(btn("sd-copy", "Copy source", "Copy the raw markdown to the clipboard", copySource));
   document.body.appendChild(bar);
 
-  apply(); // sets --mdp-zoom + the pct label from saved/default
+  apply(); // sets --sd-zoom + the pct label from saved/default
 
   // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom) ----
   window.addEventListener("keydown", function (e) {
@@ -161,7 +161,7 @@
       var ae = document.activeElement;
       var editable = ae && (ae.isContentEditable ||
         /^(input|textarea|select)$/i.test(ae.tagName));
-      if (!editable && doc.classList.contains("mdp-has-toc")) {
+      if (!editable && doc.classList.contains("sd-has-toc")) {
         e.preventDefault(); toggleToc(); return;
       }
     }
@@ -172,7 +172,7 @@
   });
 
   // ---- scroll-spy: highlight the section currently in view ----
-  if (doc.classList.contains("mdp-has-toc")) {
+  if (doc.classList.contains("sd-has-toc")) {
     var links = {};
     toc.querySelectorAll('a[href^="#"]').forEach(function (a) {
       var id = decodeURIComponent(a.getAttribute("href").slice(1));
@@ -187,8 +187,8 @@
           if (!en.isIntersecting) return;
           var a = links[en.target.id];
           if (!a) return;
-          for (var k in links) links[k].classList.remove("mdp-active");
-          a.classList.add("mdp-active");
+          for (var k in links) links[k].classList.remove("sd-active");
+          a.classList.add("sd-active");
         });
       }, { rootMargin: "0px 0px -75% 0px", threshold: 0 });
       heads.forEach(function (h) { io.observe(h); });
@@ -196,18 +196,18 @@
   }
 
   // ---- frontmatter "Show more": clamp long values, reveal on demand ----
-  // CSS line-clamps .mdp-fm-clamp to a few lines. Only add a toggle when the value actually
+  // CSS line-clamps .sd-fm-clamp to a few lines. Only add a toggle when the value actually
   // overflows the clamp (so a value that fits gets no button).
-  document.querySelectorAll("td.mdp-fm-long").forEach(function (td) {
-    var clamp = td.querySelector(".mdp-fm-clamp");
+  document.querySelectorAll("td.sd-fm-long").forEach(function (td) {
+    var clamp = td.querySelector(".sd-fm-clamp");
     if (!clamp) return;
     if (clamp.scrollHeight - clamp.clientHeight < 4) return; // fits within the clamp, no toggle
     var btn = document.createElement("button");
-    btn.className = "mdp-fm-more";
+    btn.className = "sd-fm-more";
     btn.textContent = "Show more";
     btn.setAttribute("aria-expanded", "false");
     btn.addEventListener("click", function () {
-      var open = td.classList.toggle("mdp-fm-expanded");
+      var open = td.classList.toggle("sd-fm-expanded");
       btn.textContent = open ? "Show less" : "Show more";
       btn.setAttribute("aria-expanded", String(open));
     });

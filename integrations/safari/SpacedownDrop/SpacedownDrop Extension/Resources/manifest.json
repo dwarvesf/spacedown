@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Spacedown",
   "version": "1.0.0",
-  "description": "Drag a .md file onto the tab to render it via the local md-preview CLI (pandoc + KaTeX).",
+  "description": "Drag a .md file onto the tab to render it via the local spacedown CLI (pandoc + KaTeX).",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2HCc4b3vev+ZyLP07ZsiwStAAzf1KyM5n/bl+wA1F+5UD2iKtJkXNugfXY2JXor6WE9kQO9TJVupkptfzDBsglCmbqeGpE487DmauJJ734+iAK9mGZO29SiYgiB0PnQrsPHgZogn32dwq6nSKY/Cux/gqbxVzQtvIj4TVTlSj78Bp91fOWy3Cv8xlr3hy5LDkmoQAX5vbXfDHpDPnWge77/ZoahSJBXM3NVjgqPbXL/cF83KezmF58mkrc2f0XQ7i1H2Py0h6CgnPbg8usHC2ntFvJ2KrlxPbM4N39Py/8O5vX4nf4dfX/vhzyRxrTX0ML9v7Q87O0mIBBsVMWVxAQIDAQAB",
   "background": { "service_worker": "sw.js" },
   "action": { "default_title": "Spacedown" },

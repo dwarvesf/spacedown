@@ -1,6 +1,6 @@
 # Third-party notices
 
-Spacedown and the md-preview CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts.
+Spacedown and the spacedown CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts.
 
 ## Bundled code
 
@@ -19,7 +19,7 @@ Spacedown and the md-preview CLI bundle or reference the third-party works below
 | KaTeX (CDN copy) | Math in CLI output pages, loaded by pandoc from a CDN | MIT | https://github.com/KaTeX/KaTeX |
 | entr | Optional file watching for `--watch` | ISC | https://github.com/eradman/entr |
 
-The md-preview CLI runs pandoc and entr as separate programs and includes none of their code.
+The spacedown CLI runs pandoc and entr as separate programs and includes none of their code.
 
 ## Fonts (referenced, not bundled)
 
@@ -27,4 +27,4 @@ The md-preview CLI runs pandoc and entr as separate programs and includes none o
 |---|---|---|
 | iA Writer Quattro, iA Writer Mono | SIL Open Font License 1.1 | https://github.com/iaolo/iA-Fonts |
 
-Fonts by Information Architects. The `paper` theme and the Quick Look skin name these typefaces in CSS font stacks. md-preview ships no font files and falls back to system fonts when the iA Writer fonts are not installed.
+Fonts by Information Architects. The `paper` theme and the Quick Look skin name these typefaces in CSS font stacks. spacedown ships no font files and falls back to system fonts when the iA Writer fonts are not installed.

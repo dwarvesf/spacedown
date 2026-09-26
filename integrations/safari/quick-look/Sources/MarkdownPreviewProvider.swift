@@ -4,7 +4,7 @@
 //
 //  Quick Look preview extension: spacebar a .md in Finder/Spotlight -> rendered preview.
 //  Renders in-process with marked.js + KaTeX (NOT pandoc, which a sandboxed appex cannot
-//  spawn) via JavaScriptCore, and reuses the md-preview CSS so it looks like the browser
+//  spawn) via JavaScriptCore, and reuses the spacedown CSS so it looks like the browser
 //  preview. The same JS glue is node-tested in quick-look/test-render.js.
 //
 
@@ -45,13 +45,13 @@ final class MarkdownRenderer {
     /// Rendered <body> HTML for the given markdown. Falls back to escaped plain text.
     func renderBody(_ md: String) -> String {
         guard let ctx = ctx else { return "<pre>\(escape(md))</pre>" }
-        ctx.setObject(md, forKeyedSubscript: "MDP_SRC" as NSString)
-        let result = ctx.evaluateScript("mdToHtml(MDP_SRC)")
+        ctx.setObject(md, forKeyedSubscript: "SD_SRC" as NSString)
+        let result = ctx.evaluateScript("mdToHtml(SD_SRC)")
         if let html = result?.toString(), !html.isEmpty { return html }
         return "<pre>\(escape(md))</pre>"
     }
 
-    /// Shared CSS for the page head: KaTeX stylesheet + the md-preview VS Code look.
+    /// Shared CSS for the page head: KaTeX stylesheet + the spacedown VS Code look.
     func headCSS() -> String {
         let b = Bundle(for: MarkdownRenderer.self)
         var head = ""

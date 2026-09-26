@@ -15,7 +15,7 @@
   // Frontmatter: JS port of assets/frontmatter-to-table.py (the pandoc/browser path).
   // Same tolerant contract: split each line on the FIRST ": ", never a real YAML parser;
   // anything odd (deep nesting, mixed shapes, stray text) falls back to a ```yaml fence.
-  // The .mdp-frontmatter CSS ships in md-style.html already. Omitted vs the python:
+  // The .sd-frontmatter CSS ships in md-style.html already. Omitted vs the python:
   // the (1)(2)(3) enum soft-break and the long-value clamp (its Show-more toggle lives
   // in the browser foot JS the appex does not load).
   var FM_SCALAR_RE = /^(true|false|null|-?\d+(\.\d+)?)$/i;
@@ -36,7 +36,7 @@
         : "";
       if (v === "") return "&nbsp;";
     }
-    if (FM_SCALAR_RE.test(v)) return '<span class="mdp-fm-scalar">' + fmEsc(v) + "</span>";
+    if (FM_SCALAR_RE.test(v)) return '<span class="sd-fm-scalar">' + fmEsc(v) + "</span>";
     return fmEsc(v).replace(/`([^`]+)`/g, function (whole, code) {
       return "<code>" + code + "</code>";
     });
@@ -98,11 +98,11 @@
       i++;
     }
     if (!rows.length) return null;
-    var out = ['<table class="mdp-frontmatter">',
-      '<colgroup><col class="mdp-fm-col-key"><col class="mdp-fm-col-val"></colgroup>',
+    var out = ['<table class="sd-frontmatter">',
+      '<colgroup><col class="sd-fm-col-key"><col class="sd-fm-col-val"></colgroup>',
       "<tbody>"];
     rows.forEach(function (r) {
-      out.push('<tr><td class="mdp-fm-key">' + fmEsc(r[0]) + '</td><td class="mdp-fm-val">' + r[1] + "</td></tr>");
+      out.push('<tr><td class="sd-fm-key">' + fmEsc(r[0]) + '</td><td class="sd-fm-val">' + r[1] + "</td></tr>");
     });
     out.push("</tbody></table>");
     return out.join("\n");
@@ -130,7 +130,7 @@
     var blocks = [];
     function stash(html) {
       blocks.push(html);
-      return "MDPMATHPLACEHOLDER" + (blocks.length - 1) + "ENDMDP";
+      return "SDMATHPLACEHOLDER" + (blocks.length - 1) + "ENDSD";
     }
     // display first so the inline pass cannot eat half of a $$ pair
     src = src.replace(/\$\$([\s\S]+?)\$\$/g, function (whole, tex) {
@@ -159,20 +159,20 @@
     var outs = [];
     src = src.replace(/^([ \t]*>[ \t]*)\[!([A-Za-z]+)\][ \t]*(.*)$/gm, function (whole, prefix, type, title) {
       outs.push({ type: type.toLowerCase(), title: title.trim() });
-      return prefix + "MDPCALLOUT" + (outs.length - 1) + "ENDMDP";
+      return prefix + "SDCALLOUT" + (outs.length - 1) + "ENDSD";
     });
     return { src: src, outs: outs };
   }
 
   function calloutHTML(html, outs) {
-    return html.replace(/<blockquote>(\s*)<p>MDPCALLOUT(\d+)ENDMDP\s*/g, function (whole, ws, i) {
+    return html.replace(/<blockquote>(\s*)<p>SDCALLOUT(\d+)ENDSD\s*/g, function (whole, ws, i) {
       var c = outs[+i];
       if (!c) return whole;
       var type = FM_CALLOUT_TYPES[c.type] ? c.type : "note";
       var label = c.type.charAt(0).toUpperCase() + c.type.slice(1).toLowerCase();
-      var head = '<p class="mdp-callout-head">' + fmEsc(label) +
-        (c.title ? '<span class="mdp-callout-title"> · ' + fmEsc(c.title) + "</span>" : "") + "</p>";
-      return '<blockquote class="mdp-callout mdp-callout-' + type + '">' + ws + head + "<p>";
+      var head = '<p class="sd-callout-head">' + fmEsc(label) +
+        (c.title ? '<span class="sd-callout-title"> · ' + fmEsc(c.title) + "</span>" : "") + "</p>";
+      return '<blockquote class="sd-callout sd-callout-' + type + '">' + ws + head + "<p>";
     }).replace(/<p>\s*<\/p>/g, "");
   }
 
@@ -190,8 +190,8 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  if (global.marked && !global.__mdpWikilinks) {
-    global.__mdpWikilinks = true;
+  if (global.marked && !global.__sdWikilinks) {
+    global.__sdWikilinks = true;
     global.marked.use({
       extensions: [{
         name: "wikilink",
@@ -268,8 +268,8 @@
       var spent = 0;
       var classes = widths.map(function (w) {
         if (!hasProse) return "";
-        if (w <= TIGHT_MAX && spent + w <= TIGHT_BUDGET) { spent += w; return "mdp-tight"; }
-        if (w <= NARROW_MAX) return "mdp-narrow";
+        if (w <= TIGHT_MAX && spent + w <= TIGHT_BUDGET) { spent += w; return "sd-tight"; }
+        if (w <= NARROW_MAX) return "sd-narrow";
         return "";
       });
       // Two prose columns split the width by how much text each holds, so the shorter
@@ -279,14 +279,14 @@
       var wide = cols >= 4 || widths.filter(function (w) { return w > NARROW_MAX; }).length >= 2;
       var floors = [];
       if (wide) {
-        table = table.replace("<table>", '<table class="mdp-wide">');
+        table = table.replace("<table>", '<table class="sd-wide">');
         // A cell of length L wrapped at width W is L/W lines tall, so widths in
         // proportion to content are what make the columns of a row end level.
         var share = widths.reduce(function (sum, w, i) {
-          return sum + (classes[i] === "mdp-tight" ? 0 : w);
+          return sum + (classes[i] === "sd-tight" ? 0 : w);
         }, 0);
         floors = widths.map(function (w, i) {
-          if (classes[i] === "mdp-tight" || !share) return 0;
+          if (classes[i] === "sd-tight" || !share) return 0;
           var ch = Math.round((w / share) * WIDE_TOTAL);
           return Math.min(COL_MAX, Math.max(COL_MIN, ch));
         });
@@ -318,7 +318,7 @@
     // re-escape whole KaTeX spans that sat inside a fence, filling the code block with
     // tag soup: `$x$` in a js fence became about 1.5KB of escaped markup.
     html = highlightBlocks(html);
-    html = html.replace(/MDPMATHPLACEHOLDER(\d+)ENDMDP/g, function (whole, i) {
+    html = html.replace(/SDMATHPLACEHOLDER(\d+)ENDSD/g, function (whole, i) {
       var b = m.blocks[+i];
       return b == null ? whole : b;
     });

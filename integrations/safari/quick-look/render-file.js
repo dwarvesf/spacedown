@@ -11,7 +11,7 @@
 //
 // The summary counts the shapes this pipeline has historically broken on:
 // frontmatter table, callouts, leaked [!markers], katex spans, task-list items,
-// <br> hard breaks, and unresolved MDP placeholders (always a bug when nonzero).
+// <br> hard breaks, and unresolved SD placeholders (always a bug when nonzero).
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -37,11 +37,11 @@ for (const f of ["marked.min.js", "katex.min.js", "highlight.min.js", "ql-render
 const t0 = Date.now();
 const html = ctx.mdToHtml(fs.readFileSync(file, "utf8"));
 const count = (re) => (html.match(re) || []).length;
-const placeholders = count(/MDP(CALLOUT|MATHPLACEHOLDER)\d+ENDMDP/g);
+const placeholders = count(/SD(CALLOUT|MATHPLACEHOLDER)\d+ENDSD/g);
 console.log(
   `${path.basename(file)}: ${html.length}b in ${Date.now() - t0}ms |`,
-  `fm-table:${count(/class="mdp-frontmatter"/g)}`,
-  `callouts:${count(/<blockquote class="mdp-callout/g)}`,
+  `fm-table:${count(/class="sd-frontmatter"/g)}`,
+  `callouts:${count(/<blockquote class="sd-callout/g)}`,
   `literal-[!:${count(/\[!/g)}`,
   `katex:${count(/class="katex/g)}`,
   `tasklist:${count(/task-list-item/g) - 1}`,

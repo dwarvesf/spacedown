@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh: wire up the two md-preview "just open it" integrations on macOS.
+# install.sh: wire up the two spacedown "just open it" integrations on macOS.
 #
 #   1. Finder app  -> compiles Spacedown Opener.app (an Apple-Event open-handler) and,
 #                     with --set-default, registers it as the default .md handler.
@@ -18,12 +18,12 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MD_OPEN="${HERE}/md-open"
+MD_OPEN="${HERE}/spacedown-open"
 APP_SRC="${HERE}/finder-app/SpacedownOpener.applescript"
 # The bundle is named "Spacedown Opener.app": macOS's default-handler / Open-With dialogs
 # use the bundle FILENAME (not CFBundleDisplayName), so the name must live in the filename.
 APP_OUT="${HERE}/finder-app/Spacedown Opener.app"
-HOST_BIN="${HERE}/extension/native-host/md-preview-host"
+HOST_BIN="${HERE}/extension/native-host/spacedown-host"
 HOST_TPL="${HERE}/extension/native-host/foundation.d.spacedown.json.template"
 HOST_NAME="foundation.d.spacedown"
 EXTENSION_ID="mhifeggicglofancjnjmkgihedkddnpn"  # derived from extension/manifest.json "key"
@@ -32,7 +32,7 @@ MD_UTI="net.daringfireball.markdown"
 # claims both, so set/revert must cover both or the `md` binding won't flip cleanly.
 MD_UTIS=( "net.daringfireball.markdown" "public.markdown" )
 HANDLER_BUNDLE="foundation.d.spacedown.opener"            # the Finder Open-With app, set on Spacedown Opener.app below
-STATE_DIR="${HOME}/.config/md-preview"
+STATE_DIR="${HOME}/.config/spacedown"
 FIRSTRUN_MARKER="${STATE_DIR}/handler-offered"    # so the first-run offer asks exactly once
 PREV_HANDLER_FILE="${STATE_DIR}/prev-md-handler"  # snapshot of the handler we replaced, for revert
 
@@ -107,10 +107,10 @@ uninstall() {
 [[ "${1:-}" == "--revert-default" ]] && revert_default_handler "${2:-}"
 
 command -v osacompile >/dev/null 2>&1 || die "osacompile not found (ships with macOS)"
-[[ -f "$MD_OPEN" ]] || die "md-open wrapper missing at $MD_OPEN"
+[[ -f "$MD_OPEN" ]] || die "spacedown-open wrapper missing at $MD_OPEN"
 chmod +x "$MD_OPEN" "$HOST_BIN"
 
-# --- 1. compile the Finder app with the md-open path injected ---
+# --- 1. compile the Finder app with the spacedown-open path injected ---
 log "compiling Spacedown Opener.app"
 tmp_scpt="$(mktemp -t SpacedownOpener).applescript"
 sed "s#__MD_OPEN__#${MD_OPEN}#g" "$APP_SRC" > "$tmp_scpt"

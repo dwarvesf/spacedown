@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Minimal localhost live-reload server for md-preview --watch.
+"""Minimal localhost live-reload server for spacedown --watch.
 
-Serves the rendered HTML at ``/`` and the output file's mtime at ``/__mdp_version``,
+Serves the rendered HTML at ``/`` and the output file's mtime at ``/__sd_version``,
 bound to 127.0.0.1 on an ephemeral port. The watch-mode injected poll script
-(assets/livereload-foot.html) fetches ``/__mdp_version`` every ~1s and reloads the page
+(assets/livereload-foot.html) fetches ``/__sd_version`` every ~1s and reloads the page
 when it changes; ``entr`` re-renders the HTML on each save, so the page tracks edits with
 no manual refresh. Localhost-only, ephemeral port, no persistence: it lives and dies with
 the --watch process. NOT a general server.
@@ -32,7 +32,7 @@ def main():
             self.wfile.write(body)
 
         def do_GET(self):
-            if self.path == "/__mdp_version":
+            if self.path == "/__sd_version":
                 try:
                     v = repr(os.path.getmtime(out_path))
                 except OSError:

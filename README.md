@@ -7,7 +7,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 | Part | What it does | Needs |
 |---|---|---|
 | `Spacedown.app` | Quick Look preview for `.md` files | macOS 13 or later |
-| `md-preview` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser | any Unix shell, `pandoc` |
+| `spacedown` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser | any Unix shell, `pandoc` |
 | Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | build from source, the CLI and `pandoc` |
 
 ## Download
@@ -34,11 +34,11 @@ Get the notarized `Spacedown-<version>-macos.zip` from [Releases](https://github
 - **Wikilinks.** `[[target]]` and `[[target|title]]` render as links.
 - **Wide tables scroll.** Tables wider than the page scroll sideways instead of squashing.
 - **Relative images work.** Images resolve against the source file's folder, wherever the HTML lands.
-- **Folder mode.** `md-preview <dir>` renders every top-level Markdown file and writes an index page.
+- **Folder mode.** `spacedown <dir>` renders every top-level Markdown file and writes an index page.
 - **Live reload.** `--watch` re-renders on save and refreshes the open page.
 - **Editor fonts.** Font settings from VS Code or VSCodium carry over to the page (see below).
 
-## Install the md-preview CLI
+## Install the spacedown CLI
 
 The CLI is a single bash script plus the `assets/` folder next to it. It shares the `paper` theme with the Quick Look panel.
 
@@ -50,9 +50,8 @@ brew install entr          # optional, only for --watch
 git clone https://github.com/dwarvesf/spacedown.git
 cd spacedown
 mkdir -p ~/.local/bin
-ln -sfn "$PWD/bin/md-preview" ~/.local/bin/md-preview
-ln -sfn "$PWD/bin/md-preview" ~/.local/bin/mdp     # optional short alias
-md-preview --version
+ln -sfn "$PWD/bin/spacedown" ~/.local/bin/spacedown
+spacedown --version
 ```
 
 The script resolves its own symlink, so `assets/` must stay next to `bin/`. Make sure `~/.local/bin` is on your `PATH`.
@@ -60,20 +59,20 @@ The script resolves its own symlink, so `assets/` must stay next to `bin/`. Make
 ## Usage
 
 ```bash
-md-preview notes.md                       # render and open in a browser
-md-preview notes.md --no-open             # render only, print the output path
-md-preview notes.md --out /tmp/page.html  # choose the output path
-md-preview notes.md --watch               # re-render on save, page auto-refreshes
-md-preview notes.md --font-mode read      # serif reading mode
-md-preview .                              # every .md in this folder, plus an index
+spacedown notes.md                       # render and open in a browser
+spacedown notes.md --no-open             # render only, print the output path
+spacedown notes.md --out /tmp/page.html  # choose the output path
+spacedown notes.md --watch               # re-render on save, page auto-refreshes
+spacedown notes.md --font-mode read      # serif reading mode
+spacedown .                              # every .md in this folder, plus an index
 ```
 
-The default output path is `/tmp/md-preview/<slug>.html`, where the slug is the lowercased file name with every run of other characters turned into `-`. Rendering the same file again overwrites the same page, so a browser tab can stay open on it.
+The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the lowercased file name with every run of other characters turned into `-`. Rendering the same file again overwrites the same page, so a browser tab can stay open on it.
 
 ### Output contract
 
-- **stdout** carries exactly one line on success: the absolute path of the HTML file. `open "$(md-preview notes.md --no-open)"` works.
-- **stderr** carries everything else, each line prefixed with `md-preview:`.
+- **stdout** carries exactly one line on success: the absolute path of the HTML file. `open "$(spacedown notes.md --no-open)"` works.
+- **stderr** carries everything else, each line prefixed with `spacedown:`.
 - When stdout is not a terminal, `--no-open` is implied. Scripts and coding agents can call the tool without opening a browser.
 
 ### Flags
@@ -97,7 +96,7 @@ The default output path is `/tmp/md-preview/<slug>.html`, where the slug is the 
 | `read` | Proportional serif prose (Georgia first, for full Vietnamese diacritics) with monospace code and tables. |
 | `mono` | Full editor fidelity: the fonts mirrored from the editor settings, monospace everywhere. |
 
-The iA Writer fonts are free under the SIL Open Font License 1.1. Install them from [github.com/iaolo/iA-Fonts](https://github.com/iaolo/iA-Fonts) to get the intended typography. md-preview only names them in CSS and ships no font files.
+The iA Writer fonts are free under the SIL Open Font License 1.1. Install them from [github.com/iaolo/iA-Fonts](https://github.com/iaolo/iA-Fonts) to get the intended typography. spacedown only names them in CSS and ships no font files.
 
 `assets/paper-theme.css` is plain CSS, so it also works as a VS Code or VSCodium [`markdown.styles`](https://code.visualstudio.com/docs/languages/markdown#_using-your-own-css) entry. Point the setting at the file with a `file://` URL and an absolute path.
 
@@ -105,11 +104,11 @@ The iA Writer fonts are free under the SIL Open Font License 1.1. Install them f
 
 | Variable | Effect |
 |---|---|
-| `MD_PREVIEW_FONT_MODE` | Default font mode when `--font-mode` is absent. |
-| `MD_PREVIEW_SETTINGS` | A `settings.json` to read preview fonts from. Default: VSCodium's, then VS Code's. |
-| `MD_PREVIEW_BROWSER` | App name to open pages in, for example `"Google Chrome"`. Default: the first installed of Arc, Chrome, Edge and Brave, then the system default. |
+| `SPACEDOWN_FONT_MODE` | Default font mode when `--font-mode` is absent. |
+| `SPACEDOWN_SETTINGS` | A `settings.json` to read preview fonts from. Default: VSCodium's, then VS Code's. |
+| `SPACEDOWN_BROWSER` | App name to open pages in, for example `"Google Chrome"`. Default: the first installed of Arc, Chrome, Edge and Brave, then the system default. |
 
-md-preview reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `markdown.preview.lineHeight` and `editor.fontFamily` from the settings file. With no settings file, stock VS Code defaults apply.
+spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `markdown.preview.lineHeight` and `editor.fontFamily` from the settings file. With no settings file, stock VS Code defaults apply.
 
 ### Exit codes
 
@@ -138,7 +137,7 @@ integrations/build-safari.sh --with-safari  # also the Safari drop extension and
 | `Spacedown.app` | `~/Applications/` | always |
 | Render helper (XPC) | `~/.local/libexec/spacedown-render` | `--with-safari` |
 | LaunchAgent `foundation.d.spacedown.render` | `~/Library/LaunchAgents/` | `--with-safari` |
-| `md-open` link | `~/.local/bin/md-open` | `--with-safari` |
+| `spacedown-open` link | `~/.local/bin/spacedown-open` | `--with-safari` |
 
 After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Spacedown** under System Settings > General > Login Items & Extensions > Quick Look.
 
@@ -156,7 +155,7 @@ The Safari extension must be App-Sandboxed to load, and a sandboxed extension ca
 ```bash
 bash tests/smoke.sh                                   # CLI suite, also runs the Quick Look tests
 node integrations/safari/quick-look/test-render.js    # Quick Look render core only
-md-preview tests/fixture/fixture.md                   # synthetic document that exercises every feature
+spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```
 
 `assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.

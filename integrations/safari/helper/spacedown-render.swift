@@ -8,7 +8,7 @@
 //  MachServices) when the sandboxed appex opens an XPC connection.
 //
 //  Build: swiftc -O spacedown-render.swift -o spacedown-render   (Foundation only)
-//  The render logic is the exact md-open spawn moved verbatim from the old
+//  The render logic is the exact spacedown-open spawn moved verbatim from the old
 //  SafariWebExtensionHandler.
 
 import Foundation
@@ -29,7 +29,7 @@ final class RenderImpl: NSObject, SpacedownRenderService {
         if !(lower.hasSuffix(".md") || lower.hasSuffix(".markdown")) { name += ".md" }
 
         let tmpDir = (NSTemporaryDirectory() as NSString)
-            .appendingPathComponent("md-preview-drop-" + UUID().uuidString)
+            .appendingPathComponent("spacedown-drop-" + UUID().uuidString)
         let srcPath = (tmpDir as NSString).appendingPathComponent(name)
         do {
             try FileManager.default.createDirectory(atPath: tmpDir, withIntermediateDirectories: true)
@@ -41,14 +41,14 @@ final class RenderImpl: NSObject, SpacedownRenderService {
 
         let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
         var env = ProcessInfo.processInfo.environment
-        // launchd gives a minimal PATH; add Homebrew + ~/.local/bin so md-open,
-        // md-preview, and pandoc resolve.
+        // launchd gives a minimal PATH; add Homebrew + ~/.local/bin so spacedown-open,
+        // spacedown, and pandoc resolve.
         env["PATH"] = "/opt/homebrew/bin:\(home)/.local/bin:/usr/local/bin:/usr/bin:/bin"
-        env["MD_PREVIEW_BROWSER"] = "Safari"   // drop happened in Safari -> open in Safari
+        env["SPACEDOWN_BROWSER"] = "Safari"   // drop happened in Safari -> open in Safari
 
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        proc.arguments = ["md-open", srcPath]
+        proc.arguments = ["spacedown-open", srcPath]
         proc.environment = env
         let outPipe = Pipe(), errPipe = Pipe()
         proc.standardOutput = outPipe
@@ -57,7 +57,7 @@ final class RenderImpl: NSObject, SpacedownRenderService {
         do {
             try proc.run()
         } catch {
-            reply(false, "could not launch md-open: \(error.localizedDescription)")
+            reply(false, "could not launch spacedown-open: \(error.localizedDescription)")
             return
         }
         proc.waitUntilExit()

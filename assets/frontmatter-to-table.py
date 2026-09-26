@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a leading YAML frontmatter block as an HTML properties table for md-preview.
+"""Render a leading YAML frontmatter block as an HTML properties table for spacedown.
 
 Tolerant by design: it splits each line on the FIRST ``: `` and NEVER hands the block
 to a real YAML parser, which is the exact thing that crashes pandoc on SKILL.md
@@ -7,7 +7,7 @@ to a real YAML parser, which is the exact thing that crashes pandoc on SKILL.md
 it cannot cleanly parse, it FALLS BACK to emitting the block as a ```yaml fence, so the
 render never crashes. The rest of the file is passed through unchanged.
 
-Emits ``<table class="mdp-frontmatter">`` (raw HTML; pandoc passes it through). Inline
+Emits ``<table class="sd-frontmatter">`` (raw HTML; pandoc passes it through). Inline
 ``code`` in a value keeps its chip; everything else is HTML-escaped. Nested maps flatten
 to dotted keys (depth <=2); deeper nesting or any odd shape triggers the fence fallback.
 """
@@ -60,7 +60,7 @@ def fmt_value(v):
         if v == "":
             return "&nbsp;"
     if SCALAR_RE.match(v):
-        return '<span class="mdp-fm-scalar">%s</span>' % esc(v)
+        return '<span class="sd-fm-scalar">%s</span>' % esc(v)
     e = esc(v)
     # turn inline `code` into a <code> chip (group already escaped), then break an
     # explicit enumerated run onto lines.
@@ -154,10 +154,10 @@ def render_table(block):
         return None
     # Tag the table when any value is long so CSS can widen it (more robust than :has()).
     has_long = any(is_long for _, _, is_long in rows)
-    table_cls = "mdp-frontmatter mdp-fm-has-long" if has_long else "mdp-frontmatter"
+    table_cls = "sd-frontmatter sd-fm-has-long" if has_long else "sd-frontmatter"
     out = [
         '<table class="%s">' % table_cls,
-        '<colgroup><col class="mdp-fm-col-key"><col class="mdp-fm-col-val"></colgroup>',
+        '<colgroup><col class="sd-fm-col-key"><col class="sd-fm-col-val"></colgroup>',
         "<tbody>",
     ]
     for k, v, is_long in rows:
@@ -165,14 +165,14 @@ def render_table(block):
             # long value: wrap in a clamp container so CSS shows a few lines and the foot JS
             # can add a "Show more" toggle (the full text is metadata, not the main content).
             out.append(
-                '<tr class="mdp-fm-row-stacked">'
-                '<td class="mdp-fm-key">%s</td>'
-                '<td class="mdp-fm-val mdp-fm-long"><div class="mdp-fm-clamp">%s</div></td></tr>'
+                '<tr class="sd-fm-row-stacked">'
+                '<td class="sd-fm-key">%s</td>'
+                '<td class="sd-fm-val sd-fm-long"><div class="sd-fm-clamp">%s</div></td></tr>'
                 % (esc(k), v)
             )
         else:
             out.append(
-                '<tr><td class="mdp-fm-key">%s</td><td class="mdp-fm-val">%s</td></tr>'
+                '<tr><td class="sd-fm-key">%s</td><td class="sd-fm-val">%s</td></tr>'
                 % (esc(k), v)
             )
     out.append("</tbody></table>")
