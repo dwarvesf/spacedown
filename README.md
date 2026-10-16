@@ -214,6 +214,7 @@ The Releases page carries one release: each new version replaces the previous on
    - `scripts/mas-altool.sh`: runs `altool` validate or upload for the signed `.pkg`, reading the API key from the same 1Password item at call time. Usage: `mas-altool.sh validate|upload <pkg>`.
    - `scripts/store-shots.sh`: renders the two App Store screenshots from the real Quick Look preview through headless Brave. Needs Brave Browser and Node. Renders the fixtures `scripts/launch.md` (light) and `scripts/showcase.md` (dark).
    - `scripts/readme-shots.sh`: renders the test fixture through the same Quick Look pipeline and screenshots it into `docs/images/` for this README. Needs Brave Browser and Node.
+   - `scripts/layout-check`: renders a markdown file with `bin/spacedown`, measures the layout in a private headless Helium at 390, 768, 1470 and 1728px (overflow, content edges, side gaps, right edges, optional skim bright-word share, optional dark palette), screenshots each width, and exits 1 when any width scrolls sideways. Needs Helium; `BROWSER` overrides it.
    - `scripts/window-shots.sh`: screenshots the app window page, Quick Look only and with Safari, light and dark, at the sizes `ViewController` sets. Needs Brave Browser.
    - `scripts/qlwrap.js`: wraps a Quick Look render body the way `MarkdownPreviewProvider.buildPreviewHTML` does. Used by `store-shots.sh` and `readme-shots.sh`. Needs Node.
 

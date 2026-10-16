@@ -1,0 +1,214 @@
+#!/bin/bash
+# Render a markdown file with bin/spacedown, open it in a private headless Helium at several
+# widths, measure the layout and screenshot each width. Exit 1 when any width scrolls sideways.
+#
+# Usage: scripts/layout-check [--mode ia|tm|paper] [--widths 390,768,1470,1728]
+#                             [--shots <dir>] [--skim] [--dark] <file.md>
+# BROWSER overrides the browser binary. The user's running browser is never touched: every
+# launch gets a fresh --user-data-dir.
+set -euo pipefail
+
+S="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$S/.." && pwd)"
+BROWSER="${BROWSER:-/Applications/Helium.app/Contents/MacOS/Helium}"
+
+usage() {
+  cat <<'EOF'
+Usage: layout-check [--mode ia|tm|paper] [--widths 390,768,1470,1728] [--shots <dir>] [--skim] [--dark] <file.md>
+
+  --mode    font mode passed to spacedown (default ia)
+  --widths  comma-separated window widths (default 390,768,1470,1728)
+  --shots   screenshot directory (default: a fresh mktemp dir, printed)
+  --skim    add sd-skim to the page; also print the bright-word share
+  --dark    force the dark palette (promotes the prefers-color-scheme: dark blocks to all)
+
+Prints one line per width plus the screenshot path. Exit 1 when any width overflows
+horizontally, else 0. BROWSER overrides the browser binary.
+EOF
+}
+
+MODE="ia"
+WIDTHS="390,768,1470,1728"
+SHOTS=""
+SKIM=0
+DARK=0
+FILE=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --mode) [ $# -ge 2 ] || { usage >&2; exit 64; }; MODE="$2"; shift 2 ;;
+    --widths) [ $# -ge 2 ] || { usage >&2; exit 64; }; WIDTHS="$2"; shift 2 ;;
+    --shots) [ $# -ge 2 ] || { usage >&2; exit 64; }; SHOTS="$2"; shift 2 ;;
+    --skim) SKIM=1; shift ;;
+    --dark) DARK=1; shift ;;
+    -*) echo "layout-check: unknown option $1" >&2; usage >&2; exit 64 ;;
+    *) [ -z "$FILE" ] || { echo "layout-check: one file only" >&2; exit 64; }; FILE="$1"; shift ;;
+  esac
+done
+
+[ -n "$FILE" ] || { usage >&2; exit 64; }
+[ -f "$FILE" ] || { echo "layout-check: no such file: $FILE" >&2; exit 1; }
+[ -x "$BROWSER" ] || { echo "layout-check: browser not found: $BROWSER" >&2; exit 1; }
+case "$MODE" in ia|tm|paper) ;; *) echo "layout-check: --mode must be ia, tm or paper" >&2; exit 64 ;; esac
+case "$WIDTHS" in
+  ''|*[!0-9,]*|,*|*,|*,,*) echo "layout-check: --widths must be comma-separated integers" >&2; exit 64 ;;
+esac
+
+WORK="$(mktemp -d)"
+if [ -z "$SHOTS" ]; then SHOTS="$(mktemp -d)"; else mkdir -p "$SHOTS"; fi
+SHOTS="$(cd "$SHOTS" && pwd)"
+echo "shots: $SHOTS"
+
+"$REPO/bin/spacedown" --font-mode "$MODE" --no-open --out "$WORK/page.html" "$FILE" >/dev/null 2>&1 \
+  || { echo "layout-check: spacedown failed on $FILE" >&2; exit 1; }
+
+# Measured copy: optional dark promotion, optional sd-skim, then the measuring script.
+# The script runs before the first animation frame, so sd-skim lands without the fade transition.
+cat >| "$WORK/measure.js" <<'EOF'
+<script>
+(function () {
+  var EDGE_SEL = "body > p, body > table, body > hr, table.sd-frontmatter";
+  var SKIM = __SKIM__;
+  if (SKIM) document.documentElement.classList.add("sd-skim");
+  function measure() {
+    var root = document.documentElement;
+    var els = Array.prototype.slice.call(document.querySelectorAll(EDGE_SEL));
+    var edges = [], seen = {}, left = Infinity, right = -Infinity;
+    els.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.width === 0) return;
+      var rr = Math.round(r.right + window.pageXOffset);
+      if (!seen[rr]) { seen[rr] = 1; edges.push(rr); }
+      left = Math.min(left, Math.round(r.left + window.pageXOffset));
+      right = Math.max(right, rr);
+    });
+    edges.sort(function (a, b) { return a - b; });
+    var toc = document.getElementById("TOC");
+    var tocRight = 0;
+    if (toc) {
+      var tr = toc.getBoundingClientRect();
+      if (getComputedStyle(toc).display !== "none" && tr.width > 0 && tr.right > 0) tocRight = Math.round(tr.right);
+    }
+    var vw = window.innerWidth;
+    var out = {
+      vw: vw, sw: root.scrollWidth, ov: root.scrollWidth > root.clientWidth ? "yes" : "no",
+      l: isFinite(left) ? left : 0, r: isFinite(right) ? right : 0,
+      gl: isFinite(left) ? left - tocRight : 0, gr: isFinite(right) ? vw - right : 0,
+      e: edges.join("/")
+    };
+    if (SKIM) {
+      var SKIP = "pre, script, style, noscript, textarea, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, button, svg";
+      var BRIGHT = ".sd-key, strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child";
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      var total = 0, bright = 0, n;
+      while ((n = walker.nextNode())) {
+        var p = n.parentElement;
+        if (!p || p.closest(SKIP)) continue;
+        var words = n.nodeValue.split(/\s+/).filter(Boolean).length;
+        if (!words) continue;
+        total += words;
+        if (p.closest(BRIGHT)) bright += words;
+      }
+      out.bw = total; out.bb = bright;
+      out.bs = total ? (100 * bright / total).toFixed(1) : "0.0";
+    }
+    var parts = [];
+    Object.keys(out).forEach(function (k) { parts.push(k + "=" + out[k]); });
+    document.body.setAttribute("data-lc", parts.join(" "));
+  }
+  measure();
+  window.addEventListener("load", function () { measure(); setTimeout(measure, 300); });
+})();
+</script>
+EOF
+sed "s/__SKIM__/$SKIM/" "$WORK/measure.js" >| "$WORK/measure.out.js"
+
+if [ "$DARK" -eq 1 ]; then
+  sed 's/@media (prefers-color-scheme: dark)/@media all/g' "$WORK/page.html" >| "$WORK/base.html"
+else
+  command cp -f "$WORK/page.html" "$WORK/base.html"
+fi
+# Insert the script before the last </body>.
+awk -v js="$WORK/measure.out.js" '
+  { lines[NR] = $0 }
+  /<\/body>/ { last = NR }
+  END {
+    for (i = 1; i <= NR; i++) {
+      if (i == last) { while ((getline l < js) > 0) print l }
+      print lines[i]
+    }
+    if (!last) { while ((getline l < js) > 0) print l }
+  }' "$WORK/base.html" >| "$WORK/measure.html"
+
+# Run the browser in the background with a fresh profile and wait for its output, since new
+# headless may never exit after --screenshot or --dump-dom. Polls up to 30s, then kills the pid.
+# usage: run_browser <outfile> <png|dom> <width> <url>
+run_browser() {
+  local out="$1" kind="$2" w="$3" url="$4" pid i ready profile
+  profile="$(mktemp -d)"
+  if [ "$kind" = "dom" ]; then
+    "$BROWSER" --headless=new --disable-gpu --hide-scrollbars --user-data-dir="$profile" \
+      --window-size="$w",900 --virtual-time-budget=3000 --dump-dom "$url" >| "$out" 2>/dev/null &
+  else
+    "$BROWSER" --headless=new --disable-gpu --hide-scrollbars --user-data-dir="$profile" \
+      --window-size="$w",900 --virtual-time-budget=3000 --screenshot="$out" "$url" >/dev/null 2>&1 &
+  fi
+  pid=$!
+  ready=0
+  for i in $(seq 1 60); do
+    if [ "$kind" = "dom" ]; then
+      if [ -s "$out" ] && grep -q '</html>' "$out"; then ready=1; break; fi
+    else
+      if [ -s "$out" ]; then sleep 0.5; ready=1; break; fi
+    fi
+    if ! kill -0 "$pid" 2>/dev/null; then
+      if [ -s "$out" ]; then ready=1; fi
+      break
+    fi
+    sleep 0.5
+  done
+  kill "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+  [ "$ready" -eq 1 ]
+}
+
+field() { # field <name> <string>
+  printf '%s\n' "$2" | tr ' ' '\n' | sed -n "s/^$1=//p" | head -1
+}
+
+overflow_any=0
+IFS=',' read -r -a WLIST <<< "$WIDTHS"
+SUFFIX=""
+[ "$SKIM" -eq 1 ] && SUFFIX="${SUFFIX}-skim"
+[ "$DARK" -eq 1 ] && SUFFIX="${SUFFIX}-dark"
+
+for w in "${WLIST[@]}"; do
+  dom="$WORK/dom-$w.html"
+  if ! run_browser "$dom" dom "$w" "file://$WORK/measure.html"; then
+    echo "W=$w measure failed (no DOM from the browser within 30s)" >&2
+    overflow_any=1
+    continue
+  fi
+  data="$(grep -o 'data-lc="[^"]*"' "$dom" | head -1 | sed 's/^data-lc="//; s/"$//')"
+  if [ -z "$data" ]; then
+    echo "W=$w measure failed (no data-lc on body)" >&2
+    overflow_any=1
+    continue
+  fi
+  ov="$(field ov "$data")"
+  [ "$ov" = "yes" ] && overflow_any=1
+  echo "W=$w viewport=$(field vw "$data") scroll=$(field sw "$data") overflow=$ov content=$(field l "$data")-$(field r "$data") gapLeft=$(field gl "$data") gapRight=$(field gr "$data") edges=$(field e "$data")"
+  if [ "$SKIM" -eq 1 ]; then
+    echo "  bright-words: $(field bb "$data") of $(field bw "$data") ($(field bs "$data")%)"
+  fi
+  shot="$SHOTS/layout-$w$SUFFIX.png"
+  if run_browser "$shot" png "$w" "file://$WORK/measure.html"; then
+    echo "  shot: $shot"
+  else
+    echo "  shot: failed ($shot not written within 30s)" >&2
+  fi
+done
+
+[ "$overflow_any" -eq 0 ] || exit 1
+exit 0
