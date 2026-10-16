@@ -638,6 +638,15 @@ fi
 echo "[page-end] the page leaves room below the last line"
 if grep -q 'padding-bottom: 6em;' "${SCRIPT_DIR}/assets/vscode-preview-head.html"; then ok "bottom padding"; else no "no bottom padding on the page"; fi
 
+echo "[one-edge] tables that fit and section rules end on the prose measure"
+HEAD_HTML="${SCRIPT_DIR}/assets/vscode-preview-head.html"
+if grep -q 'body > table:not(.sd-wide), body > hr { max-width: 48rem; }' "$HEAD_HTML" \
+   && grep -q 'body > hr { margin-left: 0; }' "$HEAD_HTML"; then
+  ok "one right edge"
+else
+  no "tables or rules run past the prose measure: the page has two right edges"
+fi
+
 echo "[ia-caption] a caption under a lone image is centered"
 if grep -q 'p:has(> img:only-child) + p {.*text-align: center;' "$IA_THEME"; then ok "centered caption"; else no "caption not centered"; fi
 
