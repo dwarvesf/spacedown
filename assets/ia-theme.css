@@ -273,3 +273,16 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
   }
   mark { background-color: rgba(250, 222, 76, 0.25); }
 }
+
+/* Print is always black on white, whatever the screen palette (the dark one included). The
+   page layout, link addresses and page breaks live in reading-chrome-head.html. */
+@media print {
+  :root {
+    --ia-bg: #fff;
+    --ia-fg: #000;
+    --ia-border: #000;
+    --ia-row-rule: #ccc;
+    --ia-link: #000;
+    --ia-code-bg: #f2f2f2;
+  }
+}
