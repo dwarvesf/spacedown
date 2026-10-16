@@ -677,6 +677,80 @@ ln -s "$DOCX" "${TMP}/linked-docx"
 "${TMP}/linked-docx" "${TMP}/d.md" -o "${TMP}/linked.docx" >/dev/null 2>&1 || true
 if docx_styles "${TMP}/linked.docx" | grep -q 'IBM Plex Sans'; then ok "symlink"; else no "symlink lost the reference doc"; fi
 
+# ---- reading-view polish: outline, tables, images, links, print, toolbar ----
+printf '# Polish\n\n## Section\n\nSee https://d.foundation and [Dwarves](https://dwarves.foundation).\n\n- one\n- two\n' > "${TMP}/polish.md"
+"$SPACEDOWN" "${TMP}/polish.md" --out "${TMP}/polish.html" --no-open >/dev/null 2>&1
+
+echo "[polish-1] dash bullets are scoped to the article, never nav#TOC"
+if grep -q 'ul:not(nav#TOC ul):not(.task-list) > li::before' "${TMP}/polish.html" \
+   && ! grep -qE '^ul > li::before' "${TMP}/polish.html"; then
+  ok "the dash selector excludes the outline list (and no unscoped copy remains)"
+else
+  no "dash bullets are not scoped away from nav#TOC"
+fi
+
+echo "[polish-2] an empty thead is hidden"
+if grep -q 'thead:not(:has(th:not(:empty))) { display: none; }' "${TMP}/polish.html"; then
+  ok "empty header row rule present"
+else
+  no "empty thead rule missing"
+fi
+
+echo "[polish-3] a local image becomes a data: URI, unless SPACEDOWN_EMBED_IMAGES=0"
+mkdir -p "${TMP}/img"
+printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>\n' > "${TMP}/img/fig.svg"
+head -c 5400000 /dev/zero > "${TMP}/img/huge.png"
+printf '![](fig.svg)\n\n![](%s/img/fig.svg)\n\n![](huge.png)\n\n![](https://example.com/remote.png)\n' "$TMP" > "${TMP}/img/doc.md"
+"$SPACEDOWN" "${TMP}/img/doc.md" --out "${TMP}/img/on.html" --no-open >/dev/null 2>"${TMP}/img/on.err"
+SPACEDOWN_EMBED_IMAGES=0 "$SPACEDOWN" "${TMP}/img/doc.md" --out "${TMP}/img/off.html" --no-open >/dev/null 2>&1
+svg_on=$(grep -o 'data:image/svg+xml;base64' "${TMP}/img/on.html" | wc -l | tr -d ' ')
+if [[ "$svg_on" -eq 2 ]] && ! grep -q 'src="fig.svg"' "${TMP}/img/on.html" \
+   && grep -q 'src="huge.png"' "${TMP}/img/on.html" \
+   && grep -q 'src="https://example.com/remote.png"' "${TMP}/img/on.html" \
+   && [[ "$(grep -c 'image over 5 MB' "${TMP}/img/on.err")" -eq 1 ]]; then
+  ok "relative and absolute svg embedded; a 5 MB+ file and a remote URL left alone (logged once)"
+else
+  no "image embedding wrong (svg data URIs=${svg_on})"
+fi
+if grep -q 'src="fig.svg"' "${TMP}/img/off.html" && ! grep -q 'data:image/svg+xml;base64' "${TMP}/img/off.html"; then
+  ok "SPACEDOWN_EMBED_IMAGES=0 keeps the path"
+else
+  no "SPACEDOWN_EMBED_IMAGES=0 did not keep the image path"
+fi
+
+echo "[polish-4] a bare URL becomes a link; the ia theme styles links as links"
+if grep -q '<a href="https://d.foundation"' "${TMP}/polish.html" \
+   && grep -q -- '--ia-link: #1d5fd1' "${TMP}/polish.html" \
+   && grep -q -- '--ia-link: #7aa7ff' "${TMP}/polish.html" \
+   && grep -q 'a:focus-visible' "${TMP}/polish.html"; then
+  ok "bare URL autolinked; accent, dark accent and focus ring present"
+else
+  no "bare URL not linked or link styling missing"
+fi
+
+echo "[polish-5] print: button, stylesheet, chrome hidden, link addresses"
+if grep -q 'window.print()' "${TMP}/polish.html" && grep -q '@media print' "${TMP}/polish.html" \
+   && grep -q 'nav#TOC, .sd-toolbar, .sd-toc-toggle, .sd-progress { display: none !important; }' "${TMP}/polish.html" \
+   && grep -q 'content: " (" attr(href) ")"' "${TMP}/polish.html" \
+   && grep -q 'break-inside: avoid' "${TMP}/polish.html"; then
+  ok "print button wired; print sheet hides chrome, shows link addresses, keeps blocks whole"
+else
+  no "print support incomplete"
+fi
+
+echo "[polish-6] toolbar buttons carry an aria-label and a title; the progress bar exists"
+labels_ok=1
+for lbl in 'ICONS.zoomOut, "Zoom out"' 'ICONS.zoomIn, "Zoom in"' 'ICONS.print, "Print"' '"Reset zoom"'; do
+  grep -qF "$lbl" "${TMP}/polish.html" || labels_ok=0
+done
+if [[ $labels_ok -eq 1 ]] && grep -qF 'COPY_LABEL = "Copy source"' "${TMP}/polish.html" \
+   && grep -qF 'b.setAttribute("aria-label", label); b.title = title;' "${TMP}/polish.html" \
+   && grep -q 'sd-progress' "${TMP}/polish.html"; then
+  ok "zoom out, zoom level, zoom in, copy and print are labelled icon buttons; progress bar present"
+else
+  no "toolbar labels or progress bar missing"
+fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2
