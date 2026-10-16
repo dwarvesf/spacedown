@@ -657,6 +657,13 @@ else
   no "phone gutter missing: text sits 52px in from each edge on a phone"
 fi
 
+echo "[phone-table] on phones a wide table scrolls in its own box"
+if grep -q 'body > table:not(.sd-frontmatter) { display: block; overflow-x: auto; max-width: 100%; }' "$CHROME_HEAD"; then
+  ok "phone table scroll"
+else
+  no "phone table scroll missing: a wide table pushes the page sideways on a phone"
+fi
+
 echo "[fm-width] the frontmatter table fills the column and its keys start on the text edge"
 if grep -q 'width: 100%;                    /\* fills the column' "$HEAD_HTML" \
    && grep -q 'table.sd-frontmatter td:first-child { padding-left: 0; }' "$HEAD_HTML" \
