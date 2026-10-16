@@ -105,7 +105,7 @@ if grep -q 'class="title"' "${TMP}/fixture.html"; then no "title block present";
 #     the body rule must appear AFTER pandoc's 36em so the cascade lets it win.
 echo "[13] page column overrides pandoc default"
 line36=$(grep -n 'max-width: 36em' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
-line60=$(grep -n '  max-width: 60rem;' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
+line60=$(grep -n '  max-width: 60rem;' "${TMP}/fixture.html" | head -1 | cut -d: -f1 || true)
 if [[ -n "$line60" ]] && { [[ -z "$line36" ]] || [[ "$line60" -gt "$line36" ]]; } \
    && ! grep -q 'max-width: 48rem' "${TMP}/fixture.html"; then
   ok "60rem column wins over pandoc 36em; prose fills it"
