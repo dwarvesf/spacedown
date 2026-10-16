@@ -978,6 +978,20 @@ else
   no "build wiring missing"
 fi
 
+# layout-check: the no-browser surface only (--help, no args, bad option)
+echo "[layout-check] usage and argument errors need no browser"
+LC="${SCRIPT_DIR}/scripts/layout-check"
+set +e
+"$LC" --help >/dev/null 2>&1; lc_help=$?
+"$LC" >/dev/null 2>&1; lc_none=$?
+"$LC" --bogus x.md >/dev/null 2>&1; lc_bad=$?
+set -e
+if [[ -x "$LC" && $lc_help -eq 0 && $lc_none -eq 64 && $lc_bad -eq 64 ]]; then
+  ok "--help exits 0; no file and unknown option exit 64"
+else
+  no "layout-check usage: help=$lc_help none=$lc_none bad=$lc_bad"
+fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2
