@@ -194,8 +194,11 @@ thead th {
    box, so they always end where the cells end, even when the box is wider (.sd-wide). The
    selectors match the base rule that blanks the row-top border (it names every element). */
 tbody td { border-bottom: none; }
+/* pandoc's default sheet draws ink rules on the tbody box; the cells carry the rules here. */
+table > tbody { border-top: none; border-bottom: none; }
+/* first-of-type, not first-child: pandoc puts a colgroup before the tbody when cells run long. */
 thead > tr:first-child > *,
-table > tbody:first-child > tr:first-child > *,
+table > tbody:first-of-type > tr:first-child > *,
 thead:not(:has(th:not(:empty))) + tbody > tr:first-child > * { border-top: 1px solid var(--ia-table-rule); }
 thead + tbody > tr:first-child > * { border-top: 1px solid var(--ia-table-rule); }
 table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-table-rule); }
@@ -240,7 +243,7 @@ p > img:only-child[src$=".svg"] { width: 100%; }
    the caption paragraph, the same shape the panel reads (pandoc runs with
    -implicit_figures so it does not caption the image with its own alt text as well). */
 p:has(> img:only-child) { margin-bottom: 0.7em; }
-p:has(> img:only-child) + p { font-size: 0.82em; line-height: 1.5; opacity: 0.72; }
+p:has(> img:only-child) + p { font-size: 0.82em; line-height: 1.5; opacity: 0.72; text-align: center; }
 
 mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
 

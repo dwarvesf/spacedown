@@ -616,6 +616,18 @@ else
   no "ia table drifted from iA Writer (light rules, bold first column, or rules on the table box)"
 fi
 
+echo "[ia-table-headless] a headless table behind a colgroup opens on a soft rule, not pandoc's ink tbody rule"
+if grep -q 'table > tbody { border-top: none; border-bottom: none; }' "$IA_THEME" \
+   && grep -q 'table > tbody:first-of-type > tr:first-child > \*,' "$IA_THEME" \
+   && ! grep -q 'table > tbody:first-child > tr:first-child' "$IA_THEME"; then
+  ok "headless table top rule"
+else
+  no "headless table: tbody ink rule not undone, or first-row rule still keyed on tbody:first-child"
+fi
+
+echo "[ia-caption] a caption under a lone image is centered"
+if grep -q 'p:has(> img:only-child) + p {.*text-align: center;' "$IA_THEME"; then ok "centered caption"; else no "caption not centered"; fi
+
 echo "[fonts] the ia page embeds the iA fonts (Safari ignores installed ones); tm and the opt-out do not"
 printf '# T\n\nHello *world*.\n' > "${TMP}/fonts.md"
 "$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-ia.html" --no-open >/dev/null 2>&1 || true
