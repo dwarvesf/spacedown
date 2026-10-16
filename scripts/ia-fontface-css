@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ia-fontface-css: print @font-face rules carrying the vendored iA Writer Quattro V and
+# Mono V files (assets/fonts/ia/, SIL OFL 1.1) as base64 data URIs.
+# Safari and the sandboxed Quick Look webview only let pages use fonts that ship with
+# macOS, so an installed iA font is ignored there; an embedded face always loads.
+# Used by bin/spacedown (themes that name the iA fonts) and scripts/build-ql-skin.
+# Env: IA_FONT_DIR overrides the font dir.
+set -euo pipefail
+
+_src="${BASH_SOURCE[0]}"
+while [[ -h "$_src" ]]; do
+  _dir="$(cd -P "$(dirname "$_src")" && pwd)"
+  _src="$(readlink "$_src")"
+  [[ "$_src" != /* ]] && _src="${_dir}/${_src}"
+done
+ROOT="$(cd -P "$(dirname "$_src")/.." && pwd)"
+FONT_DIR="${IA_FONT_DIR:-${ROOT}/assets/fonts/ia}"
+
+face() {
+  local family=$1 style=$2 file="${FONT_DIR}/$3"
+  [[ -f "$file" ]] || { echo "ia-fontface-css: font missing: $file" >&2; exit 2; }
+  printf '@font-face { font-family: "%s"; font-style: %s; font-weight: 100 900; src: url(data:font/ttf;base64,%s) format("truetype"); }\n' \
+    "$family" "$style" "$(base64 < "$file" | tr -d '\n')"
+}
+
+echo "/* iA Writer fonts (SIL OFL 1.1) embedded by scripts/ia-fontface-css. */"
+face "iA Writer Quattro V" normal iAWriterQuattroV.ttf
+face "iA Writer Quattro V" italic iAWriterQuattroV-Italic.ttf
+face "iA Writer Mono V" normal iAWriterMonoV.ttf
+face "iA Writer Mono V" italic iAWriterMonoV-Italic.ttf
