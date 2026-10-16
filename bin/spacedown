@@ -429,7 +429,15 @@ MODECSS
         THEME_HEAD="$(mktemp -t spacedown-theme 2>/dev/null || true)"
         if [[ -n "${THEME_HEAD:-}" ]]; then
           TMPFILES+=("$THEME_HEAD")
-          { echo '<style>'; cat "$THEME_CSS"; echo '</style>'; } > "$THEME_HEAD"
+          # A theme that names the iA fonts gets them embedded: Safari only lets pages
+          # use fonts that ship with macOS, so an installed iA font is ignored there.
+          # SPACEDOWN_EMBED_FONTS=0 keeps the page small and relies on installed fonts.
+          FONTFACE_CSS=""
+          if [[ "${SPACEDOWN_EMBED_FONTS:-1}" != "0" ]] && grep -q 'iA Writer' "$THEME_CSS"; then
+            FONTFACE_CSS="$("${SCRIPT_DIR}/../scripts/ia-fontface-css" 2>/dev/null || true)"
+            [[ -n "$FONTFACE_CSS" ]] || log "iA fonts not embedded (assets/fonts/ia missing); installed fonts only"
+          fi
+          { echo '<style>'; [[ -n "$FONTFACE_CSS" ]] && printf '%s\n' "$FONTFACE_CSS"; cat "$THEME_CSS"; echo '</style>'; } > "$THEME_HEAD"
           pandoc_flags+=( --include-in-header "$THEME_HEAD" )
         fi
       else

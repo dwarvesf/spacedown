@@ -605,6 +605,18 @@ else
   no "synthetic fixture render incomplete (rc=$rc)"
 fi
 
+echo "[fonts] the ia page embeds the iA fonts (Safari ignores installed ones); tm and the opt-out do not"
+printf '# T\n\nHello *world*.\n' > "${TMP}/fonts.md"
+"$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-ia.html" --no-open >/dev/null 2>&1 || true
+SPACEDOWN_EMBED_FONTS=0 "$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-off.html" --no-open >/dev/null 2>&1 || true
+"$SPACEDOWN" "${TMP}/fonts.md" --font-mode tm --out "${TMP}/fonts-tm.html" --no-open >/dev/null 2>&1 || true
+ia_faces=$(grep -o 'url(data:font/ttf;base64,' "${TMP}/fonts-ia.html" 2>/dev/null | wc -l | tr -d ' ')
+if [[ "$ia_faces" -eq 4 ]] && ! grep -q 'url(data:font/ttf' "${TMP}/fonts-off.html" && ! grep -q 'url(data:font/ttf' "${TMP}/fonts-tm.html"; then
+  ok "4 embedded faces in ia, none with SPACEDOWN_EMBED_FONTS=0 or tm"
+else
+  no "font embedding wrong (ia faces=${ia_faces})"
+fi
+
 echo "[list] a list right under a line of text is a list, with task checkboxes"
 printf '**Step one**\n- [ ] first task\n- [x] second task\n' > "${TMP}/list.md"
 "$SPACEDOWN" "${TMP}/list.md" --out "${TMP}/list.html" --no-open >/dev/null 2>&1 || true
