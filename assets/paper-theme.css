@@ -36,6 +36,8 @@
   --paper-mark: #f6e7a8;
   --sd-skim-ink: var(--paper-fg);  /* skim mode: key words / every other word */
   --sd-skim-fade: #a8a59d;
+  --sd-read-blue: var(--paper-link);  /* BeeLine / RSVP / surprise: line colour, overlay ground */
+  --sd-read-bg: var(--paper-bg);
   --paper-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --paper-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
   /* Set via the shared vars, not on body: reading-chrome-head.html injects after

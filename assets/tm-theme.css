@@ -64,6 +64,8 @@
   --tm-red: #ad2111;
   --sd-skim-ink: var(--tm-fg1);  /* skim mode: key words / every other word */
   --sd-skim-fade: #a3a3a1;
+  --sd-read-red: var(--tm-red);  /* BeeLine / RSVP / surprise: line colour, overlay ground */
+  --sd-read-bg: var(--tm-bg);
   /* Vietnamese-safe order (Georgia first); see comment above. */
   --tm-font-serif: Georgia, "Iowan Old Style BT", "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
   --tm-font-mono: "SF Mono", Monaco, Inconsolata, "Fira Code", "JetBrains Mono", ui-monospace, Menlo, "DejaVu Sans Mono", monospace;
