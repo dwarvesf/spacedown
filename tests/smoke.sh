@@ -569,6 +569,12 @@ else
   no "synthetic fixture render incomplete (rc=$rc)"
 fi
 
+echo "[list] a list right under a line of text is a list, with task checkboxes"
+printf '**Step one**\n- [ ] first task\n- [x] second task\n' > "${TMP}/list.md"
+"$SPACEDOWN" "${TMP}/list.md" --out "${TMP}/list.html" --no-open >/dev/null 2>&1 || true
+if grep -q '<li' "${TMP}/list.html" && [[ $(grep -c 'type="checkbox"' "${TMP}/list.html") -ge 2 ]] \
+   && ! grep -q -- '- \[ \]' "${TMP}/list.html"; then ok "list without a preceding blank line"; else no "list folded into the paragraph as literal text"; fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2
