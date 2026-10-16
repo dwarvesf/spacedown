@@ -625,6 +625,19 @@ else
   no "headless table: tbody ink rule not undone, or first-row rule still keyed on tbody:first-child"
 fi
 
+echo "[ia-list-hang] the dash marker takes no room, so wrapped bullet lines align under the text"
+if grep -q 'content: "\\2013";' "$IA_THEME" \
+   && grep -q 'width: 1.35em; .*margin\|width: 1.35em;' "$IA_THEME" \
+   && grep -q 'margin-left: -1.35em;' "$IA_THEME" \
+   && ! grep -q '2013\\00a0' "$IA_THEME"; then
+  ok "list hang"
+else
+  no "dash marker is wider than its pull-back: wrapped bullet lines start left of the first line"
+fi
+
+echo "[page-end] the page leaves room below the last line"
+if grep -q 'padding-bottom: 6em;' "${SCRIPT_DIR}/assets/vscode-preview-head.html"; then ok "bottom padding"; else no "no bottom padding on the page"; fi
+
 echo "[ia-caption] a caption under a lone image is centered"
 if grep -q 'p:has(> img:only-child) + p {.*text-align: center;' "$IA_THEME"; then ok "centered caption"; else no "caption not centered"; fi
 
