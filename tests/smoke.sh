@@ -163,17 +163,50 @@ else
   no "font-mode toggle not behaving"
 fi
 
-# 17e. The default renders the paper theme, --font-mode=paper matches it, and
-#      --font-mode=mono carries no paper tokens (negative control).
-echo "[17e] font-mode paper default"
+# 17e. The default renders the ia theme, paper and tm are explicit modes, and read and
+#      mono carry no theme tokens (negative control).
+echo "[17e] font-mode ia default"
 "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=paper --out "${TMP}/paper.html" --no-open >/dev/null 2>&1
 "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=mono --out "${TMP}/mono.html" --no-open >/dev/null 2>&1
-if grep -q -- '--paper-bg' "${TMP}/default.html" \
-   && grep -q -- '--paper-bg' "${TMP}/paper.html" \
-   && ! grep -q -- '--paper-bg' "${TMP}/mono.html" && ! grep -q -- '--paper-bg' "${TMP}/read.html"; then
-  ok "default renders paper; mono and read unaffected (negative control)"
+if grep -q -- '--ia-bg' "${TMP}/default.html" && ! grep -q -- '--paper-bg' "${TMP}/default.html" \
+   && grep -q -- '--paper-bg' "${TMP}/paper.html" && ! grep -q -- '--ia-bg' "${TMP}/paper.html" \
+   && ! grep -q -- '--ia-bg' "${TMP}/mono.html" && ! grep -q -- '--paper-bg' "${TMP}/mono.html" \
+   && ! grep -q -- '--ia-bg' "${TMP}/read.html" && ! grep -q -- '--paper-bg' "${TMP}/read.html"; then
+  ok "default renders ia; paper passes through; mono and read carry no theme (negative control)"
 else
-  no "paper default not behaving"
+  no "ia default not behaving"
+fi
+
+# 17e2. --font-mode=tm renders the Thinking Machines theme, and only it.
+echo "[17e2] font-mode tm"
+"$SPACEDOWN" "${TMP}/fixture.md" --font-mode=tm --out "${TMP}/tm.html" --no-open >/dev/null 2>&1
+"$SPACEDOWN" "${TMP}/fixture.md" --font-mode tm --out "${TMP}/tm2.html" --no-open >/dev/null 2>&1
+if grep -q -- '--tm-bg' "${TMP}/tm.html" && ! grep -q -- '--ia-bg' "${TMP}/tm.html" && ! grep -q -- '--paper-bg' "${TMP}/tm.html" \
+   && grep -q -- '--tm-bg' "${TMP}/tm2.html"; then
+  ok "tm renders in both flag forms, without the ia or paper tokens"
+else
+  no "tm mode not applied"
+fi
+
+# 17e3. SPACEDOWN_FONT_MODE sets the default; the flag still wins; a bad value is exit 64.
+echo "[17e3] SPACEDOWN_FONT_MODE"
+SPACEDOWN_FONT_MODE=paper "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/envpaper.html" --no-open >/dev/null 2>&1
+SPACEDOWN_FONT_MODE=tm "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=ia --out "${TMP}/envflag.html" --no-open >/dev/null 2>&1
+set +e; SPACEDOWN_FONT_MODE=nope "$SPACEDOWN" "${TMP}/fixture.md" --no-open >/dev/null 2>&1; rc=$?; set -e
+if grep -q -- '--paper-bg' "${TMP}/envpaper.html" && ! grep -q -- '--ia-bg' "${TMP}/envpaper.html" \
+   && grep -q -- '--ia-bg' "${TMP}/envflag.html" && ! grep -q -- '--tm-bg' "${TMP}/envflag.html" && [[ $rc -eq 64 ]]; then
+  ok "env sets the mode, the flag overrides it, a bad value exits 64"
+else
+  no "SPACEDOWN_FONT_MODE not behaving (rc=$rc)"
+fi
+
+# 17e4. The ia stack puts iA Writer Quattro first, in the browser theme and the Quick Look skin.
+echo "[17e4] ia stack has Quattro first"
+if grep -q -- '--ia-font-sans: "iA Writer Quattro V"' "${TMP}/default.html" \
+   && grep -q -- '--ql-body-font: "iA Writer Quattro V"' "${SCRIPT_DIR}/integrations/safari/quick-look/Resources/ql-reading.css"; then
+  ok "Quattro first in the ia theme and the Quick Look skin"
+else
+  no "a theme lost iA Writer Quattro as its first face"
 fi
 
 # 17f. an unknown font mode is a usage error
@@ -181,16 +214,17 @@ echo "[17f] unknown font mode -> exit 64"
 set +e; "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=nope --no-open >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
 
-# 17g. SPACEDOWN_THEME_CSS replaces the paper theme; read mode ignores it; a missing
-#      file is a usage error.
+# 17g. SPACEDOWN_THEME_CSS replaces the active theme (ia by default); read mode ignores it;
+#      a missing file is a usage error.
 echo "[17g] SPACEDOWN_THEME_CSS theme hook"
 printf ':root { --custom-theme-bg: #123456; }\n' > "${TMP}/custom.css"
 SPACEDOWN_THEME_CSS="${TMP}/custom.css" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/custom.html" --no-open >/dev/null 2>&1
 SPACEDOWN_THEME_CSS="${TMP}/custom.css" "$SPACEDOWN" "${TMP}/fixture.md" --font-mode=read --out "${TMP}/custom-read.html" --no-open >/dev/null 2>&1
 set +e; SPACEDOWN_THEME_CSS="${TMP}/nope.css" "$SPACEDOWN" "${TMP}/fixture.md" --no-open >/dev/null 2>&1; rc=$?; set -e
 if grep -q -- '--custom-theme-bg' "${TMP}/custom.html" && ! grep -q -- '--paper-bg' "${TMP}/custom.html" \
+   && ! grep -q -- '--ia-bg' "${TMP}/custom.html" \
    && ! grep -q -- '--custom-theme-bg' "${TMP}/custom-read.html" && [[ $rc -eq 64 ]]; then
-  ok "theme file replaces paper; read unaffected; missing file exits 64"
+  ok "theme file replaces the active theme; read unaffected; missing file exits 64"
 else
   no "SPACEDOWN_THEME_CSS hook not behaving (rc=$rc)"
 fi
@@ -453,12 +487,14 @@ fi
 # 38c. contract guard: every custom property a dark block redefines must also be declared
 #      in a base :root, or that color has its ONLY definition inside the media query and
 #      the light page loses it. Checked on the assets, which is where the rule lives.
+#      ia-theme.css is not listed: its dark block flips the --sd-syn-* tokens whose light
+#      values live in reading-chrome-head.html, so a per-file check cannot see them.
 echo "[38c] no color defined only inside a dark media query"
 if python3 - "${SCRIPT_DIR}/assets" <<'PY'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
 bad = []
-for name in ("vscode-preview-head.html", "reading-chrome-head.html", "paper-theme.css"):
+for name in ("vscode-preview-head.html", "reading-chrome-head.html", "paper-theme.css", "tm-theme.css"):
     text = (root / name).read_text()
     i, blocks = 0, []
     while True:
@@ -499,15 +535,15 @@ echo "[38d] every surface shares one dark page ground"
 if python3 - "${SCRIPT_DIR}" <<'PY'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
-# Parity groups. The paper pair (browser paper theme + the Quick Look skin, which is
-# the same look) share paper's ground. Grounds must agree WITHIN a group, not across
+# Parity groups. The ia pair (browser ia theme + the Quick Look skin, which is the same
+# look) share ia's ground. Grounds must agree WITHIN a group, not across
 # groups. The vscode group states each token it must set in its dark block.
 groups = {
     "vscode": {
         "assets/vscode-preview-head.html": ("--vscode-editor-background", "--vscode-textCodeBlock-background"),
     },
-    "paper": {
-        "assets/paper-theme.css": ("--paper-bg",),
+    "ia": {
+        "assets/ia-theme.css": ("--ia-bg",),
         # The panel inherits --vscode-textCodeBlock-background from the copied md-style.html,
         # so only its own page ground is stated here.
         "integrations/safari/quick-look/Resources/ql-reading.css": ("--ql-paper",),
@@ -574,6 +610,60 @@ printf '**Step one**\n- [ ] first task\n- [x] second task\n' > "${TMP}/list.md"
 "$SPACEDOWN" "${TMP}/list.md" --out "${TMP}/list.html" --no-open >/dev/null 2>&1 || true
 if grep -q '<li' "${TMP}/list.html" && [[ $(grep -c 'type="checkbox"' "${TMP}/list.html") -ge 2 ]] \
    && ! grep -q -- '- \[ \]' "${TMP}/list.html"; then ok "list without a preceding blank line"; else no "list folded into the paragraph as literal text"; fi
+
+# 41. The vendored iA fonts exist with their license, and the Quick Look skin build embeds
+#     exactly the four as data URIs (the sandboxed panel cannot load installed fonts).
+echo "[41] vendored iA fonts + license"
+FONTS="${SCRIPT_DIR}/assets/fonts/ia"
+if [[ -f "${FONTS}/iAWriterQuattroV.ttf" && -f "${FONTS}/iAWriterQuattroV-Italic.ttf" \
+   && -f "${FONTS}/iAWriterMonoV.ttf" && -f "${FONTS}/iAWriterMonoV-Italic.ttf" ]] \
+   && grep -q 'SIL OPEN FONT LICENSE' "${FONTS}/LICENSE.md"; then
+  ok "four font files and the OFL text are vendored"
+else
+  no "assets/fonts/ia is missing a font or the license"
+fi
+
+echo "[42] build-ql-skin embeds the four iA fonts"
+skin="$("${SCRIPT_DIR}/scripts/build-ql-skin" "${TMP}/skin.css" 2>/dev/null || true)"
+if [[ "$skin" == "${TMP}/skin.css" ]] \
+   && [[ $(grep -o 'src: url(data:font/ttf;base64,' "${TMP}/skin.css" | wc -l | tr -d ' ') -eq 4 ]] \
+   && grep -q -- '--ql-body-font: "iA Writer Quattro V"' "${TMP}/skin.css" \
+   && ! grep -q 'data:font' "${SCRIPT_DIR}/integrations/safari/quick-look/Resources/ql-reading.css"; then
+  ok "exactly 4 font data URIs in the built skin; the committed source stays readable"
+else
+  no "skin build did not embed exactly 4 fonts"
+fi
+
+# 43-46. spacedown-docx: markdown to .docx in the iA look.
+DOCX="${SCRIPT_DIR}/bin/spacedown-docx"
+docx_styles() { unzip -p "$1" word/styles.xml 2>/dev/null; }
+printf -- '---\ntitle: "T"\n---\n\n<!-- private note -->\n\n## Head\n\nBody with [a link](https://x.test).\n\n> quote\n' > "${TMP}/d.md"
+
+echo "[43] spacedown-docx writes a .docx next to the input in the iA look"
+"$DOCX" "${TMP}/d.md" >/dev/null 2>&1 || true
+if [[ -f "${TMP}/d.docx" ]] && docx_styles "${TMP}/d.docx" | grep -q 'IBM Plex Sans' \
+   && docx_styles "${TMP}/d.docx" | grep -q 'w:color w:val="1A1A1A"'; then
+  ok "iA docx styles (IBM Plex Sans, ink 1A1A1A)"
+else
+  no "docx is missing the iA styles"
+fi
+
+echo "[44] spacedown-docx drops HTML comments and honors -o"
+"$DOCX" "${TMP}/d.md" -o "${TMP}/out.docx" >/dev/null 2>&1 || true
+if [[ -f "${TMP}/out.docx" ]] && ! unzip -p "${TMP}/out.docx" word/document.xml | grep -q 'private note'; then
+  ok "-o honored, comment dropped"
+else
+  no "-o ignored or the HTML comment leaked"
+fi
+
+echo "[45] spacedown-docx refuses a missing input with 66"
+set +e; "$DOCX" "${TMP}/none.md" >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 66 ]]; then ok "exit 66"; else no "got $rc"; fi
+
+echo "[46] a symlinked spacedown-docx still finds the reference doc"
+ln -s "$DOCX" "${TMP}/linked-docx"
+"${TMP}/linked-docx" "${TMP}/d.md" -o "${TMP}/linked.docx" >/dev/null 2>&1 || true
+if docx_styles "${TMP}/linked.docx" | grep -q 'IBM Plex Sans'; then ok "symlink"; else no "symlink lost the reference doc"; fi
 
 echo
 if [[ $fail -gt 0 ]]; then
