@@ -33,7 +33,8 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 ## Features
 
 - **Math.** Inline `$...$` and display `$$...$$` math rendered by KaTeX.
-- **Reading themes.** A warm `paper` theme by default, plus a serif `read` mode and a monospace `mono` mode.
+- **Reading themes.** An `ia` theme by default (iA Writer's Quattro look), plus `tm` (serif, from thinkingmachines.ai), `paper`, a serif `read` mode and a monospace `mono` mode.
+- **Word and Google Docs export.** `spacedown-docx` turns Markdown into a `.docx` in the same iA look.
 - **Dark mode.** Every mode follows the system or browser appearance through `prefers-color-scheme`. There is no flag.
 - **Outline sidebar.** A collapsible table of contents built from the headings, with scroll tracking. The `[` key toggles it.
 - **Zoom and copy source.** `Cmd +`, `Cmd -` and `Cmd 0` scale the text. A toolbar button copies the original Markdown.
@@ -48,7 +49,7 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 
 ## Install the spacedown CLI
 
-The CLI is a single bash script plus the `assets/` folder next to it. It shares the `paper` theme with the Quick Look panel.
+The CLI is a single bash script plus the `assets/` folder next to it. The Quick Look panel carries the same iA look as the default `ia` theme.
 
 ```bash
 brew install pandoc        # required
@@ -92,7 +93,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 | `--no-open` | Do not open a browser. Implied when stdout is not a terminal. |
 | `--watch` | Re-render on save (needs `entr`). With `python3`, the open page refreshes itself. Ctrl-C stops. |
 | `--title STR` | Browser tab title. Default: the file name without its extension. |
-| `--font-mode MODE` | `paper` (default), `read` or `mono`. See below. |
+| `--font-mode MODE` | `ia` (default), `tm`, `paper`, `read` or `mono`. See below. |
 | `--no-standalone` | Emit an HTML fragment for embedding instead of a full page. |
 | `--help`, `--version` | Print usage, or the version plus dependency status. |
 
@@ -100,19 +101,22 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 
 | Mode | Look |
 |---|---|
-| `paper` (default) | Warm paper ground, a modest heading scale and soft rules. Set in iA Writer Quattro and iA Writer Mono when installed, otherwise in system fonts. Carries its own dark palette. |
+| `ia` (default) | A port of iA Writer's Quattro template: every heading at body size in bold, dash bullets, hairline table rules, near-black on `#fcfcfc` with 164% leading. Set in iA Writer Quattro and iA Writer Mono. Dark ground is iA's night `#1a1a1a`. |
+| `tm` | Serif reading look with typography ported from thinkingmachines.ai (Georgia first, for full Vietnamese diacritics). Code containers are themed; syntax colors stay pandoc-tango. |
+| `paper` | Warm paper ground, a modest heading scale and soft rules. Set in iA Writer Quattro and iA Writer Mono when installed, otherwise in system fonts. Carries its own dark palette. |
 | `read` | Proportional serif prose (Georgia first, for full Vietnamese diacritics) with monospace code and tables. |
 | `mono` | Full editor fidelity: the fonts mirrored from the editor settings, monospace everywhere. |
 
-The iA Writer fonts are free under the SIL Open Font License 1.1. Install them from [github.com/iaolo/iA-Fonts](https://github.com/iaolo/iA-Fonts) to get the intended typography. spacedown only names them in CSS and ships no font files.
+The iA Writer fonts are free under the SIL Open Font License 1.1. The repo vendors the four variable files (Quattro V and Mono V, upright and italic) in `assets/fonts/ia/` with their license, so the look is reproducible on any Mac. The browser themes name the fonts by family and do not embed them, so an installed copy is what a browser page uses. Install the fonts from [github.com/iaolo/iA-Fonts](https://github.com/iaolo/iA-Fonts) or by copying `assets/fonts/ia/*.ttf` into Font Book. Without them the page falls back to system fonts. The Quick Look panel does embed the vendored fonts (see below).
 
-`assets/paper-theme.css` is plain CSS, so it also works as a VS Code or VSCodium [`markdown.styles`](https://code.visualstudio.com/docs/languages/markdown#_using-your-own-css) entry. Point the setting at the file with a `file://` URL and an absolute path.
+`assets/ia-theme.css`, `assets/tm-theme.css` and `assets/paper-theme.css` are plain CSS, so each also works as a VS Code or VSCodium [`markdown.styles`](https://code.visualstudio.com/docs/languages/markdown#_using-your-own-css) entry. Point the setting at the file with a `file://` URL and an absolute path.
 
 ### Environment variables
 
 | Variable | Effect |
 |---|---|
-| `SPACEDOWN_FONT_MODE` | Default font mode when `--font-mode` is absent. |
+| `SPACEDOWN_FONT_MODE` | Default font mode when `--font-mode` is absent. Default: `ia`. |
+| `SPACEDOWN_THEME_CSS` | A plain CSS file that replaces the CSS of the active `ia`, `tm` or `paper` mode. `read` and `mono` ignore it. |
 | `SPACEDOWN_SETTINGS` | A `settings.json` to read preview fonts from. Default: VSCodium's, then VS Code's. |
 | `SPACEDOWN_BROWSER` | App name to open pages in, for example `"Google Chrome"`. Default: the first installed of Arc, Chrome, Edge and Brave, then the system default. |
 
@@ -128,6 +132,24 @@ spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `mar
 | `3` | `--watch` requested but `entr` is not installed |
 | `64` | Usage error |
 | `130` | Ctrl-C during `--watch` |
+
+## Export to Word and Google Docs: spacedown-docx
+
+```bash
+spacedown-docx notes.md                      # writes notes.docx next to it, prints the path
+spacedown-docx notes.md -o ~/Desktop/notes.docx
+```
+
+The result uses a pandoc reference doc (`assets/docx/ia-reference.docx`) that carries the iA look: ink `#1a1a1a`, 1.64 line height, headings at body size in bold, one block gap and about 70 characters per line. Frontmatter `title:` becomes the title block. HTML comments are dropped, so a private note in a comment never reaches the reader. iA Writer Quattro is not in the Google Docs font list, so the doc uses IBM Plex Sans and IBM Plex Mono, the faces iA's fonts derive from. The script resolves its own symlink, so link `bin/spacedown-docx` onto your `PATH` the same way as `spacedown`. Exit codes: `0` ok, `2` pandoc or the reference doc missing, `64` usage, `66` input file not found.
+
+To open it as a Google Doc, upload the `.docx` with [GAM](https://github.com/GAM-team/GAM) and ask Drive to convert it:
+
+```bash
+gam user <user> create drivefile drivefilename "<name>" localfile notes.docx mimetype gdoc
+gam user <user> update drivefile <id> localfile notes.docx newfilename "<name>"   # refresh in place, keeps sharing
+```
+
+To change the look, edit the style values at the top of `scripts/build-docx-reference.py`, run `python3 -I scripts/build-docx-reference.py`, and commit the script and the regenerated `.docx` together.
 
 ## Build the app from source
 
@@ -147,6 +169,8 @@ integrations/build-safari.sh --with-safari  # also the Safari drop extension and
 | LaunchAgent `dfoundation.spacedown.render` | `~/Library/LaunchAgents/` | `--with-safari` |
 | `spacedown-open` link | `~/.local/bin/spacedown-open` | `--with-safari` |
 
+The Quick Look panel shows the iA look. Its sandboxed webview cannot load fonts installed on the Mac, so the build runs `scripts/build-ql-skin`. That step prepends `@font-face` rules carrying the four vendored iA Writer fonts as base64 data URIs to the skin source (`integrations/safari/quick-look/Resources/ql-reading.css`) and ships the result inside the app. The committed skin stays readable. `SKIN_CSS=<file>` replaces the skin with your own, used as given and not font-embedded. `scripts/build-ql-skin [out.css]` builds the embedded skin by itself.
+
 After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Spacedown** under System Settings > General > Login Items & Extensions > Quick Look.
 
 The Safari extension must be App-Sandboxed to load, and a sandboxed extension cannot run pandoc. It therefore forwards each dropped file over XPC to a small unsandboxed helper, which launchd starts on demand and which exits when idle. To enable the extension after `--with-safari`:
@@ -161,7 +185,7 @@ The Safari extension must be App-Sandboxed to load, and a sandboxed extension ca
 ## Development
 
 ```bash
-bash tests/smoke.sh                                   # CLI suite, also runs the Quick Look tests
+bash tests/smoke.sh                                   # CLI and spacedown-docx suite, also runs the Quick Look tests
 node integrations/safari/quick-look/test-render.js    # Quick Look render core only
 spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```
@@ -196,7 +220,7 @@ The Releases page carries one release: each new version replaces the previous on
 
 - The browser look builds on VS Code's markdown preview stylesheet (Microsoft, MIT).
 - Math by [KaTeX](https://katex.org), Markdown parsing in Quick Look by [marked](https://marked.js.org), code highlighting in Quick Look by [highlight.js](https://highlightjs.org), conversion by [pandoc](https://pandoc.org).
-- The `paper` theme names the iA Writer Quattro and iA Writer Mono typefaces. Fonts by Information Architects.
+- The `ia` and `paper` themes and the Quick Look skin use the iA Writer Quattro and iA Writer Mono typefaces, vendored under the SIL Open Font License 1.1. Fonts by Information Architects. The `ia` look ports the Quattro template of iA Writer, and the `tm` look ports the typography of thinkingmachines.ai.
 
 Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
