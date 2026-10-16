@@ -326,7 +326,10 @@ fi
 # <figure> captioned with the ALT text, and the house convention already writes the
 # caption as the next paragraph, so every figure read its caption twice. Without it
 # the shape matches the Quick Look panel: an image paragraph, then a caption paragraph.
-pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks --katex --syntax-highlighting tango )
+# +lists_without_preceding_blankline: a list right under a line of text (`**Step**`
+# then `- [ ] item`) is a list in GitHub, Obsidian and the Quick Look appex (marked);
+# pandoc otherwise folds it into the paragraph as literal "- [ ]" text.
+pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks+lists_without_preceding_blankline --katex --syntax-highlighting tango )
 [[ "$STANDALONE" == "1" ]] && pandoc_flags+=( --standalone )
 # Use pagetitle (browser-tab <title>) not title: a `title` metadata makes pandoc
 # emit a centered document-title header block, which VS Code's preview never shows.
