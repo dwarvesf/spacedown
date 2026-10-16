@@ -18,7 +18,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 
 ## Download
 
-Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`, which also links the `spacedown` CLI onto your `PATH` (see below).
+Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`. The CLI is not linked by the cask yet; see below to set it up.
 
 ## Screenshots
 
@@ -51,7 +51,7 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 
 The CLI is a single bash script plus the `assets/` folder next to it. The Quick Look panel carries the same iA look as the default `ia` theme.
 
-**With the app.** `Spacedown.app` carries the CLI at `Contents/Resources/cli/bin/spacedown`, with the assets it needs beside it. The Homebrew cask links that path as `spacedown`, so the app and the CLI update together. Without Homebrew, link it yourself: `ln -sfn /Applications/Spacedown.app/Contents/Resources/cli/bin/spacedown ~/.local/bin/spacedown`. The Mac App Store build does not carry the CLI. `pandoc` is still required.
+**With the app.** From the next release, `Spacedown.app` carries the CLI at `Contents/Resources/cli/bin/spacedown`, with the assets it needs beside it, and the cask will link it. Until then, link a source checkout (below) or, with a build that has it, link it yourself: `ln -sfn /Applications/Spacedown.app/Contents/Resources/cli/bin/spacedown ~/.local/bin/spacedown`. The Mac App Store build does not carry the CLI. `pandoc` is still required.
 
 **From source.**
 
