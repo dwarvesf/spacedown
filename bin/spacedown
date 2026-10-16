@@ -43,6 +43,8 @@ TM_CSS="${SCRIPT_DIR}/../assets/tm-theme.css"
 PAPER_CSS="${SCRIPT_DIR}/../assets/paper-theme.css"
 # Live-reload (watch mode only): a poll script injected into the page + a localhost server.
 LIVERELOAD_FOOT="${SCRIPT_DIR}/../assets/livereload-foot.html"
+# Pandoc JSON filter that inlines local images as data: URIs (on by default).
+EMBED_IMAGES="${SCRIPT_DIR}/../assets/embed-images.py"
 LIVERELOAD_SERVER="${SCRIPT_DIR}/../assets/livereload-server.py"
 
 usage() {
@@ -78,6 +80,9 @@ Env:
   SPACEDOWN_THEME_CSS=FILE  a plain CSS theme that replaces the CSS of the active
                     ia, tm or paper mode (same contract as assets/ia-theme.css).
                     read and mono are unaffected.
+  SPACEDOWN_EMBED_IMAGES=0  keep image paths as written. By default a local image
+                    (relative or absolute path, up to 5 MB) is embedded as a data: URI
+                    so the page still shows it when opened on another machine.
   --no-standalone   Disable pandoc --standalone (rare; for embedding).
   --help            Print this.
   --version         Print version + dep status.
@@ -348,8 +353,20 @@ fi
 # +lists_without_preceding_blankline: a list right under a line of text (`**Step**`
 # then `- [ ] item`) is a list in GitHub, Obsidian and the Quick Look appex (marked);
 # pandoc otherwise folds it into the paragraph as literal "- [ ]" text.
-pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks+lists_without_preceding_blankline --katex --syntax-highlighting tango )
+# +autolink_bare_uris: a bare https://example.com in running text becomes a link, as in
+# GitHub and Obsidian (pandoc markdown only links <angle-bracket> or [text](url) forms).
+pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks+lists_without_preceding_blankline+autolink_bare_uris --katex --syntax-highlighting tango )
 [[ "$STANDALONE" == "1" ]] && pandoc_flags+=( --standalone )
+# Embed local images as data: URIs (assets/embed-images.py). The page often gets read on a
+# machine that cannot see the source directory (served from one host, opened on another),
+# so a relative image path would load nothing there. The filter resolves paths against the
+# source file's directory, skips remote URLs and files over 5 MB. SPACEDOWN_EMBED_IMAGES=0
+# keeps the paths as written (a small page, for a machine that can resolve them).
+if [[ "${SPACEDOWN_EMBED_IMAGES:-1}" != "0" ]] && [[ -f "$EMBED_IMAGES" ]] && command -v python3 >/dev/null 2>&1; then
+  SPACEDOWN_SRC_DIR="$(cd "$(dirname "$FILE")" && pwd)"
+  export SPACEDOWN_SRC_DIR
+  pandoc_flags+=( --filter "$EMBED_IMAGES" )
+fi
 # Use pagetitle (browser-tab <title>) not title: a `title` metadata makes pandoc
 # emit a centered document-title header block, which VS Code's preview never shows.
 pandoc_flags+=( --metadata "pagetitle:${TITLE}" )

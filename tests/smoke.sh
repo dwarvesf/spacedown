@@ -598,7 +598,7 @@ if [[ $rc -eq 0 ]] \
    && [[ "$(grep -c '<table' "${TMP}/fx.html")" -ge 3 ]] \
    && grep -q 'class="sourceCode' "${TMP}/fx.html" \
    && grep -q 'sd-callout-warning' "${TMP}/fx.html" \
-   && grep -q '<img src="chart.svg"' "${TMP}/fx.html" \
+   && grep -q 'data:image/svg+xml;base64' "${TMP}/fx.html" \
    && grep -q 'class="wikilink"' "${TMP}/fx.html"; then
   ok "frontmatter, math, tables, code, callout, image, wikilink all rendered"
 else
