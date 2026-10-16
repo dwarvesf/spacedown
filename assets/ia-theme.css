@@ -34,7 +34,6 @@
   --ia-fg: #1a1a1a;
   --ia-border: #1a1a1a;
   --ia-code-bg: rgba(36, 36, 36, 0.055);
-  --ia-row-rule: #e6e6e6;
   --ia-link: #1d5fd1;
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
@@ -164,8 +163,6 @@ table {
   width: 100%;
   border-collapse: collapse;
   border: none;
-  border-top: 1px solid var(--ia-border);
-  border-bottom: 1px solid var(--ia-border);
   border-radius: 0;
   background-color: transparent;
   font-size: 0.875em;
@@ -191,23 +188,20 @@ thead th {
   border-bottom: none;
   padding: 0.6em 1em 0.6em 0;
 }
-/* The ink rules frame the table (top and bottom, above); a header row gets one more under
-   it. Rows inside are separated by a light hairline so a long table stays scannable. The
-   selector matches the base rule that blanks the row-top border (it names every element). */
-thead + tbody { border-top: 1px solid var(--ia-border); }
+/* iA Writer's table: every rule is an ink hairline (top, under the header, between rows,
+   bottom) and body cells keep the body weight. The rules sit on the cells, not the table
+   box, so they always end where the cells end, even when the box is wider (.sd-wide). The
+   selectors match the base rule that blanks the row-top border (it names every element). */
 tbody td { border-bottom: none; }
-table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-row-rule); }
+thead > tr:first-child > *,
+table > tbody:first-child > tr:first-child > *,
+thead:not(:has(th:not(:empty))) + tbody > tr:first-child > * { border-top: 1px solid var(--ia-border); }
+thead + tbody > tr:first-child > * { border-top: 1px solid var(--ia-border); }
+table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-border); }
+table > tbody:last-child > tr:last-child > * { border-bottom: 1px solid var(--ia-border); }
 /* A headerless table (`| | |` over the rule row) arrives with an empty header row: drop it so
    the table opens on its first body row, under the one ink rule, with no stray line. */
 thead:not(:has(th:not(:empty))) { display: none; }
-/* First column is the row label: bold, one line, only as wide as its content. A table with
-   prose columns (.sd-wide) lets it wrap again. The frontmatter table styles its own keys. */
-table:not(.sd-frontmatter) > tbody > tr > :first-child {
-  font-weight: 700;
-  white-space: nowrap;
-  width: 1%;
-}
-table.sd-wide:not(.sd-frontmatter) > tbody > tr > :first-child { white-space: normal; width: auto; }
 /* A table set inside a quote sits on the quote's own text edge: no extra margin or inset. */
 blockquote > table { margin-left: 0; margin-right: 0; }
 blockquote table th:first-child, blockquote table td:first-child { padding-left: 0; }
@@ -258,7 +252,6 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-fg: #cccccc;
     --ia-border: #cccccc;
     --ia-code-bg: rgba(245, 245, 245, 0.06);
-    --ia-row-rule: #3a3a3a;
     --ia-link: #7aa7ff;
     /* Code tokens in iA's dark editor accents (measured from the app: amber
        #c1944e, purple #ba8db2, green #82a56f, muted #878787). Redefines the
@@ -281,7 +274,6 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-bg: #fff;
     --ia-fg: #000;
     --ia-border: #000;
-    --ia-row-rule: #ccc;
     --ia-link: #000;
     --ia-code-bg: #f2f2f2;
   }

@@ -605,6 +605,17 @@ else
   no "synthetic fixture render incomplete (rc=$rc)"
 fi
 
+echo "[ia-table] tables follow iA Writer: ink hairlines between rows, body-weight cells, rules on the cells"
+IA_THEME="${SCRIPT_DIR}/assets/ia-theme.css"
+if grep -q 'table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-border); }' "$IA_THEME" \
+   && grep -q 'table > tbody:last-child > tr:last-child > \* { border-bottom: 1px solid var(--ia-border); }' "$IA_THEME" \
+   && ! grep -q 'ia-row-rule' "$IA_THEME" \
+   && ! grep -q 'tbody > tr > :first-child {' "$IA_THEME"; then
+  ok "iA table rules"
+else
+  no "ia table drifted from iA Writer (light rules, bold first column, or rules on the table box)"
+fi
+
 echo "[fonts] the ia page embeds the iA fonts (Safari ignores installed ones); tm and the opt-out do not"
 printf '# T\n\nHello *world*.\n' > "${TMP}/fonts.md"
 "$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-ia.html" --no-open >/dev/null 2>&1 || true
