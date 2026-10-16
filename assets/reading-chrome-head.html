@@ -183,6 +183,12 @@ html.sd-has-toc.sd-toc-collapsed nav#TOC {
   pointer-events: none; visibility: hidden;
 }
 html.sd-has-toc.sd-toc-collapsed body { padding-left: 26px; }
+/* Phones: html and body each pad 26px, so text sat 52px in from each edge. Drop the html pad and give
+   body one 20px gutter; an open outline overlays the text here instead of pushing it. */
+@media (max-width: 600px) {
+  html { padding-left: 0; padding-right: 0; }
+  body, html.sd-has-toc body, html.sd-has-toc.sd-toc-collapsed body { padding-left: 20px; padding-right: 20px; }
+}
 
 /* Transitions live only after first paint. visibility flips after the slide on collapse
    (so links leave the tab order only once hidden), immediately on expand. */
