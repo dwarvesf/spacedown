@@ -1,29 +1,32 @@
-/* Quick Look reading skin: the "paper" look, the panel's copy of
-   assets/paper-theme.css (the browser default). Injected AFTER md-style.html (the
-   shared VS Code look), so everything here wins.
-
-   Fonts: iA Writer Quattro and iA Writer Mono by Information Architects, free under
-   the SIL Open Font License 1.1 (github.com/iaolo/iA-Fonts). Referenced by family
-   name; the Quick Look webview resolves them when installed, else system faces.
+/* Quick Look reading skin: the iA Writer look.
+   Injected AFTER md-style.html (the shared VS Code look), so everything here wins.
+   Quick Look only: the browser preview carries its own copy of this look
+   (assets/ia-theme.css); both are ports of the Quattro template bundled
+   in iA Writer 8 for macOS. The sandboxed QL webview cannot load the iA fonts
+   from /Library/Fonts (it fell back to SF), so build the skin with
+   scripts/build-ql-skin: it prepends @font-face rules with the four vendored
+   Quattro V and Mono V files (assets/fonts/ia/, SIL OFL) as data URIs. This file
+   stays readable; build-safari.sh runs that step and ships the embedded result.
+   SKIN_CSS=FILE swaps in a different skin and skips the embed.
 
    Tunables live in :root. To go back to the VS Code sans look, set
    --ql-body-font to var(--markdown-font-family).
 
-   Smoke 38d pairs this file's dark ground with assets/paper-theme.css. */
+   Dark ground is iA's editor night #1a1a1a, same as the browser ia theme;
+   smoke 38d pairs this file with assets/ia-theme.css. */
 :root {
   --ql-body-font: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --ql-head-font: var(--ql-body-font);
   --ql-mono-font: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
-  --ql-size: 17px;
-  --ql-leading: 1.62;
-  --ql-measure: 40rem;
-  --ql-paper: #fbfaf7;
-  --ql-ink: #242321;
-  --ql-ink-soft: #6e6c67;
-  --ql-rule: #dcd9d2;
-  --ql-rule-strong: #b9b5ac;
-  --ql-accent: #2b5f91;
-  --ql-code-bg: #f0eee9;
+  --ql-size: 18px;
+  --ql-leading: 1.64;
+  --ql-measure: 38rem;          /* the template's own body measure (38em) */
+  --ql-paper: #fcfcfc;
+  --ql-ink: #1a1a1a;
+  --ql-ink-soft: #1a1a1a;       /* iA: one ink, hierarchy comes from weight */
+  --ql-rule: #1a1a1a;           /* iA hairlines are full-strength ink */
+  --ql-accent: #1a1a1a;         /* iA: links and rules share the ink color */
+  --ql-code-bg: rgba(36, 36, 36, 0.055);
 }
 
 html, body {
@@ -31,6 +34,7 @@ html, body {
   font-family: var(--ql-body-font);
   font-size: var(--ql-size);
   line-height: var(--ql-leading);
+  font-weight: 420; /* template mac formula on the variable font */
   color: var(--ql-ink);
 }
 body {
@@ -41,48 +45,54 @@ body {
   font-kerning: normal;
 }
 
-p { margin: 0 0 1.1em; }
+/* iA rhythm: one uniform block gap, no first-line indents. */
+p { margin: 0 0 1.6em; }
 
-/* A modest scale: size marks the top two levels, weight carries the rest. */
+/* iA signature: headings keep body size, bold carries the hierarchy. */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--ql-head-font);
-  font-weight: 650;
-  letter-spacing: -0.005em;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: inherit;
+  letter-spacing: normal;
   color: var(--ql-ink);
-  margin: 2em 0 0.6em;
+  margin: 1.8em 0 0;
   padding: 0;
   border-bottom: none;
 }
-h1 { font-size: 1.6em; line-height: 1.25; margin-top: 0; }
-h2 { font-size: 1.3em; line-height: 1.3; }
-h3 { font-size: 1.1em; line-height: 1.4; }
-h4, h5, h6 { font-size: 1em; line-height: inherit; }
-h6 { color: var(--ql-ink-soft); }
+h1 { margin-top: 0; }
+h1, h2 { margin-bottom: 1.6em; }
+h3, h4, h5, h6 { margin-bottom: 0.2em; }
+h5 { font-weight: 500; }
 
 blockquote {
-  margin: 0 0 1.1em;
-  padding: 0 1em;
-  border-left: 3px solid var(--ql-rule);
-  color: var(--ql-ink-soft);
+  margin: 1.6em 0;
+  padding: 0.1em 1em;
+  border-left: 1px solid var(--ql-rule);
+  color: inherit;
   font-style: normal;
 }
 blockquote p:last-child { margin-bottom: 0; }
 
-a {
-  color: var(--ql-accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.18em;
-  text-decoration-color: color-mix(in srgb, var(--ql-accent) 35%, transparent);
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+/* Dash bullets. */
+ul, ol { padding-left: 2.2em; margin: 0 0 1.6em; }
+ul { list-style: none; }
+ul > li::before {
+  content: "\2013\00a0\00a0";
+  float: left;
+  margin-left: -1.35em;
 }
+li { margin: 0.28em 0; }
 
-ul, ol { padding-left: 1.6em; margin: 0 0 1.1em; }
-li { margin: 0.25em 0; }
-li::marker { color: var(--ql-ink-soft); }
+hr { border: 0; border-top: 1px solid var(--ql-rule); margin: 1.8em 0; }
 
-hr { border: 0; border-top: 1px solid var(--ql-rule); margin: 2em 0; }
+img { border-radius: 0; }
 
-/* Tables: a header rule plus soft row hairlines, tabular figures, no card frame,
-   zebra or grid. The base stylesheet renders a table as a rounded scrolling card
+/* Tables: hairline rules only, tabular figures, no card frame / zebra / grid.
+   Ported from the browser iA theme (assets/ia-theme.css), which solved this
+   first. The base stylesheet renders a table as a rounded scrolling card
    (display:block, width:max-content, border-radius, uppercase thead chip, zebra
    fill); every one of those must be undone here, some at matched specificity. */
 table {
@@ -91,16 +101,18 @@ table {
   width: 100%;
   border-collapse: collapse;
   border: none;
+  border-top: 1px solid var(--ql-rule);
+  border-bottom: 1px solid var(--ql-rule);
   border-radius: 0;
   background-color: transparent;
-  font-size: 0.9em;
-  line-height: 1.6;
+  font-size: 0.875em;
+  line-height: 1.71;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 th, td {
   border: none;
-  padding: 0.5em 1em 0.5em 0;
+  padding: 0.6em 1em 0.6em 0;
   text-align: left;
   vertical-align: top;
   background-color: transparent;
@@ -108,14 +120,15 @@ th, td {
 /* thead th: match the base chip rule's specificity to undo it. */
 thead th {
   font-size: 1em;
-  font-weight: 650;
+  font-weight: 700;
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
   color: inherit;
-  border-bottom: 1px solid var(--ql-rule-strong);
-  padding: 0.5em 1em 0.5em 0;
+  border-bottom: none;
+  padding: 0.6em 1em 0.6em 0;
 }
+tbody { border-top: 1px solid var(--ql-rule); }
 tbody td { border-bottom: none; }
 tbody tr + tr td { border-top: 1px solid var(--ql-rule); }
 /* Kill the base zebra fill and last-row corner rounding at their own specificity. */
@@ -155,26 +168,48 @@ th[align="center"], td[align="center"] { text-align: center; }
 /* Figure captions: the house convention is an image alone in its paragraph followed
    by the caption paragraph. Markdown emits no <figure>, so the structure is the only
    signal. Caption reads as subordinate metadata, and sits closer to its image. */
-p:has(> img:only-child) { margin-bottom: 0.6em; }
-p:has(> img:only-child) + p { font-size: 0.85em; line-height: 1.5; color: var(--ql-ink-soft); }
+p:has(> img:only-child) { margin-bottom: 0.7em; }
+p:has(> img:only-child) + p { font-size: 0.82em; line-height: 1.5; opacity: 0.72; }
 
+/* Code: iA Mono, subtle wash. */
 code, pre, kbd, samp { font-family: var(--ql-mono-font); }
-:not(pre) > code { font-size: 0.9em; background-color: var(--ql-code-bg); border-radius: 4px; padding: 0.1em 0.3em; }
-pre { font-size: 0.9em; line-height: 1.55; border-radius: 6px; background-color: var(--ql-code-bg); }
+:not(pre) > code { font-size: 0.94em; background-color: var(--ql-code-bg); border-radius: 2px; padding: 0.08em 0.17em; }
+pre { font-size: 0.94em; line-height: 1.5; border-radius: 2px; background-color: var(--ql-code-bg); }
 
 /* Math keeps KaTeX's own faces; only match the surrounding size. */
 .katex { font-size: 1.04em; }
 
 /* Dark mode follows the Mac's system appearance (the Quick Look webview inherits
-   it). Only the tokens flip; syntax colors stay the bundled GitHub-dark hljs theme. */
+   it). Only the tokens flip; every rule above is written against them.
+
+   md-style.html carries its own dark block, and build-safari.sh copies that file
+   in from assets/, so the --vscode-* surface colors arrive already flipped.
+   --ql-paper matches the browser ia theme's dark ground (smoke 38d asserts the
+   pair); the rest is the iA night-mode ink and wash. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --ql-paper: #19191b;
-    --ql-ink: #dedcd6;
-    --ql-ink-soft: #9c9a94;
-    --ql-rule: #34343a;
-    --ql-rule-strong: #55555c;
-    --ql-accent: #8bb8e8;
-    --ql-code-bg: #242428;
+    --ql-paper: #1a1a1a;
+    --ql-ink: #cccccc;
+    --ql-ink-soft: #cccccc;
+    --ql-rule: #cccccc;
+    --ql-accent: #cccccc;
+    --ql-code-bg: rgba(245, 245, 245, 0.06);
   }
+  /* Code tokens in iA's dark editor accents (amber #c1944e, purple #ba8db2,
+     green #82a56f, muted #878787), overriding the GitHub-dark hljs theme
+     loaded before this file. Same mapping as the browser ia theme's
+     --sd-syn-* block. Additions/deletions keep the hljs semantic colors. */
+  .hljs { color: #cccccc; background: transparent; }
+  .hljs-doctag, .hljs-keyword, .hljs-meta .hljs-keyword, .hljs-template-tag,
+  .hljs-template-variable, .hljs-type, .hljs-variable.language_,
+  .hljs-title, .hljs-title.class_, .hljs-title.class_.inherited__,
+  .hljs-title.function_ { color: #ba8db2; }
+  .hljs-meta .hljs-string, .hljs-regexp, .hljs-string,
+  .hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag { color: #82a56f; }
+  .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number,
+  .hljs-operator, .hljs-selector-attr, .hljs-selector-class,
+  .hljs-selector-id, .hljs-variable, .hljs-built_in, .hljs-symbol,
+  .hljs-bullet, .hljs-section { color: #c1944e; }
+  .hljs-code, .hljs-comment, .hljs-formula { color: #878787; }
+  .hljs-subst, .hljs-emphasis, .hljs-strong { color: #cccccc; }
 }

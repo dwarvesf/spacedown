@@ -1,0 +1,234 @@
+/* spacedown "iA Writer" reading theme. Ported from the Quattro (Manuscript)
+   template bundled inside iA Writer 8 for macOS:
+   /Applications/iA Writer.app/Contents/Resources/Templates/Quattro.iatemplate
+   (style.css + style/style-core.css + style/typography-*.css, read 2026-08-27).
+
+   TWO uses, same file (same contract as tm-theme.css):
+   1. `spacedown --font-mode=ia` (the default): the CLI wraps this into a temp <style> head
+      partial via --include-in-header.
+   2. VS Code / VSCodium `markdown.styles` entry (plain CSS, no wrapper).
+
+   ADAPTATION notes, not a byte-for-byte port:
+   - Fonts reference the locally installed families (iA Writer ships them to
+     /Library/Fonts): variable "iA Writer Quattro V" first, static S as
+     fallback, then system sans. No font files are embedded here, so an installed
+     font wins. The repo vendors the OFL fonts in assets/fonts/ia/; the Quick Look
+     build embeds them (scripts/build-ql-skin) because its sandbox cannot load
+     installed fonts.
+   - The template's signature look is kept: ALL headings render at body size in
+     bold (no size ramp), dash bullets on unordered lists, hairline top/bottom
+     table rules, near-black-on-#fcfcfc, generous 164% leading.
+   - Body weight 420 mirrors the template's mac formula (--wght 455 at the
+     default "l" content size + mac adjustment -35) on the variable font.
+   - Layout (reading column, TOC sidebar, zoom toolbar) is NOT touched; those
+     are shared chrome across every font mode. Typography + color only.
+   - Dark palette is the APP's night mode (#1a1a1a ground, measured from the
+     editor; the bundled template says #101010 but the app paints #1a1a1a) with
+     the template's #cccccc ink, keyed off prefers-color-scheme since pandoc
+     output has no .night-mode class.
+   - Syntax token colors stay pandoc-tango (same call as the tm theme): only
+     the code container is themed.
+   */
+:root {
+  --ia-bg: #fcfcfc;
+  --ia-fg: #1a1a1a;
+  --ia-border: #1a1a1a;
+  --ia-code-bg: rgba(36, 36, 36, 0.055);
+  --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Template default: content-size-l = 18px at line-height-base 164%.
+     Set via the shared vars so reading-chrome's !important body rule computes
+     these (see tm-theme.css injection-order note). */
+  --markdown-font-size: 18px;
+  --markdown-line-height: 29.5px;
+}
+
+html, body {
+  background-color: var(--ia-bg);
+  color: var(--ia-fg);
+  font-family: var(--ia-font-sans);
+  font-weight: 420;
+  font-kerning: normal;
+}
+
+/* iA signature: headings keep body size, bold carries the hierarchy. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ia-font-sans);
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+  color: var(--ia-fg);
+  margin: 1.8125em 0 0; /* 29/16 em, the template's uniform block rhythm */
+  border-bottom: none;  /* suppress base stylesheet's GitHub h1/h2 rule */
+}
+h1, h2 { margin-bottom: 1.8125em; }
+h3, h4, h5, h6 { margin-bottom: 0; }
+h5 { font-weight: 500; }
+h1 + h2, h2 + h1, h1 + h1, h2 + h2 { margin-top: -0.9375em; }
+h1 + h3, h2 + h3, h3 + h4, h4 + h5, h5 + h6 { margin-top: 0; }
+
+/* Uniform vertical rhythm on every block element. */
+p, ol, ul, dl, figure, blockquote, pre, table {
+  margin: 1.8125em 0 0;
+}
+h3 + p, h4 + p, h5 + p, h6 + p,
+h3 + ul, h4 + ul, h3 + ol, h4 + ol,
+h3 + pre, h4 + pre, h3 + table, h4 + table,
+h3 + blockquote, h4 + blockquote {
+  margin-top: 0;
+}
+li > p, li > ul, li > ol { margin-top: 0; }
+
+a {
+  color: inherit; /* template: links share the ink color */
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ia-fg) 40%, transparent);
+}
+a:hover { text-decoration-color: var(--ia-fg); }
+
+/* Dash bullets. */
+ul { list-style: none; padding-left: 2.5em; }
+ul > li::before {
+  content: "\2013\00a0\00a0";
+  float: left;
+  margin-left: -1.35em;
+}
+ol { padding-left: 2.5em; }
+
+blockquote {
+  margin-left: 0;
+  border-left: 1px solid var(--ia-border);
+  padding: 0 1em;
+  color: inherit;
+  font-style: normal;
+}
+
+hr {
+  border: 0;
+  border-bottom: 1px solid var(--ia-border);
+  margin: 1.8125em auto 1.75em;
+}
+
+/* Code: iA Mono, subtle wash, soft radius, wrapped lines (template behavior). */
+pre, pre.sourceCode {
+  background-color: var(--ia-code-bg) !important;
+  border-radius: 2px;
+  font-family: var(--ia-font-mono) !important;
+  padding: 1rem;
+  white-space: pre-wrap;
+}
+pre code, pre.sourceCode code {
+  font-family: inherit !important;
+  font-size: 0.94em;
+  line-height: 1.5;
+  background: transparent;
+  padding: 0;
+}
+:not(pre) > code, kbd, samp {
+  font-family: var(--ia-font-mono);
+  font-size: 0.94em;
+  background-color: var(--ia-code-bg);
+  border-radius: 2px;
+  padding: 0.08em 0.17em 0.17em;
+  color: inherit;
+  /* A long path or url carries no break opportunity, so it runs past the reading
+     column instead of wrapping inside it. Same reason bare links break below. */
+  overflow-wrap: anywhere;
+}
+a { overflow-wrap: anywhere; }
+
+/* Tables: hairline rules only, tabular figures, no card frame / zebra / grid.
+   The base stylesheet renders tables as a rounded scrolling card (display:block,
+   width:max-content, border-radius, uppercase thead chip, zebra fill); every one
+   of those must be explicitly undone here, some at matched specificity. */
+table {
+  display: table;     /* undo card: block+max-content content-sizes the columns */
+  table-layout: auto; /* columns size by content: a keyword column stops eating a prose column's width */
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  border-top: 1px solid var(--ia-border);
+  border-bottom: 1px solid var(--ia-border);
+  border-radius: 0;
+  background-color: transparent;
+  font-size: 0.875em;
+  line-height: 1.71;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+th, td {
+  border: none;
+  padding: 0.6em 1em 0.6em 0;
+  vertical-align: top;
+  text-align: left;
+  background-color: transparent;
+}
+/* thead th: match the base chip rule's specificity to undo it. */
+thead th {
+  font-size: 1em;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  color: inherit;
+  border-bottom: none;
+  padding: 0.6em 1em 0.6em 0;
+}
+/* Row hairlines in the ink color (template: tbody th/td border-top #1a1a1a). */
+tbody { border-top: 1px solid var(--ia-border); }
+tbody td { border-bottom: none; }
+tbody tr + tr td { border-top: 1px solid var(--ia-border); }
+/* Kill the base zebra fill and last-row corner rounding at their own specificity. */
+table:not(.sd-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
+/* Neutralize the base auto-numeric right-align (.sd-num, added by script): under
+   this theme it floats numbers to mid-page. Explicit markdown column alignment
+   (style="text-align: right") still wins via the base rule. */
+td.sd-num, th.sd-num { text-align: left; }
+tbody tr:last-child td:first-child,
+tbody tr:last-child td:last-child { border-radius: 0; }
+
+/* Column sizing, the same contract the Quick Look panel reads under (its own copy is
+   quick-look/Resources/ql-reading.css). The classes come from the base stylesheet's
+   load-time pass; the per-column min-width floors ride on the cells as inline style. */
+.sd-tight { white-space: nowrap; }   /* a date or id column stays on one line */
+.sd-narrow { min-width: 22ch; }      /* a label column gets a two-line measure */
+/* A table that cannot hold a readable measure in every column: four or more columns,
+   or two prose columns. It scrolls sideways rather than starving one of them. */
+table.sd-wide {
+  display: block;      /* the CSS-only way to get overflow-x on a bare table */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+table.sd-wide th:not(.sd-tight),
+table.sd-wide td:not(.sd-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
+
+/* Figure captions. The house convention is an image alone in its paragraph followed by
+   the caption paragraph, the same shape the panel reads (pandoc runs with
+   -implicit_figures so it does not caption the image with its own alt text as well). */
+p:has(> img:only-child) { margin-bottom: 0.7em; }
+p:has(> img:only-child) + p { font-size: 0.82em; line-height: 1.5; opacity: 0.72; }
+
+mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
+
+/* iA dark: the editor's night ground (#1a1a1a, the light ink inverted; measured
+   from the app). The bundled template says #101010, but the app itself paints
+   #1a1a1a and that is the look Han asked to match. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ia-bg: #1a1a1a;
+    --ia-fg: #cccccc;
+    --ia-border: #cccccc;
+    --ia-code-bg: rgba(245, 245, 245, 0.06);
+    /* Code tokens in iA's dark editor accents (measured from the app: amber
+       #c1944e, purple #ba8db2, green #82a56f, muted #878787). Redefines the
+       base stylesheet's --sd-syn-* vars; its `code span.*` rules consume
+       them. alert/error keep the base semantic reds. */
+    --sd-syn-keyword: #ba8db2;
+    --sd-syn-string: #82a56f;
+    --sd-syn-number: #c1944e;
+    --sd-syn-comment: #878787;
+    --sd-syn-operator: #cccccc;
+    --sd-syn-var: #cccccc;
+  }
+  mark { background-color: rgba(250, 222, 76, 0.25); }
+}

@@ -21,10 +21,10 @@ Spacedown and the spacedown CLI bundle or reference the third-party works below.
 
 The spacedown CLI runs pandoc and entr as separate programs and includes none of their code.
 
-## Fonts (referenced, not bundled)
+## Fonts (bundled)
 
-| Font | License | Upstream |
-|---|---|---|
-| iA Writer Quattro, iA Writer Mono | SIL Open Font License 1.1 | https://github.com/iaolo/iA-Fonts |
+| Font | Where it lives | License | Upstream |
+|---|---|---|---|
+| iA Writer Quattro V, iA Writer Mono V (upright and italic) | `assets/fonts/ia/*.ttf`, license text in `assets/fonts/ia/LICENSE.md` | SIL Open Font License 1.1, Copyright (c) 2018 Information Architects Inc. with Reserved Font Name "iA Writer"; based on IBM Plex, Copyright (c) 2017 IBM Corp. | https://github.com/iaolo/iA-Fonts |
 
-Fonts by Information Architects. The `paper` theme and the Quick Look skin name these typefaces in CSS font stacks. spacedown ships no font files and falls back to system fonts when the iA Writer fonts are not installed.
+The four files are embedded as base64 data URIs into the Quick Look reading skin at build time (`scripts/build-ql-skin`), because the sandboxed Quick Look webview cannot load installed fonts. The browser themes `ia` and `paper` name the fonts by family and do not embed them. `spacedown-docx` sets documents in IBM Plex Sans and IBM Plex Mono (SIL OFL 1.1, IBM Corp.) by name and ships no Plex files.
