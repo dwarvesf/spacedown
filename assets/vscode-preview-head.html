@@ -66,10 +66,10 @@ body {
   /* One reading column, capped + centered (re-established 2026-07-12). The 2026-06-11
      removal happened because wide math/code forced page-level scrollbars back then;
      those elements now own their overflow (sections 6, 7, 7b), so the cap is safe.
-     The column is the 48rem prose measure itself, so it sits centered with no empty strip
-     on its right; wide blocks scroll inside their own box. body stays content-box, so the sidebar
+     Prose, tables and rules all fill this 60rem column, so the page has one centered
+     column with no empty strip beside the text; wide blocks scroll inside their own box. body stays content-box, so the sidebar
      padding-left does not eat into the column. */
-  max-width: 48rem;
+  max-width: 60rem;
   margin: 0 auto;
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
@@ -770,14 +770,14 @@ h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { background: none; padding
    Cap the measure on TEXT blocks only. The 2026-06-11 body-wide max-width was removed
    because it clipped display math and code; scoping the cap to prose-type elements
    excludes pre / table / .katex-display, so those keep full width + their own
-   horizontal scroll and that regression cannot recur. ~48rem = ~80 mono chars. */
+   horizontal scroll and that regression cannot recur. ~60rem = ~94 mono chars, the owner's choice over a narrower measure. */
 body > p, body > ul, body > ol, body > blockquote,
 body > h1, body > h2, body > h3, body > h4, body > h5, body > h6 {
-  max-width: 48rem;
+  max-width: 60rem;
 }
 /* A table that fits the measure and a section rule end on the prose edge too, so the page
    keeps one right edge. A .sd-wide table scrolls inside the same column. */
-body > table:not(.sd-wide), body > hr { max-width: 48rem; }
+body > table:not(.sd-wide), body > hr { max-width: 60rem; }
 body > hr { margin-left: 0; } /* ia centers hr with auto margins; a capped rule starts on the text edge */
 /* Code blocks hug their content like tables (same width recipe as the table rule):
    a 55-char SQL block no longer paints a full-bleed gray slab. */

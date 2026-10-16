@@ -101,15 +101,14 @@ if grep -q 'class="title"' "${TMP}/fixture.html"; then no "title block present";
 
 # 13. page column overrides pandoc's 36em default (designer pass 2026-07-12: the old
 #     body-wide `max-width: none` became a 60rem page column + 48rem prose measure).
-#     The page column is now the 48rem measure itself (no empty strip right of the prose);
+#     Prose now fills the 60rem column too (one width, no empty strip beside the text);
 #     the body rule must appear AFTER pandoc's 36em so the cascade lets it win.
 echo "[13] page column overrides pandoc default"
 line36=$(grep -n 'max-width: 36em' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
-line60=$(grep -n '  max-width: 48rem;' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
+line60=$(grep -n '  max-width: 60rem;' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
 if [[ -n "$line60" ]] && { [[ -z "$line36" ]] || [[ "$line60" -gt "$line36" ]]; } \
-   && ! grep -q 'max-width: 60rem' "${TMP}/fixture.html" \
-   && grep -q 'max-width: 48rem' "${TMP}/fixture.html"; then
-  ok "48rem page column wins over pandoc 36em"
+   && ! grep -q 'max-width: 48rem' "${TMP}/fixture.html"; then
+  ok "60rem column wins over pandoc 36em; prose fills it"
 else
   no "page column / prose measure missing or ordered before pandoc default"
 fi
@@ -642,7 +641,7 @@ if grep -q 'padding-bottom: 6em;' "${SCRIPT_DIR}/assets/vscode-preview-head.html
 
 echo "[one-edge] tables that fit and section rules end on the prose measure"
 HEAD_HTML="${SCRIPT_DIR}/assets/vscode-preview-head.html"
-if grep -q 'body > table:not(.sd-wide), body > hr { max-width: 48rem; }' "$HEAD_HTML" \
+if grep -q 'body > table:not(.sd-wide), body > hr { max-width: 60rem; }' "$HEAD_HTML" \
    && grep -q 'body > hr { margin-left: 0; }' "$HEAD_HTML"; then
   ok "one right edge"
 else
