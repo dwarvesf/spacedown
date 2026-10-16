@@ -703,7 +703,7 @@ head -c 5400000 /dev/zero > "${TMP}/img/huge.png"
 printf '![](fig.svg)\n\n![](%s/img/fig.svg)\n\n![](huge.png)\n\n![](https://example.com/remote.png)\n' "$TMP" > "${TMP}/img/doc.md"
 "$SPACEDOWN" "${TMP}/img/doc.md" --out "${TMP}/img/on.html" --no-open >/dev/null 2>"${TMP}/img/on.err"
 SPACEDOWN_EMBED_IMAGES=0 "$SPACEDOWN" "${TMP}/img/doc.md" --out "${TMP}/img/off.html" --no-open >/dev/null 2>&1
-svg_on=$(grep -o 'data:image/svg+xml;base64' "${TMP}/img/on.html" | wc -l | tr -d ' ')
+svg_on=$(grep -o 'data:image/svg+xml;base64' "${TMP}/img/on.html" | wc -l | tr -d ' ' || true)
 if [[ "$svg_on" -eq 2 ]] && ! grep -q 'src="fig.svg"' "${TMP}/img/on.html" \
    && grep -q 'src="huge.png"' "${TMP}/img/on.html" \
    && grep -q 'src="https://example.com/remote.png"' "${TMP}/img/on.html" \
