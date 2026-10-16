@@ -9,7 +9,7 @@ import jwt
 
 VAULT = "dfoundation-prod"
 BUNDLE = "dfoundation.spacedown"
-VERSION = "1.0.3"
+VERSION = "1.1.0"
 HACKER_BAR = "dfoundation.hacker-bar"
 
 meta = json.load(open(sys.argv[1]))
@@ -183,7 +183,7 @@ if shots:
         ok(f"screenshot {name} commit", *call("PATCH", f"/v1/appScreenshots/{sid}", {"data": {"type": "appScreenshots", "id": sid,
            "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}}))
 
-# build: attach the newest processed 1.0.3 build
+# build: attach the newest processed 1.1.0 build
 s, d = call("GET", f"/v1/builds?filter[app]={APP}&filter[preReleaseVersion.version]={VERSION}&sort=-uploadedDate&limit=5")
 builds = [(b["id"], b["attributes"]["version"], b["attributes"]["processingState"]) for b in d.get("data", [])]
 print("builds:", [(v, st) for _, v, st in builds])

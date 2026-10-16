@@ -11,7 +11,7 @@
 # Env (defaults shown):
 #   TEAM_ID=W777S7V8TN
 #   SIGN_ID="Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)"
-#   NOTARY_PROFILE=DWARVES_NOTARY
+#   NOTARY_PROFILE=DWARVES_NOTARY   or NOTARY_KEY=<.p8 path> NOTARY_KEY_ID NOTARY_ISSUER (API key, headless)
 #   REPO=dwarvesf/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
@@ -41,6 +41,14 @@ if [[ "${1:-}" == "--mas" ]]; then MAS=1; shift; fi
 TEAM_ID="${TEAM_ID:-W777S7V8TN}"
 SIGN_ID="${SIGN_ID:-Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-DWARVES_NOTARY}"
+# Notary auth: an App Store Connect API key when NOTARY_KEY (a .p8 path), NOTARY_KEY_ID and
+# NOTARY_ISSUER are set, else the keychain profile. The key works headless; a keychain
+# profile cannot be stored without a GUI session on some hosts.
+if [[ -n "${NOTARY_KEY:-}" ]]; then
+  NOTARY_AUTH=( --key "$NOTARY_KEY" --key-id "${NOTARY_KEY_ID:?NOTARY_KEY_ID unset}" --issuer "${NOTARY_ISSUER:?NOTARY_ISSUER unset}" )
+else
+  NOTARY_AUTH=( --keychain-profile "$NOTARY_PROFILE" )
+fi
 REPO="${REPO:-dwarvesf/spacedown}"
 DRAFT="${DRAFT:-0}"
 PUBLISH="${PUBLISH:-1}"
@@ -147,8 +155,8 @@ fi
 [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
 has "$(security find-identity -v -p codesigning)" "\"$SIGN_ID\"" \
   || die "signing identity missing: $SIGN_ID"
-xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
-  || die "notarytool profile '$NOTARY_PROFILE' missing; run: xcrun notarytool store-credentials $NOTARY_PROFILE"
+xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1 \
+  || die "notary credentials rejected: set NOTARY_KEY, NOTARY_KEY_ID and NOTARY_ISSUER, or run: xcrun notarytool store-credentials $NOTARY_PROFILE"
 [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || die "dirty tree; commit first"
 
 # --- build + sign ---------------------------------------------------------------
@@ -165,12 +173,12 @@ has "$(codesign -dvv "$APP" 2>&1)" "Authority=Developer ID Application" \
 # --- notarize + staple ----------------------------------------------------------
 echo "== notarize"
 ditto -c -k --keepParent "$APP" "$DIST/submit.zip"
-RESULT="$(xcrun notarytool submit "$DIST/submit.zip" --keychain-profile "$NOTARY_PROFILE" \
+RESULT="$(xcrun notarytool submit "$DIST/submit.zip" "${NOTARY_AUTH[@]}" \
   --wait --output-format json)"
 STATUS="$(printf '%s' "$RESULT" | /usr/bin/plutil -extract status raw -o - - 2>/dev/null || true)"
 if [[ "$STATUS" != "Accepted" ]]; then
   SUB_ID="$(printf '%s' "$RESULT" | /usr/bin/plutil -extract id raw -o - - 2>/dev/null || true)"
-  [[ -n "$SUB_ID" ]] && xcrun notarytool log "$SUB_ID" --keychain-profile "$NOTARY_PROFILE" >&2 || true
+  [[ -n "$SUB_ID" ]] && xcrun notarytool log "$SUB_ID" "${NOTARY_AUTH[@]}" >&2 || true
   die "notarization status: ${STATUS:-unknown}"
 fi
 xcrun stapler staple "$APP"
@@ -191,7 +199,7 @@ ditto "$APP" "$DSTAGE/$APP_NAME"
 ln -s /Applications "$DSTAGE/Applications"
 hdiutil create -volname Spacedown -srcfolder "$DSTAGE" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
 codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
-DRESULT="$(xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1 || true)"
+DRESULT="$(xcrun notarytool submit "$DMG" "${NOTARY_AUTH[@]}" --wait 2>&1 || true)"
 has "$DRESULT" "status: Accepted" || { echo "$DRESULT" >&2; die "dmg notarization not accepted"; }
 xcrun stapler staple "$DMG" >/dev/null
 has "$(spctl -a -vv -t open --context context:primary-signature "$DMG" 2>&1 || true)" "source=Notarized Developer ID" \
