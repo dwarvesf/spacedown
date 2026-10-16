@@ -827,6 +827,69 @@ else
   no "toolbar labels or progress bar missing"
 fi
 
+# ---- CLI bundled inside the app (scripts/bundle-cli) ----
+FAKE_APP="${TMP}/stage/Spacedown.app"
+mkdir -p "${FAKE_APP}/Contents"
+"${SCRIPT_DIR}/scripts/bundle-cli" "$FAKE_APP" >/dev/null 2>&1 || true
+CLI_DIR="${FAKE_APP}/Contents/Resources/cli"
+
+echo "[bundle-1] bundle-cli lays out the CLI and every runtime file under Contents/Resources/cli"
+need_ok=1
+for f in bin/spacedown scripts/ia-fontface-css assets/ia-theme.css assets/tm-theme.css assets/paper-theme.css \
+         assets/vscode-preview-head.html assets/reading-chrome-head.html assets/reading-chrome-foot.html \
+         assets/livereload-foot.html assets/livereload-server.py assets/embed-images.py \
+         assets/frontmatter-to-table.py assets/callouts-to-html.py assets/docx/ia-reference.docx \
+         assets/fonts/ia/iAWriterQuattroV.ttf; do
+  [[ -f "${CLI_DIR}/${f}" ]] || { need_ok=0; echo "    missing: ${f}" >&2; }
+done
+if [[ $need_ok -eq 1 && -x "${CLI_DIR}/bin/spacedown" && -x "${CLI_DIR}/scripts/ia-fontface-css" \
+      && ! -e "${CLI_DIR}/assets/REFRESH.md" ]]; then
+  ok "layout complete, scripts executable, maintainer notes left out"
+else
+  no "bundled layout incomplete"
+fi
+
+echo "[bundle-2] bundle-cli refuses a path that is not an app bundle"
+set +e; "${SCRIPT_DIR}/scripts/bundle-cli" "${TMP}/not-an-app" >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
+
+# The staged app moves away from the repo and is run through a symlink, like the cask's
+# `binary` stanza does, so any lookup that reaches back into the checkout fails here.
+mv -f "${TMP}/stage" "${TMP}/relocated"
+BUNDLED="${TMP}/relocated/Spacedown.app/Contents/Resources/cli/bin/spacedown"
+mkdir -p "${TMP}/brewbin"
+ln -s "$BUNDLED" "${TMP}/brewbin/spacedown"
+
+echo "[bundle-3] the bundled CLI, moved and run through a symlink, renders the same HTML as the repo CLI"
+printf -- '---\ntitle: B\n---\n\n> [!note] Hi\n> body\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "${TMP}/b.md"
+"$SPACEDOWN" "${TMP}/b.md" --out "${TMP}/b-repo.html" --no-open >/dev/null 2>&1 || true
+"${TMP}/brewbin/spacedown" "${TMP}/b.md" --out "${TMP}/b-bundled.html" --no-open >/dev/null 2>&1 || true
+if [[ -s "${TMP}/b-bundled.html" ]] && cmp -s "${TMP}/b-repo.html" "${TMP}/b-bundled.html"; then
+  ok "byte-identical page (theme, chrome, frontmatter table, callout)"
+else
+  no "bundled render differs from the repo render or failed"
+fi
+
+echo "[bundle-4] the bundled CLI embeds the iA fonts"
+if grep -q 'iA Writer Quattro V' "${TMP}/b-bundled.html" && grep -q 'base64,' "${TMP}/b-bundled.html"; then
+  ok "font faces embedded from the bundle"
+else
+  no "bundled render carries no embedded iA fonts"
+fi
+
+echo "[bundle-5] the bundled CLI exports .docx in the iA look"
+"${TMP}/brewbin/spacedown" docx "${TMP}/d.md" -o "${TMP}/bundled.docx" >/dev/null 2>&1 || true
+if docx_styles "${TMP}/bundled.docx" | grep -q 'IBM Plex Sans'; then ok "docx from the bundle"; else no "bundled docx failed"; fi
+
+echo "[bundle-6] build-safari.sh bundles the CLI by default; the store build opts out"
+if grep -q 'scripts/bundle-cli' "${SCRIPT_DIR}/integrations/build-safari.sh" \
+   && grep -q 'BUNDLE_CLI="${BUNDLE_CLI:-1}"' "${SCRIPT_DIR}/integrations/build-safari.sh" \
+   && grep -q 'BUNDLE_CLI=0' "${SCRIPT_DIR}/scripts/release.sh"; then
+  ok "default on, MAS build off"
+else
+  no "build wiring missing"
+fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2

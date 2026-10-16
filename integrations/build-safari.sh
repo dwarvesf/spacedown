@@ -36,6 +36,9 @@
 #                       to appear in Settings > Extensions without "Allow unsigned".
 #   APP_DEST=<dir>      install location (default ~/Applications).
 #   NO_INSTALL=1        stop after signing and print the built app's path.
+#   BUNDLE_CLI=0        leave the spacedown CLI out of the app. By default the CLI and its
+#                       assets go to Contents/Resources/cli/ (scripts/bundle-cli), so the
+#                       Homebrew cask can link bin/spacedown and app and CLI update together.
 #   SKIN_CSS=<file>     replace the Quick Look reading skin in this build with a
 #                       personal one (same contract as quick-look/Resources/ql-reading.css).
 #                       Used as given: it is not font-embedded. Unset, the build runs
@@ -46,6 +49,7 @@ SIGN_ID="${SIGN_ID:--}"
 NO_INSTALL="${NO_INSTALL:-0}"
 NOTARIZE="${NOTARIZE:-}"
 SKIN_CSS="${SKIN_CSS:-}"
+BUNDLE_CLI="${BUNDLE_CLI:-1}"
 [[ -z "$SKIN_CSS" || -f "$SKIN_CSS" ]] || { echo "build-safari: SKIN_CSS not found: $SKIN_CSS" >&2; exit 1; }
 
 SAFARI=0
@@ -132,6 +136,11 @@ else
 fi
 cp -f "$SKIN_OUT" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/ql-reading.css"
 [[ -n "$SKIN_CSS" ]] || rm -f "$SKIN_OUT"
+# The CLI rides inside the app, before signing seals the bundle.
+if [[ "$BUNDLE_CLI" != "0" ]]; then
+  "${HERE}/../scripts/bundle-cli" "$APP" >/dev/null || { echo "build-safari: bundle-cli FAILED" >&2; exit 1; }
+  echo "build-safari: bundled the spacedown CLI into Contents/Resources/cli"
+fi
 SAFARI_APPEX="${APP}/Contents/PlugIns/SpacedownDrop Extension.appex"
 if [[ $SAFARI -eq 0 && -d "$SAFARI_APPEX" ]]; then
   # The Xcode project always builds the Safari target; set it aside in the build dir.

@@ -90,7 +90,8 @@ if [[ $MAS -eq 1 ]]; then
   [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || die "dirty tree; commit first"
 
   echo "== build (Quick Look only)"
-  BUILT="$(SKIN_CSS= NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
+  # BUNDLE_CLI=0: the store app is sandboxed and Homebrew never links it, so no CLI inside.
+  BUILT="$(SKIN_CSS= BUNDLE_CLI=0 NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
   [[ -d "$BUILT" ]] || die "build did not report an app path"
   mkdir -p "$MDIST"
   rsync -a --delete "$BUILT" "$MDIST/"

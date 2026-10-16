@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# bundle-cli: put the spacedown CLI and the files it needs at runtime inside an app bundle,
+# so the app and the CLI update together (the Homebrew cask links the CLI from here).
+#   scripts/bundle-cli <Spacedown.app>
+# Layout written under <app>/Contents/Resources/cli/ (same shape as the repo, because
+# bin/spacedown finds its files at ../assets and ../scripts from its own real path):
+#   bin/spacedown            the CLI, includes the docx subcommand
+#   assets/                  themes, partials, filters, fonts, docx reference doc
+#   scripts/ia-fontface-css  embeds the vendored iA fonts into themed pages
+# assets/REFRESH.md is maintainer notes and stays out. Run it before the app is signed:
+# the signature seals these files.
+set -euo pipefail
+
+ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP="${1:-}"
+[[ -n "$APP" && -d "$APP/Contents" ]] || { echo "usage: bundle-cli <Spacedown.app>" >&2; exit 64; }
+
+DEST="${APP}/Contents/Resources/cli"
+mkdir -p "$DEST/bin" "$DEST/assets" "$DEST/scripts"
+rsync -a "${ROOT}/bin/spacedown" "$DEST/bin/"
+rsync -a --delete --exclude REFRESH.md "${ROOT}/assets/" "$DEST/assets/"
+rsync -a "${ROOT}/scripts/ia-fontface-css" "$DEST/scripts/"
+chmod 755 "$DEST/bin/spacedown" "$DEST/scripts/ia-fontface-css"
+echo "$DEST/bin/spacedown"

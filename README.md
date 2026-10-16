@@ -18,7 +18,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 
 ## Download
 
-Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`.
+Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`, which also links the `spacedown` CLI onto your `PATH` (see below).
 
 ## Screenshots
 
@@ -50,6 +50,10 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 ## Install the spacedown CLI
 
 The CLI is a single bash script plus the `assets/` folder next to it. The Quick Look panel carries the same iA look as the default `ia` theme.
+
+**With the app.** `Spacedown.app` carries the CLI at `Contents/Resources/cli/bin/spacedown`, with the assets it needs beside it. The Homebrew cask links that path as `spacedown`, so the app and the CLI update together. Without Homebrew, link it yourself: `ln -sfn /Applications/Spacedown.app/Contents/Resources/cli/bin/spacedown ~/.local/bin/spacedown`. The Mac App Store build does not carry the CLI. `pandoc` is still required.
+
+**From source.**
 
 ```bash
 brew install pandoc        # required
@@ -162,6 +166,8 @@ Requirements: Xcode (for `xcodebuild` and `swiftc`) and [XcodeGen](https://githu
 integrations/build-safari.sh                # the app with the Quick Look extension only
 integrations/build-safari.sh --with-safari  # also the Safari drop extension and its render helper
 ```
+
+`integrations/build-safari.sh` also copies the CLI and its assets into the app with `scripts/bundle-cli` before signing. `BUNDLE_CLI=0` leaves them out; the Mac App Store build does.
 
 | Installed item | Path | When |
 |---|---|---|
