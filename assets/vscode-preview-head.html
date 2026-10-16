@@ -775,6 +775,10 @@ body > p, body > ul, body > ol, body > blockquote,
 body > h1, body > h2, body > h3, body > h4, body > h5, body > h6 {
   max-width: 48rem;
 }
+/* A table that fits the measure and a section rule end on the prose edge too, so the page
+   keeps one right edge. Only a .sd-wide table runs on to the 60rem column and scrolls. */
+body > table:not(.sd-wide), body > hr { max-width: 48rem; }
+body > hr { margin-left: 0; } /* ia centers hr with auto margins; a capped rule starts on the text edge */
 /* Code blocks hug their content like tables (same width recipe as the table rule):
    a 55-char SQL block no longer paints a full-bleed gray slab. */
 /* border-box: max-width includes the 16px padding + border, otherwise the pre's
