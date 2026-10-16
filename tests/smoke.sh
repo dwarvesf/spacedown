@@ -908,7 +908,7 @@ fi
 echo "[skim-6] print renders the normal view: every skim rule sits inside @media screen"
 skim_nocomment="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html")"
 skim_loose=$(awk '/^@media screen/{s=1} s==0 && /html\.sd-skim/{n++} /^}/{s=0} END{print n+0}' <<<"$skim_nocomment")
-skim_all=$(grep -c 'html\.sd-skim' <<<"$skim_nocomment")
+skim_all=$(grep -c 'html\.sd-skim' <<<"$skim_nocomment" || true)
 if [[ "$skim_loose" -eq 0 && "$skim_all" -ge 3 ]]; then
   ok "no skim rule outside a screen-only block (${skim_all} rules inside)"
 else
