@@ -38,6 +38,7 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 - **Dark mode.** Every mode follows the system or browser appearance through `prefers-color-scheme`. There is no flag.
 - **Outline sidebar.** A collapsible table of contents built from the headings, with scroll tracking. The `[` key toggles it.
 - **Zoom and copy source.** `Cmd +`, `Cmd -` and `Cmd 0` scale the text. A toolbar button copies the original Markdown.
+- **Skim.** A toolbar button (or the `S` key) fades every word to a soft grey except the key ones: bold text, headings, table headers and first cells, figures like `8x`, `10%` and `$10M`, acronyms, and capitalized names. Rules only, no model. A name or acronym lights up the first time it appears under each heading, so the subject of the page does not glow on every line. The choice is remembered, and print always renders the normal view.
 - **Frontmatter as a table.** A leading YAML block renders as a key and value table. Frontmatter that strict YAML parsers reject still renders.
 - **Callouts.** Obsidian-style `> [!note] Title` blocks render as styled callouts.
 - **Wikilinks.** `[[target]]` and `[[target|title]]` render as links.
