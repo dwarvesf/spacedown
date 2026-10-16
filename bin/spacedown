@@ -4,6 +4,10 @@
 #
 # Exit codes: 0 ok | 1 source bad | 2 pandoc fail | 3 entr missing | 64 usage | 130 SIGINT
 #
+# Subcommand: `spacedown docx <file.md> [-o out.docx]` writes a .docx in the iA look
+# instead of HTML (exit codes there: 0 ok | 2 pandoc or reference doc missing | 64 usage
+# | 66 input not found).
+#
 # stdout: absolute output path (one line, on success only).
 # stderr: diagnostics, prefixed with "spacedown:".
 
@@ -52,10 +56,16 @@ usage() {
 spacedown: render markdown (with LaTeX via KaTeX) to HTML; optionally open in browser.
 
 Usage:
+  spacedown docx <file> [-o out.docx]
   spacedown <file> [--out PATH] [--no-open] [--watch] [--title STR]
                     [--font-mode ia|tm|paper|read|mono] [--standalone | --no-standalone]
                     [--help] [--version]
   spacedown <dir>  [--out PATH] [--no-open]
+
+Subcommands:
+  docx              Markdown to .docx in the iA look (Word and Google Docs).
+                    `spacedown docx --help` for its usage. A file literally named
+                    "docx" is rendered as `spacedown ./docx`.
 
 Args:
   <file>            Path to a markdown file.
@@ -175,6 +185,55 @@ slugify() {
     | LC_ALL=C tr '[:upper:]' '[:lower:]' \
     | LC_ALL=C sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
 }
+
+# ---- docx subcommand ----
+# `spacedown docx <file.md> [-o out.docx]`: markdown to .docx in the iA look, via the
+# pandoc reference doc assets/docx/ia-reference.docx. YAML frontmatter becomes the title
+# block; HTML comments are dropped. stdout: the output path. Exit: 0 ok | 2 pandoc or
+# reference doc missing | 64 usage | 66 input not found.
+DOCX_REF="${SCRIPT_DIR}/../assets/docx/ia-reference.docx"
+
+docx_usage() {
+  cat <<'EOF'
+spacedown docx: markdown to .docx in the iA look (imports into Google Docs intact).
+
+Usage:
+  spacedown docx <file.md> [-o out.docx]
+
+Flags:
+  -o, --output PATH  Output path. Default: <file>.docx next to the input.
+  -h, --help         Print this.
+
+Exit codes: 0 ok | 2 pandoc or reference doc missing | 64 usage | 66 input not found
+stdout: the output path (success only). stderr: diagnostics.
+EOF
+}
+
+docx_main() {
+  local src="" out=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -o|--output) [[ -n "${2:-}" ]] || { docx_usage >&2; exit 64; }; out="$2"; shift 2 ;;
+      --output=*) out="${1#--output=}"; shift ;;
+      -h|--help) docx_usage; exit 0 ;;
+      -*) log "docx: unknown flag $1"; docx_usage >&2; exit 64 ;;
+      *) [[ -z "$src" ]] || { docx_usage >&2; exit 64; }; src="$1"; shift ;;
+    esac
+  done
+  [[ -n "$src" ]] || { docx_usage >&2; exit 64; }
+  [[ -f "$src" ]] || die 66 "docx: no such file: $src"
+  [[ -f "$DOCX_REF" ]] || die 2 "docx: reference doc missing: $DOCX_REF (run python3 -I scripts/build-docx-reference.py)"
+  command -v pandoc >/dev/null || die 2 "docx: pandoc not found (brew install pandoc)"
+  [[ -n "$out" ]] || out="${src%.*}.docx"
+  pandoc "$src" -f markdown-implicit_figures -t docx --reference-doc "$DOCX_REF" -o "$out"
+  echo "$out"
+}
+
+if [[ "${1:-}" == "docx" ]]; then
+  shift
+  docx_main "$@"
+  exit 0
+fi
 
 # ---- parse args ----
 FILE=""
