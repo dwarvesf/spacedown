@@ -190,6 +190,8 @@ html.sd-has-toc.sd-toc-collapsed body { padding-left: 26px; }
 @media (max-width: 600px) {
   html { padding-left: 0; padding-right: 0; }
   body, html.sd-has-toc body, html.sd-has-toc.sd-toc-collapsed body { padding-left: 20px; padding-right: 20px; }
+  /* A table wider than a phone column scrolls in its own box instead of pushing the page sideways. */
+  body > table:not(.sd-frontmatter) { display: block; overflow-x: auto; max-width: 100%; }
 }
 
 /* Transitions live only after first paint. visibility flips after the slide on collapse
