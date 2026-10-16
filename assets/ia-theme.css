@@ -34,6 +34,8 @@
   --ia-fg: #1a1a1a;
   --ia-border: #1a1a1a;
   --ia-code-bg: rgba(36, 36, 36, 0.055);
+  --ia-row-rule: #e6e6e6;
+  --ia-link: #1d5fd1;
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
   /* Template default: content-size-l = 18px at line-height-base 164%.
@@ -79,16 +81,30 @@ h3 + blockquote, h4 + blockquote {
 }
 li > p, li > ul, li > ol { margin-top: 0; }
 
+/* Links: a calm accent, a quiet underline that turns solid (plus a faint tint) on hover,
+   and a ring for keyboard focus. The template shares the ink color; a link has to read as
+   a link on a page of near-black text, so this departs from it on purpose. */
 a {
-  color: inherit; /* template: links share the ink color */
+  color: var(--ia-link);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--ia-fg) 40%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--ia-link) 35%, transparent);
+  border-radius: 2px;
 }
-a:hover { text-decoration-color: var(--ia-fg); }
+a:hover {
+  text-decoration-color: var(--ia-link);
+  background-color: color-mix(in srgb, var(--ia-link) 9%, transparent);
+}
+a:focus-visible {
+  outline: 2px solid var(--ia-link);
+  outline-offset: 2px;
+}
 
-/* Dash bullets. */
+/* Dash bullets. Scoped to the article: nav#TOC (the outline sidebar) is a <ul> too, and an
+   unscoped rule stamped a stray dash on every outline row. */
 ul { list-style: none; padding-left: 2.5em; }
-ul > li::before {
+ul:not(nav#TOC ul) > li::before {
   content: "\2013\00a0\00a0";
   float: left;
   margin-left: -1.35em;
@@ -174,10 +190,26 @@ thead th {
   border-bottom: none;
   padding: 0.6em 1em 0.6em 0;
 }
-/* Row hairlines in the ink color (template: tbody th/td border-top #1a1a1a). */
-tbody { border-top: 1px solid var(--ia-border); }
+/* The ink rules frame the table (top and bottom, above); a header row gets one more under
+   it. Rows inside are separated by a light hairline so a long table stays scannable. The
+   selector matches the base rule that blanks the row-top border (it names every element). */
+thead + tbody { border-top: 1px solid var(--ia-border); }
 tbody td { border-bottom: none; }
-tbody tr + tr td { border-top: 1px solid var(--ia-border); }
+table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-row-rule); }
+/* A headerless table (`| | |` over the rule row) arrives with an empty header row: drop it so
+   the table opens on its first body row, under the one ink rule, with no stray line. */
+thead:not(:has(th:not(:empty))) { display: none; }
+/* First column is the row label: bold, one line, only as wide as its content. A table with
+   prose columns (.sd-wide) lets it wrap again. The frontmatter table styles its own keys. */
+table:not(.sd-frontmatter) > tbody > tr > :first-child {
+  font-weight: 700;
+  white-space: nowrap;
+  width: 1%;
+}
+table.sd-wide:not(.sd-frontmatter) > tbody > tr > :first-child { white-space: normal; width: auto; }
+/* A table set inside a quote sits on the quote's own text edge: no extra margin or inset. */
+blockquote > table { margin-left: 0; margin-right: 0; }
+blockquote table th:first-child, blockquote table td:first-child { padding-left: 0; }
 /* Kill the base zebra fill and last-row corner rounding at their own specificity. */
 table:not(.sd-frontmatter) tbody tr:nth-child(even) td { background: transparent; }
 /* Neutralize the base auto-numeric right-align (.sd-num, added by script): under
@@ -202,6 +234,12 @@ table.sd-wide {
 table.sd-wide th:not(.sd-tight),
 table.sd-wide td:not(.sd-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
 
+/* Images fit the reading column. A lone SVG has no pixel size of its own, so it takes the
+   column width; the viewBox keeps its proportions. */
+img { max-width: 100%; height: auto; }
+p > img:only-child[src^="data:image/svg+xml"],
+p > img:only-child[src$=".svg"] { width: 100%; }
+
 /* Figure captions. The house convention is an image alone in its paragraph followed by
    the caption paragraph, the same shape the panel reads (pandoc runs with
    -implicit_figures so it does not caption the image with its own alt text as well). */
@@ -219,6 +257,8 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-fg: #cccccc;
     --ia-border: #cccccc;
     --ia-code-bg: rgba(245, 245, 245, 0.06);
+    --ia-row-rule: #3a3a3a;
+    --ia-link: #7aa7ff;
     /* Code tokens in iA's dark editor accents (measured from the app: amber
        #c1944e, purple #ba8db2, green #82a56f, muted #878787). Redefines the
        base stylesheet's --sd-syn-* vars; its `code span.*` rules consume
