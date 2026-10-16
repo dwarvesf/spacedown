@@ -557,7 +557,7 @@ pre {
    assets/frontmatter-to-table.py. .frontmatter-error below is kept (a valid future hook). */
 table.sd-frontmatter {
 	display: table;                 /* override base `table { display:block }` */
-	width: auto;
+	width: 100%;                    /* fills the column, so it ends on the same right edge as the text */
 	max-width: 100%;
 	border: none;                   /* no outer box, no left rail */
 	border-radius: 0;
@@ -618,11 +618,9 @@ table.sd-frontmatter td.sd-fm-long.sd-fm-expanded .sd-fm-clamp {
 }
 .sd-fm-more:hover { color: var(--sd-ink-strong); text-decoration: underline; }
 
-/* When the table carries a long value, cap the WHOLE table so the value wraps at a
-   comfortable measure (~700px column) instead of a full-width wall, and give it a real
-   width so the value column never collapses to a sliver. Short-only frontmatter (no long
-   row) keeps the compact width:auto aside. The key column stays narrow via the colgroup. */
-table.sd-frontmatter.sd-fm-has-long { width: 100%; max-width: 820px; }
+/* The table fills the column like every other block (one right edge); a long value wraps at
+   the column width and the key column stays narrow via the colgroup. */
+table.sd-frontmatter td:first-child { padding-left: 0; } /* keys start on the text edge, under the hairline start */
 table.sd-frontmatter.sd-fm-has-long td.sd-fm-key { vertical-align: top; }
 
 .frontmatter-error {

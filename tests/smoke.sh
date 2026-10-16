@@ -648,6 +648,24 @@ else
   no "tables or rules run past the prose measure: the page has two right edges"
 fi
 
+echo "[phone-gutter] phones get one 20px gutter, not html plus body padding"
+CHROME_HEAD="${SCRIPT_DIR}/assets/reading-chrome-head.html"
+if grep -q '@media (max-width: 600px) {' "$CHROME_HEAD" \
+   && grep -q 'body, html.sd-has-toc body, html.sd-has-toc.sd-toc-collapsed body { padding-left: 20px; padding-right: 20px; }' "$CHROME_HEAD"; then
+  ok "phone gutter"
+else
+  no "phone gutter missing: text sits 52px in from each edge on a phone"
+fi
+
+echo "[fm-width] the frontmatter table fills the column and its keys start on the text edge"
+if grep -q 'width: 100%;                    /\* fills the column' "$HEAD_HTML" \
+   && grep -q 'table.sd-frontmatter td:first-child { padding-left: 0; }' "$HEAD_HTML" \
+   && ! grep -q 'max-width: 820px' "$HEAD_HTML"; then
+  ok "frontmatter width"
+else
+  no "frontmatter table narrower than the column, or keys inset from the text edge"
+fi
+
 echo "[ia-caption] a caption under a lone image is centered"
 if grep -q 'p:has(> img:only-child) + p {.*text-align: center;' "$IA_THEME"; then ok "centered caption"; else no "caption not centered"; fi
 
