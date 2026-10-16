@@ -101,13 +101,15 @@ if grep -q 'class="title"' "${TMP}/fixture.html"; then no "title block present";
 
 # 13. page column overrides pandoc's 36em default (designer pass 2026-07-12: the old
 #     body-wide `max-width: none` became a 60rem page column + 48rem prose measure).
-#     The 60rem body rule must appear AFTER pandoc's 36em so the cascade lets it win.
+#     The page column is now the 48rem measure itself (no empty strip right of the prose);
+#     the body rule must appear AFTER pandoc's 36em so the cascade lets it win.
 echo "[13] page column overrides pandoc default"
 line36=$(grep -n 'max-width: 36em' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
-line60=$(grep -n 'max-width: 60rem' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
+line60=$(grep -n '  max-width: 48rem;' "${TMP}/fixture.html" | head -1 | cut -d: -f1)
 if [[ -n "$line60" ]] && { [[ -z "$line36" ]] || [[ "$line60" -gt "$line36" ]]; } \
+   && ! grep -q 'max-width: 60rem' "${TMP}/fixture.html" \
    && grep -q 'max-width: 48rem' "${TMP}/fixture.html"; then
-  ok "60rem page column wins over pandoc 36em; 48rem prose measure present"
+  ok "48rem page column wins over pandoc 36em"
 else
   no "page column / prose measure missing or ordered before pandoc default"
 fi
