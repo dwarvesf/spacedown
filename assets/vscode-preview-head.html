@@ -66,10 +66,10 @@ body {
   /* One reading column, capped + centered (re-established 2026-07-12). The 2026-06-11
      removal happened because wide math/code forced page-level scrollbars back then;
      those elements now own their overflow (sections 6, 7, 7b), so the cap is safe.
-     Wide blocks may exceed the 48rem prose measure (7b) up to this 60rem page column,
-     then scroll inside their own box. body stays content-box, so the sidebar
+     The column is the 48rem prose measure itself, so it sits centered with no empty strip
+     on its right; wide blocks scroll inside their own box. body stays content-box, so the sidebar
      padding-left does not eat into the column. */
-  max-width: 60rem;
+  max-width: 48rem;
   margin: 0 auto;
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
@@ -776,7 +776,7 @@ body > h1, body > h2, body > h3, body > h4, body > h5, body > h6 {
   max-width: 48rem;
 }
 /* A table that fits the measure and a section rule end on the prose edge too, so the page
-   keeps one right edge. Only a .sd-wide table runs on to the 60rem column and scrolls. */
+   keeps one right edge. A .sd-wide table scrolls inside the same column. */
 body > table:not(.sd-wide), body > hr { max-width: 48rem; }
 body > hr { margin-left: 0; } /* ia centers hr with auto margins; a capped rule starts on the text edge */
 /* Code blocks hug their content like tables (same width recipe as the table rule):
