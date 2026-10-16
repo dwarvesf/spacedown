@@ -33,6 +33,7 @@
   --ia-bg: #fcfcfc;
   --ia-fg: #1a1a1a;
   --ia-border: #1a1a1a;
+  --ia-table-rule: #e3e3e3; /* soft table hairlines (owner choice over iA's ink rules) */
   --ia-code-bg: rgba(36, 36, 36, 0.055);
   --ia-link: #1d5fd1;
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
@@ -188,17 +189,17 @@ thead th {
   border-bottom: none;
   padding: 0.6em 1em 0.6em 0;
 }
-/* iA Writer's table: every rule is an ink hairline (top, under the header, between rows,
-   bottom) and body cells keep the body weight. The rules sit on the cells, not the table
+/* Tables: soft hairlines (top, under the header, between rows, bottom; the owner's choice
+   over iA's ink rules) and body cells keep the body weight. The rules sit on the cells, not the table
    box, so they always end where the cells end, even when the box is wider (.sd-wide). The
    selectors match the base rule that blanks the row-top border (it names every element). */
 tbody td { border-bottom: none; }
 thead > tr:first-child > *,
 table > tbody:first-child > tr:first-child > *,
-thead:not(:has(th:not(:empty))) + tbody > tr:first-child > * { border-top: 1px solid var(--ia-border); }
-thead + tbody > tr:first-child > * { border-top: 1px solid var(--ia-border); }
-table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-border); }
-table > tbody:last-child > tr:last-child > * { border-bottom: 1px solid var(--ia-border); }
+thead:not(:has(th:not(:empty))) + tbody > tr:first-child > * { border-top: 1px solid var(--ia-table-rule); }
+thead + tbody > tr:first-child > * { border-top: 1px solid var(--ia-table-rule); }
+table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-table-rule); }
+table > tbody:last-child > tr:last-child > * { border-bottom: 1px solid var(--ia-table-rule); }
 /* A headerless table (`| | |` over the rule row) arrives with an empty header row: drop it so
    the table opens on its first body row, under the one ink rule, with no stray line. */
 thead:not(:has(th:not(:empty))) { display: none; }
@@ -251,6 +252,7 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-bg: #1a1a1a;
     --ia-fg: #cccccc;
     --ia-border: #cccccc;
+    --ia-table-rule: #3a3a3a;
     --ia-code-bg: rgba(245, 245, 245, 0.06);
     --ia-link: #7aa7ff;
     /* Code tokens in iA's dark editor accents (measured from the app: amber
@@ -274,6 +276,7 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-bg: #fff;
     --ia-fg: #000;
     --ia-border: #000;
+    --ia-table-rule: #bbb;
     --ia-link: #000;
     --ia-code-bg: #f2f2f2;
   }
