@@ -1,5 +1,5 @@
 <script>
-/* spacedown reading chrome JS: outline scroll-spy + zoom + copy-source.
+/* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + copy-source + print.
    Injected at end of <body> via pandoc --include-after-body, after the #sd-src element.
    Pairs with assets/reading-chrome-head.html. Self-contained, no dependencies. */
 (function () {
@@ -91,12 +91,32 @@
   function apply() {
     var pct = ZOOMS[idx];
     doc.style.setProperty("--sd-zoom", (pct / 100).toString());
-    if (pctEl) pctEl.textContent = pct + "%";
+    if (pctEl) {
+      pctEl.textContent = pct + "%";
+      pctEl.setAttribute("aria-label", "Reset zoom (now " + pct + "%)");
+    }
     try { localStorage.setItem(KEY, String(pct)); } catch (e) {}
   }
   function zoomIn() { idx = clampIdx(idx + 1); apply(); }
   function zoomOut() { idx = clampIdx(idx - 1); apply(); }
   function zoomReset() { idx = DEFAULT_IDX; apply(); }
+
+  // ---- toolbar icons: inline SVG in the Lucide style (24px grid, 1.75 stroke, round caps,
+  //      currentColor), drawn for spacedown. Static strings, never built from document text. ----
+  function icon(paths) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" ' +
+      'aria-hidden="true" focusable="false">' + paths + '</svg>';
+  }
+  var GLASS = '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>';
+  var ICONS = {
+    zoomOut: icon(GLASS + '<path d="M8 11h6"/>'),
+    zoomIn: icon(GLASS + '<path d="M8 11h6M11 8v6"/>'),
+    copy: icon('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
+    check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+    print: icon('<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>')
+  };
+  var COPY_LABEL = "Copy source";
 
   // ---- copy-source (raw markdown, base64-embedded for UTF-8 + file:// safety) ----
   function decodeSrc() {
@@ -109,10 +129,12 @@
     } catch (e) { return ""; }
   }
   function flashDone(btn) {
-    btn.textContent = "Copied"; btn.classList.add("sd-done");
+    btn.innerHTML = ICONS.check; btn.classList.add("sd-done");
+    btn.setAttribute("aria-label", "Copied"); btn.title = "Copied";
     setTimeout(function () {
-      btn.textContent = "Copy source"; btn.classList.remove("sd-done");
-    }, 1400);
+      btn.innerHTML = ICONS.copy; btn.classList.remove("sd-done");
+      btn.setAttribute("aria-label", COPY_LABEL); btn.title = COPY_LABEL;
+    }, 1500);
   }
   function legacyCopy(text, done) {
     var ta = document.createElement("textarea");
@@ -132,25 +154,50 @@
   }
 
   // ---- build toolbar ----
-  function btn(cls, label, title, fn) {
+  // Every control is a real button with an aria-label and a title tooltip.
+  function btn(cls, svg, label, title, fn) {
     var b = document.createElement("button");
-    b.className = cls; b.textContent = label; b.title = title;
+    b.type = "button";
+    b.className = cls; b.innerHTML = svg;
+    b.setAttribute("aria-label", label); b.title = title;
     b.addEventListener("click", function () { fn(b); });
     return b;
   }
   var bar = document.createElement("div");
   bar.className = "sd-toolbar";
-  bar.appendChild(btn("sd-zoom-out", "A", "Zoom out (Cmd -)", zoomOut));
-  pctEl = document.createElement("span");
-  pctEl.className = "sd-zoom-pct";
-  pctEl.title = "Reset zoom (Cmd 0)";
-  pctEl.addEventListener("click", zoomReset);
+  bar.setAttribute("role", "toolbar");
+  bar.setAttribute("aria-label", "Reading tools");
+  bar.appendChild(btn("sd-zoom-out", ICONS.zoomOut, "Zoom out", "Zoom out (Cmd -)", zoomOut));
+  pctEl = btn("sd-zoom-pct", "", "Reset zoom", "Reset zoom (Cmd 0)", zoomReset);
   bar.appendChild(pctEl);
-  bar.appendChild(btn("sd-zoom-in", "A", "Zoom in (Cmd +)", zoomIn));
+  bar.appendChild(btn("sd-zoom-in", ICONS.zoomIn, "Zoom in", "Zoom in (Cmd +)", zoomIn));
   var sep = document.createElement("span"); sep.className = "sd-sep";
+  sep.setAttribute("aria-hidden", "true");
   bar.appendChild(sep);
-  bar.appendChild(btn("sd-copy", "Copy source", "Copy the raw markdown to the clipboard", copySource));
+  bar.appendChild(btn("sd-copy", ICONS.copy, COPY_LABEL, "Copy the raw markdown to the clipboard", copySource));
+  bar.appendChild(btn("sd-print", ICONS.print, "Print", "Print this page", function () { window.print(); }));
   document.body.appendChild(bar);
+
+  // ---- reading progress: a 2px bar at the top, scaled to how far down the page we are ----
+  var progress = document.createElement("div");
+  progress.className = "sd-progress";
+  progress.setAttribute("aria-hidden", "true");
+  document.body.appendChild(progress);
+  var progressQueued = false;
+  function paintProgress() {
+    progressQueued = false;
+    var max = doc.scrollHeight - window.innerHeight;
+    var p = max > 0 ? Math.min(1, Math.max(0, (window.pageYOffset || doc.scrollTop) / max)) : 0;
+    progress.style.transform = "scaleX(" + p.toFixed(4) + ")";
+  }
+  function queueProgress() {
+    if (progressQueued) return;
+    progressQueued = true;
+    requestAnimationFrame(paintProgress);
+  }
+  window.addEventListener("scroll", queueProgress, { passive: true });
+  window.addEventListener("resize", queueProgress);
+  paintProgress();
 
   apply(); // sets --sd-zoom + the pct label from saved/default
 
@@ -181,6 +228,13 @@
     var heads = Object.keys(links)
       .map(function (id) { return document.getElementById(id); })
       .filter(Boolean);
+    // Keep the active outline item in view inside the sidebar's own scroll, without moving the page.
+    var TOC_HEAD = 44;
+    function revealInOutline(a) {
+      var top = a.offsetTop, bottom = top + a.offsetHeight;
+      if (top < toc.scrollTop + TOC_HEAD + 8) toc.scrollTop = Math.max(0, top - TOC_HEAD - 8);
+      else if (bottom > toc.scrollTop + toc.clientHeight - 12) toc.scrollTop = bottom - toc.clientHeight + 12;
+    }
     if ("IntersectionObserver" in window && heads.length) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
@@ -189,6 +243,7 @@
           if (!a) return;
           for (var k in links) links[k].classList.remove("sd-active");
           a.classList.add("sd-active");
+          revealInOutline(a);
         });
       }, { rootMargin: "0px 0px -75% 0px", threshold: 0 });
       heads.forEach(function (h) { io.observe(h); });
