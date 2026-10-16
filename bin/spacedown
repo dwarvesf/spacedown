@@ -29,11 +29,17 @@ STYLE_HEAD="${SCRIPT_DIR}/../assets/vscode-preview-head.html"
 # Reading chrome (outline sidebar + zoom + copy-source): CSS head + JS foot partials.
 CHROME_HEAD="${SCRIPT_DIR}/../assets/reading-chrome-head.html"
 CHROME_FOOT="${SCRIPT_DIR}/../assets/reading-chrome-foot.html"
-# "paper" reading theme (--font-mode=paper, the default). An original design set in
-# the free iA Writer Quattro and Mono fonts (OFL, referenced by name, no embedding).
-# Plain .css (not a pre-wrapped .html head partial like the other assets) so the SAME
-# file also works directly as a VS Code / VSCodium `markdown.styles` entry; the CLI
-# wraps it in <style> at render time (below).
+# Reading themes: "ia" (--font-mode=ia, the default), "tm" and "paper". Each is one plain
+# .css file (not a pre-wrapped .html head partial like the other assets) so the SAME file
+# also works directly as a VS Code / VSCodium `markdown.styles` entry; the CLI wraps it in
+# <style> at render time (below).
+#   ia     iA Writer's Quattro template, set in iA Writer Quattro and Mono
+#   tm     typography ported from thinkingmachines.ai (Georgia serif)
+#   paper  an original warm paper design, also in the iA Writer fonts
+# The iA fonts are SIL OFL, vendored in assets/fonts/ia/ and referenced by family name
+# here (an installed font wins; the Quick Look build embeds the vendored files).
+IA_CSS="${SCRIPT_DIR}/../assets/ia-theme.css"
+TM_CSS="${SCRIPT_DIR}/../assets/tm-theme.css"
 PAPER_CSS="${SCRIPT_DIR}/../assets/paper-theme.css"
 # Live-reload (watch mode only): a poll script injected into the page + a localhost server.
 LIVERELOAD_FOOT="${SCRIPT_DIR}/../assets/livereload-foot.html"
@@ -45,7 +51,7 @@ spacedown: render markdown (with LaTeX via KaTeX) to HTML; optionally open in br
 
 Usage:
   spacedown <file> [--out PATH] [--no-open] [--watch] [--title STR]
-                    [--font-mode paper|read|mono] [--standalone | --no-standalone]
+                    [--font-mode ia|tm|paper|read|mono] [--standalone | --no-standalone]
                     [--help] [--version]
   spacedown <dir>  [--out PATH] [--no-open]
 
@@ -59,17 +65,19 @@ Flags:
   --no-open         Skip browser. Implied when stdout is not a TTY.
   --watch           Re-render on save (requires entr). Ctrl-C to exit.
   --title STR       Title metadata. Default: basename without extension.
-  --font-mode MODE  paper (default): warm reading theme set in the free
-                    iA Writer Quattro and Mono fonts (system fonts when those
-                    are not installed). mono: full editor fidelity (mirrored
+  --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
+                    free iA Writer Quattro and Mono fonts (system fonts when
+                    those are not installed). tm: serif reading look ported
+                    from thinkingmachines.ai. paper: warm paper theme in the
+                    iA Writer fonts. mono: full editor fidelity (mirrored
                     monospace everywhere). read: proportional serif prose for
                     long-form reading, monospace kept for code/tables.
                     Env: SPACEDOWN_FONT_MODE.
 
 Env:
-  SPACEDOWN_THEME_CSS=FILE  a plain CSS theme that replaces the paper theme
-                    (same contract as assets/paper-theme.css). read and mono
-                    are unaffected.
+  SPACEDOWN_THEME_CSS=FILE  a plain CSS theme that replaces the CSS of the active
+                    ia, tm or paper mode (same contract as assets/ia-theme.css).
+                    read and mono are unaffected.
   --no-standalone   Disable pandoc --standalone (rare; for embedding).
   --help            Print this.
   --version         Print version + dep status.
@@ -170,10 +178,12 @@ NO_OPEN=0
 WATCH=0
 TITLE=""
 STANDALONE=1
-# Body font mode: "paper" (default) = the reading theme; "mono" = full editor fidelity
-# (mirrored mono everywhere); "read" = proportional serif. Override default via
+# Body font mode: "ia" (default), "tm" and "paper" = reading themes; "mono" = full editor
+# fidelity (mirrored mono everywhere); "read" = proportional serif. Override default via
 # $SPACEDOWN_FONT_MODE.
-FONT_MODE="${SPACEDOWN_FONT_MODE:-paper}"
+FONT_MODE="${SPACEDOWN_FONT_MODE:-ia}"
+FONT_MODE_RE='^(ia|tm|paper|read|mono)$'
+FONT_MODE_MSG="--font-mode must be 'ia', 'tm', 'paper', 'read', or 'mono'"
 
 if [[ $# -eq 0 ]]; then
   usage >&2
@@ -190,8 +200,8 @@ while [[ $# -gt 0 ]]; do
     --watch) WATCH=1; shift ;;
     --title) [[ -n "${2:-}" ]] || die 64 "--title requires a string"; TITLE="$2"; shift 2 ;;
     --title=*) TITLE="${1#--title=}"; shift ;;
-    --font-mode) [[ "${2:-}" =~ ^(paper|read|mono)$ ]] || die 64 "--font-mode must be 'paper', 'read', or 'mono'"; FONT_MODE="$2"; shift 2 ;;
-    --font-mode=*) v="${1#--font-mode=}"; [[ "$v" =~ ^(paper|read|mono)$ ]] || die 64 "--font-mode must be 'paper', 'read', or 'mono'"; FONT_MODE="$v"; shift ;;
+    --font-mode) [[ "${2:-}" =~ $FONT_MODE_RE ]] || die 64 "$FONT_MODE_MSG"; FONT_MODE="$2"; shift 2 ;;
+    --font-mode=*) v="${1#--font-mode=}"; [[ "$v" =~ $FONT_MODE_RE ]] || die 64 "$FONT_MODE_MSG"; FONT_MODE="$v"; shift ;;
     --standalone) STANDALONE=1; shift ;;
     --no-standalone) STANDALONE=0; shift ;;
     --) shift; break ;;
@@ -207,9 +217,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$FILE" ]] || die 64 "missing required <file> arg (see --help)"
+# A SPACEDOWN_FONT_MODE typo is caught here too, not silently rendered as no theme.
+[[ "$FONT_MODE" =~ $FONT_MODE_RE ]] || die 64 "SPACEDOWN_FONT_MODE: $FONT_MODE_MSG"
+# The theme file of the active mode (read and mono have none).
+THEME_CSS=""
+case "$FONT_MODE" in
+  ia) THEME_CSS="$IA_CSS" ;;
+  tm) THEME_CSS="$TM_CSS" ;;
+  paper) THEME_CSS="$PAPER_CSS" ;;
+esac
 if [[ -n "${SPACEDOWN_THEME_CSS:-}" ]]; then
   [[ -f "$SPACEDOWN_THEME_CSS" ]] || die 64 "SPACEDOWN_THEME_CSS not found: $SPACEDOWN_THEME_CSS"
-  PAPER_CSS="$SPACEDOWN_THEME_CSS"
+  THEME_CSS="$SPACEDOWN_THEME_CSS"
 fi
 
 # ---- folder mode ----
@@ -365,8 +384,8 @@ if [[ "$STANDALONE" == "1" ]]; then
     fi
     # Font mode. "read": proportional serif prose for long-form reading, monospace
     # kept for code / inline code / tables (and KaTeX keeps its math fonts). Injected
-    # after the mirrored fonts so it wins over them. "paper" (default): the reading
-    # theme below. "mono": inject nothing, the mirrored editor fonts above stay, i.e.
+    # after the mirrored fonts so it wins over them. "ia" (default), "tm", "paper": a
+    # reading theme file, injected below. "mono": inject nothing, the mirrored editor fonts above stay, i.e.
     # full editor fidelity (the escape hatch).
     if [[ "$FONT_MODE" == "read" ]]; then
       MODE_HEAD="$(mktemp -t spacedown-mode 2>/dev/null || true)"
@@ -402,19 +421,19 @@ MODECSS
         echo '</style>' >> "$MODE_HEAD"
         pandoc_flags+=( --include-in-header "$MODE_HEAD" )
       fi
-    elif [[ "$FONT_MODE" == "paper" ]]; then
-      # PAPER_CSS is plain CSS, so wrap it in a temp <style> block for pandoc's
+    elif [[ -n "$THEME_CSS" ]]; then
+      # THEME_CSS is plain CSS, so wrap it in a temp <style> block for pandoc's
       # --include-in-header. Degrades gracefully (warn, keep the base look) if the
       # asset is missing, same pattern as STYLE_HEAD/CHROME_HEAD.
-      if [[ -f "$PAPER_CSS" ]]; then
-        PAPER_HEAD="$(mktemp -t spacedown-paper 2>/dev/null || true)"
-        if [[ -n "${PAPER_HEAD:-}" ]]; then
-          TMPFILES+=("$PAPER_HEAD")
-          { echo '<style>'; cat "$PAPER_CSS"; echo '</style>'; } > "$PAPER_HEAD"
-          pandoc_flags+=( --include-in-header "$PAPER_HEAD" )
+      if [[ -f "$THEME_CSS" ]]; then
+        THEME_HEAD="$(mktemp -t spacedown-theme 2>/dev/null || true)"
+        if [[ -n "${THEME_HEAD:-}" ]]; then
+          TMPFILES+=("$THEME_HEAD")
+          { echo '<style>'; cat "$THEME_CSS"; echo '</style>'; } > "$THEME_HEAD"
+          pandoc_flags+=( --include-in-header "$THEME_HEAD" )
         fi
       else
-        log "paper style asset not found at ${PAPER_CSS}; --font-mode=paper has no effect"
+        log "theme asset not found at ${THEME_CSS}; --font-mode=${FONT_MODE} has no effect"
       fi
     fi
     # Reading chrome: outline sidebar + zoom + copy-source. --toc makes

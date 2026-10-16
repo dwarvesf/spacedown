@@ -1,0 +1,198 @@
+/* spacedown "Thinking Machines" reading theme. Ported from the live
+   typography of https://thinkingmachines.ai/blog/on-policy-distillation/
+   (thinkingmachines.ai/css/typography.css + common.css, fetched 2026-07-18).
+
+   TWO uses, same file:
+   1. `spacedown --font-mode=tm` (bin/spacedown): the CLI wraps this file's
+      content into a temp style element (opening and closing tags) and injects it into the
+      pandoc-rendered page's <head> via `--include-in-header`.
+   2. VS Code / VSCodium's native markdown preview: point this file at the
+      `markdown.styles` setting directly (it's plain CSS, no wrapper needed,
+      VS Code links it as a stylesheet into the preview iframe).
+
+   Injection order (bin/spacedown): STYLE_HEAD -> FONT_HEAD -> this asset ->
+   CHROME_HEAD (reading-chrome-head.html). This asset does NOT come last: the
+   reading-chrome partial injects AFTER it, and reading-chrome's own `body {
+   font-size: ...!important; line-height: ...!important; }` rule would beat a
+   plain (non-!important) font-size/line-height set here regardless of source
+   order once both are !important-tied (later source wins on a tie; chrome is
+   later). Fixed below by overriding the SHARED --markdown-font-size /
+   --markdown-line-height custom properties instead of setting body's
+   font-size/line-height directly: chrome's rule already reads those variables
+   via calc(), so redeclaring them here (a plain, non-!important :root
+   declaration, source-order-wins over STYLE_HEAD's earlier default) makes
+   chrome's already-!important rule compute the right value without needing to
+   out-fight it. The pre-existing --font-mode=read theme has this same latent
+   defect (a direct, non-!important body font-size that reading-chrome's
+   !important rule silently overrides); out of scope here, not introduced by
+   this asset, left alone per surgical-changes discipline.
+
+   This is an ADAPTATION, not a byte-for-byte port:
+   - Font stack REORDERS the upstream 'Iowan Old Style BT', Georgia, serif to put
+     Georgia FIRST. Georgia has full Vietnamese diacritic coverage (proper horns
+     on u+moc/o+moc); the existing --font-mode=read theme made the same call for
+     the same reason (see its MODE_HEAD comment in bin/spacedown) after finding
+     Charter lacked Vietnamese glyphs. Iowan Old Style BT is not a shipped web
+     font (it's an Apple system font, licensing-restricted), so most readers
+     never see it anyway; keeping it as a fallback costs nothing.
+   - Syntax-highlighting TOKEN colors are NOT ported. Upstream uses Hugo's Chroma
+     highlighter (`.chroma .k` / `.n` / `.s` class names); spacedown renders via
+     pandoc's `--syntax-highlighting tango` (Skylighting classes: `kw`, `dt`, `dv`,
+     `co`, ...), a different scheme entirely. Only the code-block CONTAINER
+     (background, radius, font, padding) is ported; tango's own token colors are
+     left untouched (already designed for a light background, so they still read
+     fine against the ported --bg_code).
+   - Layout (max-width reading column, TOC sidebar, zoom, copy-source toolbar) is
+     NOT touched. Those come from vscode-preview-head.html / reading-chrome-head.html
+     and are shared across every font mode. This asset is typography + color only.
+   - Full-grid TABLE borders are a deliberate, faithful port, not an oversight:
+     upstream's real rule is `.content table td, .content table th { border:
+     var(--fg4) 1px solid; }`, i.e. TM's own tables ARE full-grid. This differs
+     from spacedown's own house table style in its other modes (hairline
+     row separators, no full grid), which is fine: tm mode intentionally looks
+     like the source it's porting, not like the tool's other modes.
+*/
+:root {
+  --tm-bg: #ffffff;
+  --tm-bg-code: #f3f3f2;
+  --tm-fg: #282828;
+  --tm-fg1: #3c3836;
+  --tm-fg2: #504945;
+  --tm-fg3: #6b6866;
+  --tm-fg4: #676767;
+  --tm-fg5: #969696;
+  --tm-red: #ad2111;
+  /* Vietnamese-safe order (Georgia first); see comment above. */
+  --tm-font-serif: Georgia, "Iowan Old Style BT", "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --tm-font-mono: "SF Mono", Monaco, Inconsolata, "Fira Code", "JetBrains Mono", ui-monospace, Menlo, "DejaVu Sans Mono", monospace;
+  /* Overriding the SHARED variables (not body's font-size/line-height
+     directly) is what makes reading-chrome's !important rule pick these up;
+     see the injection-order note above. 26px ~= 16px * 1.65, matching the
+     line-height ratio the direct-property approach would have used. */
+  --markdown-font-size: 16px;
+  --markdown-line-height: 26px;
+}
+
+html, body {
+  background-color: var(--tm-bg);
+  color: var(--tm-fg1);
+  font-family: var(--tm-font-serif);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--tm-font-serif);
+  color: var(--tm-fg);
+  /* Suppress the VS Code base stylesheet's GitHub-style h1/h2 bottom rule
+     (vscode-preview-head.html sets border-bottom-width/style on h1/h2);
+     upstream Thinking Machines headings have no underline. */
+  border-bottom: none;
+}
+/* Ratios from typography.css's generic `.content h1..h6` (the body-heading
+   rules), not the 30px hero `.post-title` (that's a distinct page-hero
+   element upstream has no equivalent of here). */
+h1 { font-size: 1.75rem; font-weight: 700; line-height: 1.4; margin: 1.25em 0 0.6em; }
+h2 { font-size: 1.45rem; font-weight: 600; line-height: 1.4; margin: 1.25em 0 0.6em; }
+h3 { font-size: 1.35rem; font-weight: normal; font-style: italic; line-height: 1.4; margin: 1.4em 0 0.5em; }
+h4 { font-size: 0.97rem; font-weight: normal; font-style: italic; margin: 1.4em 0 0.7em; }
+h5 { font-size: 0.76rem; font-weight: normal; font-style: italic; margin: 1.4em 0 0.7em; }
+h6 { font-size: 0.6rem; font-weight: normal; font-style: italic; margin: 1.4em 0 0.7em; }
+
+p { margin: 0 0 1.333rem; }
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--tm-fg4) 30%, transparent);
+  transition: color 0.2s ease-in-out, text-decoration-color 0.2s ease-in-out;
+}
+a:hover {
+  color: var(--tm-fg2);
+  text-decoration-color: color-mix(in srgb, var(--tm-fg2) 30%, transparent);
+}
+
+blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--tm-fg4) 35%, var(--tm-bg) 65%);
+  color: var(--tm-fg2);
+  font-style: normal;
+  margin: 1.6rem 0 1.6rem 1rem;
+  padding: 0.1rem 0 0.1rem 1.25rem;
+}
+
+ul { list-style: square; margin-left: 1.5rem; margin-top: 1rem; margin-bottom: 1.2rem; }
+ul > li { margin-bottom: 0.2rem; }
+ol { list-style: decimal; margin-left: 2rem; margin-top: 1rem; margin-bottom: 1.2rem; }
+ol > li { margin-bottom: 0.2rem; }
+ol ol { list-style-type: lower-alpha; }
+
+/* Code container chrome only (see the "NOT ported" note above for why token
+   colors are untouched). !important on background/font: NOT because tango
+   sets an inline style (it doesn't; it emits a stylesheet rule on the wrapper
+   div, and vscode-preview-head.html's own reassertion is what actually paints
+   pre's background today) but as a deliberate belt-and-suspenders against
+   whichever of the base/chrome/tango layers happens to win a future
+   refresh, since this is a leaf theme with no downstream consumer to break. */
+pre, pre.sourceCode {
+  background-color: var(--tm-bg-code) !important;
+  border-radius: 0.45rem;
+  font-family: var(--tm-font-mono) !important;
+  padding: 1rem;
+  font-weight: 400;
+}
+pre code, pre.sourceCode code {
+  font-family: inherit !important;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--tm-fg2);
+}
+:not(pre) > code {
+  color: var(--tm-red);
+  font-family: var(--tm-font-mono);
+  font-size: 0.9em;
+  background-color: transparent;
+  padding: 0 0.2rem;
+}
+
+table {
+  border-collapse: collapse;
+  border: none;
+  background-color: var(--tm-bg);
+}
+table td, table th {
+  border: 1px solid var(--tm-fg4);
+  padding: 0.75rem;
+  vertical-align: top;
+  text-align: left;
+}
+table th {
+  background-color: color-mix(in srgb, var(--tm-fg4) 8%, var(--tm-bg));
+  font-weight: bold;
+  /* Override the VS Code base stylesheet's thead-th chip (11px, uppercase,
+     letter-spaced) so this doesn't render as a hybrid of both looks; upstream
+     Thinking Machines table headers are plain bold text at body size. */
+  font-size: 1em;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+}
+
+mark { background-color: color-mix(in srgb, var(--tm-fg4) 15%, var(--tm-bg)); color: var(--tm-fg1); border-radius: 0.2rem; padding: 0 0.2rem; }
+kbd { background-color: color-mix(in srgb, var(--tm-fg4) 15%, var(--tm-bg)); color: var(--tm-fg1); border-radius: 0.2rem; }
+
+/* Dark appearance. This theme paints its own surfaces from --tm-* tokens, so the
+   shared dark block in vscode-preview-head.html cannot reach them. Flip the tokens
+   here instead; every rule above already reads them. Upstream Thinking Machines
+   ships no dark palette, so these values invert the ported greys at the same
+   contrast steps and reuse the shared page ground so both themes agree. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tm-bg: #23252a;
+    --tm-bg-code: #2c2f36;
+    --tm-fg: #f2f2f4;
+    --tm-fg1: #e3e3e6;
+    --tm-fg2: #c8c8d0;
+    --tm-fg3: #a8a8b0;
+    --tm-fg4: #9a9aa2;
+    --tm-fg5: #7c7c84;
+    --tm-red: #ff9d8f;
+  }
+}
