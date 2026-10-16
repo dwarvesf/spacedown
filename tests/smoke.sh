@@ -627,7 +627,7 @@ fi
 
 echo "[ia-list-hang] the dash marker takes no room, so wrapped bullet lines align under the text"
 if grep -q 'content: "\\2013";' "$IA_THEME" \
-   && grep -q 'width: 1.35em; .*margin\|width: 1.35em;' "$IA_THEME" \
+   && grep -q 'width: 1.35em;' "$IA_THEME" \
    && grep -q 'margin-left: -1.35em;' "$IA_THEME" \
    && ! grep -q '2013\\00a0' "$IA_THEME"; then
   ok "list hang"
