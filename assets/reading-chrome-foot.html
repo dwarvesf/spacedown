@@ -1,5 +1,5 @@
 <script>
-/* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + copy-source + print.
+/* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + skim + copy-source + print.
    Injected at end of <body> via pandoc --include-after-body, after the #sd-src element.
    Pairs with assets/reading-chrome-head.html. Self-contained, no dependencies. */
 (function () {
@@ -114,9 +114,120 @@
     zoomIn: icon(GLASS + '<path d="M8 11h6M11 8v6"/>'),
     copy: icon('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+    skim: icon('<path d="M4 6h16M4 18h10"/><rect x="4" y="10" width="9" height="4" rx="1" fill="currentColor"/>'),
     print: icon('<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>')
   };
   var COPY_LABEL = "Copy source";
+
+  // ---- read modes: one active at a time ----
+  // The mode lives in data-sd-read-mode plus a matching html.sd-<mode> class that the CSS keys on.
+  // A later exclusive mode (bionic) adds its name here, its own CSS block and its own key pass.
+  var MODE_KEY = "sd-read-mode";
+  var READ_MODES = ["skim"];
+  var modeBtns = {};
+  function readMode() { return doc.getAttribute("data-sd-read-mode") || ""; }
+  function applyReadMode(mode, persist) {
+    if (READ_MODES.indexOf(mode) < 0) mode = "";
+    READ_MODES.forEach(function (m) {
+      doc.classList.toggle("sd-" + m, m === mode);
+      if (modeBtns[m]) modeBtns[m].setAttribute("aria-pressed", String(m === mode));
+    });
+    if (mode) doc.setAttribute("data-sd-read-mode", mode); else doc.removeAttribute("data-sd-read-mode");
+    if (persist) { try { localStorage.setItem(MODE_KEY, mode); } catch (e) {} }
+  }
+  function toggleReadMode(mode) { applyReadMode(readMode() === mode ? "" : mode, true); }
+  var savedMode = "";
+  try { savedMode = localStorage.getItem(MODE_KEY) || ""; } catch (e) {}
+  applyReadMode(savedMode, false); // before first paint; the buttons pick up aria-pressed when built
+
+  // ---- skim: mark the key words once, at load ----
+  // Key words are wrapped in span.sd-key. strong, b, headings, th and the first td of a row stay
+  // bright through CSS alone, so this pass skips them. It also skips code, links, math, the
+  // frontmatter table, the outline and the toolbar, but still reads their text so it knows where
+  // a sentence starts. Rules, no model:
+  //   figures:      any word with a digit (8x, 10%, $10M, 2.5, Q1, 2026)
+  //   acronyms:     2+ capitals (CTO, PMF)
+  //   proper nouns: a capitalized word that does not start a sentence, and is not "I"
+  //   a name or acronym is key only the first time it appears under each h1/h2, so the subject
+  //   of the page ("AI", the company name) does not light up on every line
+  function markKeyWords() {
+    var HARD = "script, style, noscript, textarea";
+    var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
+      "strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child, button, svg";
+    var BLOCK = "p, li, td, th, dd, dt, h1, h2, h3, h4, h5, h6, blockquote, figcaption, summary, pre, div, tr, table";
+    var core, digit, acro, proper, openQuote;
+    try {
+      core = new RegExp("^[^\\p{L}\\p{N}$\u20ac\u00a3]*([$\u20ac\u00a3]?[\\p{L}\\p{N}](?:.*[\\p{L}\\p{N}%])?)", "u");
+      digit = new RegExp("\\p{N}", "u");
+      acro = new RegExp("^\\p{Lu}{2,}s?$", "u");
+      proper = new RegExp("^\\p{Lu}\\p{Ll}", "u");
+      openQuote = new RegExp("[,:]\\s*[\"\u201c\u2018]\\s*$", "u");
+    } catch (e) { return; } // no Unicode property escapes: skip the pass, the page reads normally
+
+    function atSentenceStart(before) {
+      if (openQuote.test(before)) return true;
+      var p = before.replace(/[\s"'\u201c\u2018(\[*_]+$/, "");
+      return p === "" || /[.!?\u2026:]["'\u201d\u2019)\]*_]*$/.test(p);
+    }
+
+    var nodes = [];
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (var n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.parentElement && !n.parentElement.closest(HARD) && n.nodeValue.trim()) nodes.push(n);
+    }
+
+    var lastBlock = null, tail = "", seenName = {};
+    nodes.forEach(function (node) {
+      var parent = node.parentElement;
+      var block = parent.closest(BLOCK);
+      if (block !== lastBlock) {
+        lastBlock = block; tail = "";
+        if (block && /^H[12]$/.test(block.tagName)) seenName = {}; // a new section re-introduces its names
+      }
+      var text = node.nodeValue;
+      var skip = !!parent.closest(SKIP);
+      var spans = []; // [start, end) of each key run in this node
+      if (!skip) {
+        var tokenRe = /\S+/g, m, prevEnd = -1;
+        while ((m = tokenRe.exec(text))) {
+          var c = core.exec(m[0]);
+          if (!c) continue;
+          var start = m.index + (c[0].length - c[1].length);
+          var end = start + c[1].length;
+          var word = c[1].replace(/['\u2019]s$/i, "");
+          var midSentence = !atSentenceStart(tail + text.slice(0, start));
+          var key = false;
+          if (digit.test(word)) key = true;
+          else word.split(/[-\u2013\/]/).forEach(function (part, i) {
+            if (!part) return;
+            var isName = acro.test(part) || (i === 0 ? midSentence && proper.test(part) : proper.test(part));
+            if (!isName || seenName[part]) return;
+            seenName[part] = true;
+            key = true;
+          });
+          if (!key) continue;
+          // Join neighbours separated by spaces only ("Ethan Phan") into one span.
+          if (prevEnd >= 0 && /^\s+$/.test(text.slice(prevEnd, start)) && spans.length) spans[spans.length - 1][1] = end;
+          else spans.push([start, end]);
+          prevEnd = end;
+        }
+      }
+      tail = (tail + text).slice(-8);
+      if (!spans.length) return;
+      var frag = document.createDocumentFragment(), at = 0;
+      spans.forEach(function (r) {
+        if (r[0] > at) frag.appendChild(document.createTextNode(text.slice(at, r[0])));
+        var el = document.createElement("span");
+        el.className = "sd-key";
+        el.textContent = text.slice(r[0], r[1]);
+        frag.appendChild(el);
+        at = r[1];
+      });
+      if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  markKeyWords();
 
   // ---- copy-source (raw markdown, base64-embedded for UTF-8 + file:// safety) ----
   function decodeSrc() {
@@ -174,6 +285,9 @@
   var sep = document.createElement("span"); sep.className = "sd-sep";
   sep.setAttribute("aria-hidden", "true");
   bar.appendChild(sep);
+  modeBtns.skim = btn("sd-skim", ICONS.skim, "Skim", "Skim: fade all but the key words (S)", function () { toggleReadMode("skim"); });
+  modeBtns.skim.setAttribute("aria-pressed", String(readMode() === "skim"));
+  bar.appendChild(modeBtns.skim);
   bar.appendChild(btn("sd-copy", ICONS.copy, COPY_LABEL, "Copy the raw markdown to the clipboard", copySource));
   bar.appendChild(btn("sd-print", ICONS.print, "Print", "Print this page", function () { window.print(); }));
   document.body.appendChild(bar);
@@ -200,6 +314,8 @@
   paintProgress();
 
   apply(); // sets --sd-zoom + the pct label from saved/default
+  // The skim fade eases only after first paint, so a saved skim state never animates in.
+  requestAnimationFrame(function () { doc.classList.add("sd-skim-anim"); });
 
   // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom) ----
   window.addEventListener("keydown", function (e) {
@@ -211,6 +327,12 @@
       if (!editable && doc.classList.contains("sd-has-toc")) {
         e.preventDefault(); toggleToc(); return;
       }
+    }
+    // skim toggle: bare "s", same guards as "["
+    if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      var se = document.activeElement;
+      var typing = se && (se.isContentEditable || /^(input|textarea|select)$/i.test(se.tagName));
+      if (!typing) { e.preventDefault(); toggleReadMode("skim"); return; }
     }
     if (!(e.metaKey || e.ctrlKey)) return;
     if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomIn(); }

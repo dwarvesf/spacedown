@@ -846,6 +846,75 @@ else
   no "toolbar labels or progress bar missing"
 fi
 
+# ---- Skim reading mode ----
+printf '# Skim\n\nPlot raised $10M in Q1.\n' > "${TMP}/skim.md"
+"$SPACEDOWN" "${TMP}/skim.md" --out "${TMP}/skim.html" --no-open >/dev/null 2>&1 || true
+
+echo "[skim-1] the toolbar gets a labelled Skim toggle with aria-pressed, beside zoom, copy and print"
+if grep -qF 'ICONS.skim, "Skim"' "${TMP}/skim.html" \
+   && grep -qF 'toggleReadMode("skim")' "${TMP}/skim.html" \
+   && grep -qF 'setAttribute("aria-pressed"' "${TMP}/skim.html" \
+   && grep -qF '.sd-toolbar button[aria-pressed="true"]' "${TMP}/skim.html"; then
+  ok "Skim button injected, pressed state styled"
+else
+  no "Skim toolbar button missing"
+fi
+
+echo "[skim-2] the CSS mode: faded color (not opacity), key words keep the ink, 150ms ease, motion-safe"
+skim_css="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html" | sed -n '/--sd-skim-ink-base/,$p')"
+if grep -qF 'html.sd-skim :where(p, li' <<<"$skim_css" \
+   && grep -qF 'var(--sd-skim-fade, var(--sd-skim-fade-base))' <<<"$skim_css" \
+   && grep -qF '.sd-key' <<<"$skim_css" \
+   && grep -qF 'var(--sd-skim-ink, var(--sd-skim-ink-base))' <<<"$skim_css" \
+   && grep -qF 'transition: color 150ms ease' <<<"$skim_css" \
+   && grep -qF '@media screen and (prefers-reduced-motion: no-preference)' <<<"$skim_css" \
+   && ! grep -q 'opacity' <<<"$skim_css"; then
+  ok "fade by color, ink on key words, transition gated on no-preference"
+else
+  no "Skim CSS rules missing or fade done with opacity"
+fi
+
+echo "[skim-3] the faded color is a token in every theme, light and dark"
+skim_tok_ok=1
+for theme in ia tm paper; do
+  [[ "$(grep -c -- '--sd-skim-fade:' "${SCRIPT_DIR}/assets/${theme}-theme.css")" -eq 2 ]] || skim_tok_ok=0
+  grep -q -- '--sd-skim-ink: var(--' "${SCRIPT_DIR}/assets/${theme}-theme.css" || skim_tok_ok=0
+done
+[[ "$(grep -c -- '--sd-skim-fade-base:' "${SCRIPT_DIR}/assets/reading-chrome-head.html")" -eq 2 ]] || skim_tok_ok=0
+if [[ $skim_tok_ok -eq 1 ]]; then ok "ia, tm, paper and the read/mono fallback define light and dark fade tokens"; else no "a theme lacks its skim tokens"; fi
+
+echo "[skim-4] the mode is a switch: data-sd-read-mode plus one sd-<mode> class, saved like the outline state"
+if grep -qF 'var READ_MODES = ["skim"];' "${TMP}/skim.html" \
+   && grep -qF 'doc.setAttribute("data-sd-read-mode", mode)' "${TMP}/skim.html" \
+   && grep -qF 'doc.classList.toggle("sd-" + m, m === mode)' "${TMP}/skim.html" \
+   && grep -qF 'try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}' "${TMP}/skim.html" \
+   && grep -qF 'try { savedMode = localStorage.getItem(MODE_KEY) || ""; } catch (e) {}' "${TMP}/skim.html"; then
+  ok "one mode at a time, persisted inside try/catch"
+else
+  no "read-mode switch or its persistence missing"
+fi
+
+echo "[skim-5] the load-time pass wraps figures, acronyms and proper nouns in span.sd-key and skips code, links, math, frontmatter"
+if grep -qF 'function markKeyWords()' "${TMP}/skim.html" \
+   && grep -qF 'el.className = "sd-key";' "${TMP}/skim.html" \
+   && grep -qF 'var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar' "${TMP}/skim.html" \
+   && grep -qF 'td:first-child' "${TMP}/skim.html" \
+   && grep -q '^  markKeyWords();$' "${TMP}/skim.html"; then
+  ok "key-word pass present and run at load"
+else
+  no "key-word pass missing"
+fi
+
+echo "[skim-6] print renders the normal view: every skim rule sits inside @media screen"
+skim_nocomment="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html")"
+skim_loose=$(awk '/^@media screen/{s=1} s==0 && /html\.sd-skim/{n++} /^}/{s=0} END{print n+0}' <<<"$skim_nocomment")
+skim_all=$(grep -c 'html\.sd-skim' <<<"$skim_nocomment" || true)
+if [[ "$skim_loose" -eq 0 && "$skim_all" -ge 3 ]]; then
+  ok "no skim rule outside a screen-only block (${skim_all} rules inside)"
+else
+  no "a skim rule can reach print (${skim_loose} outside @media screen of ${skim_all})"
+fi
+
 # ---- CLI bundled inside the app (scripts/bundle-cli) ----
 FAKE_APP="${TMP}/stage/Spacedown.app"
 mkdir -p "${FAKE_APP}/Contents"

@@ -34,6 +34,8 @@
   --paper-link: #2b5f91;
   --paper-code-bg: #f0eee9;
   --paper-mark: #f6e7a8;
+  --sd-skim-ink: var(--paper-fg);  /* skim mode: key words / every other word */
+  --sd-skim-fade: #a8a59d;
   --paper-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --paper-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
   /* Set via the shared vars, not on body: reading-chrome-head.html injects after
@@ -204,5 +206,6 @@ mark { background-color: var(--paper-mark); color: inherit; }
     --paper-link: #8bb8e8;
     --paper-code-bg: #242428;
     --paper-mark: #5c4f1e;
+    --sd-skim-fade: #66656b;
   }
 }
