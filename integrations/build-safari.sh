@@ -38,6 +38,9 @@
 #   NO_INSTALL=1        stop after signing and print the built app's path.
 #   SKIN_CSS=<file>     replace the Quick Look reading skin in this build with a
 #                       personal one (same contract as quick-look/Resources/ql-reading.css).
+#                       Used as given: it is not font-embedded. Unset, the build runs
+#                       scripts/build-ql-skin, which embeds the four vendored iA Writer
+#                       fonts (assets/fonts/ia/) into the shipped ql-reading.css.
 set -euo pipefail
 SIGN_ID="${SIGN_ID:--}"
 NO_INSTALL="${NO_INSTALL:-0}"
@@ -119,10 +122,16 @@ QL_APPEX="${QLDIR}/build/Build/Products/Release/SpacedownQL.appex"
 # 4. Embed the QL appex into the app.
 mkdir -p "${APP}/Contents/PlugIns"
 rsync -a --delete "$QL_APPEX" "${APP}/Contents/PlugIns/"
+# The committed skin is readable source; the shipped one carries the iA fonts as data URIs.
 if [[ -n "$SKIN_CSS" ]]; then
-  cp -f "$SKIN_CSS" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/ql-reading.css"
+  SKIN_OUT="$SKIN_CSS"
   echo "build-safari: using the reading skin $SKIN_CSS"
+else
+  SKIN_OUT="$("${HERE}/../scripts/build-ql-skin")" || { echo "build-safari: build-ql-skin FAILED" >&2; exit 1; }
+  echo "build-safari: embedded the iA Writer fonts into the reading skin"
 fi
+cp -f "$SKIN_OUT" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/ql-reading.css"
+[[ -n "$SKIN_CSS" ]] || rm -f "$SKIN_OUT"
 SAFARI_APPEX="${APP}/Contents/PlugIns/SpacedownDrop Extension.appex"
 if [[ $SAFARI -eq 0 && -d "$SAFARI_APPEX" ]]; then
   # The Xcode project always builds the Safari target; set it aside in the build dir.
