@@ -102,9 +102,10 @@ a:focus-visible {
 }
 
 /* Dash bullets. Scoped to the article: nav#TOC (the outline sidebar) is a <ul> too, and an
-   unscoped rule stamped a stray dash on every outline row. */
+   unscoped rule stamped a stray dash on every outline row. A task list uses its checkbox as
+   the marker, so it gets no dash either. */
 ul { list-style: none; padding-left: 2.5em; }
-ul:not(nav#TOC ul) > li::before {
+ul:not(nav#TOC ul):not(.task-list) > li::before {
   content: "\2013\00a0\00a0";
   float: left;
   margin-left: -1.35em;
