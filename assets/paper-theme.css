@@ -14,6 +14,17 @@
    Layout (reading column, TOC sidebar, zoom toolbar) is shared chrome across every
    font mode. This file sets typography and color only. The Quick Look panel carries
    the same look in integrations/safari/quick-look/Resources/ql-reading.css. */
+/* iA Writer Mono has no box-drawing glyphs (U+2500-257F) and few arrows/shapes, so those
+   fall back per glyph to a font with another advance, and diagram bars drift. Menlo's
+   advance is 1233/2048 em against iA Mono's 0.6 em; size-adjust (0.6 / 0.60205) makes it
+   exactly 0.6 em. Listed after iA Mono in the stack, so iA's own glyphs still win. */
+@font-face {
+  font-family: "SD Diagram Fallback";
+  src: local("Menlo"), local("Menlo-Regular");
+  size-adjust: 99.6594%;
+  unicode-range: U+2190-21FF, U+2500-25FF;
+}
+
 :root {
   --paper-bg: #fbfaf7;
   --paper-fg: #242321;
@@ -24,7 +35,7 @@
   --paper-code-bg: #f0eee9;
   --paper-mark: #f6e7a8;
   --paper-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --paper-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  --paper-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
   /* Set via the shared vars, not on body: reading-chrome-head.html injects after
      this file and its !important body rule reads these vars through calc(), so a
      direct body font-size here would lose the source-order tie. */
