@@ -29,6 +29,17 @@
    - Syntax token colors stay pandoc-tango (same call as the tm theme): only
      the code container is themed.
    */
+/* iA Writer Mono has no box-drawing glyphs (U+2500-257F) and few arrows/shapes, so those
+   fall back per glyph to a font with another advance, and diagram bars drift. Menlo's
+   advance is 1233/2048 em against iA Mono's 0.6 em; size-adjust (0.6 / 0.60205) makes it
+   exactly 0.6 em. Listed after iA Mono in the stack, so iA's own glyphs still win. */
+@font-face {
+  font-family: "SD Diagram Fallback";
+  src: local("Menlo"), local("Menlo-Regular");
+  size-adjust: 99.6594%;
+  unicode-range: U+2190-21FF, U+2500-25FF;
+}
+
 :root {
   --ia-bg: #fcfcfc;
   --ia-fg: #1a1a1a;
@@ -37,7 +48,7 @@
   --ia-code-bg: rgba(36, 36, 36, 0.055);
   --ia-link: #1d5fd1;
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
   /* Template default: content-size-l = 18px at line-height-base 164%.
      Set via the shared vars so reading-chrome's !important body rule computes
      these (see tm-theme.css injection-order note). */

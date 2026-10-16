@@ -662,6 +662,17 @@ else
   no "font embedding wrong (ia faces=${ia_faces})"
 fi
 
+echo "[diagram] box drawing keeps iA Mono's advance (its font lacks those glyphs; a fallback one drifts the bars)"
+PAPER_THEME="${SCRIPT_DIR}/assets/paper-theme.css"
+diagram_ok=1
+for theme in "$IA_THEME" "$PAPER_THEME"; do
+  grep -q 'font-family: "SD Diagram Fallback";' "$theme" \
+    && grep -q 'size-adjust: 99\.6594%;' "$theme" \
+    && grep -q 'unicode-range: U+2190-21FF, U+2500-25FF;' "$theme" \
+    && grep -q '"iA Writer Mono S", "SD Diagram Fallback", ui-monospace' "$theme" || diagram_ok=0
+done
+if [[ "$diagram_ok" -eq 1 ]]; then ok "box-drawing fallback sized to 0.6em in ia and paper"; else no "box-drawing glyphs fall back to a font with another advance: diagram bars drift"; fi
+
 echo "[list] a list right under a line of text is a list, with task checkboxes"
 printf '**Step one**\n- [ ] first task\n- [x] second task\n' > "${TMP}/list.md"
 "$SPACEDOWN" "${TMP}/list.md" --out "${TMP}/list.html" --no-open >/dev/null 2>&1 || true
