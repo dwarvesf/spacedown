@@ -130,6 +130,8 @@ html.sd-has-toc body { padding-left: 280px; }
   font-size: 11px; color: var(--sd-chrome-ink-muted);
   font-variant-numeric: tabular-nums;
 }
+.sd-toolbar button[aria-pressed="true"] { background: var(--sd-chrome-active); color: var(--sd-chrome-ink-strong); }
+
 .sd-sep { width: 1px; align-self: stretch; background: var(--sd-chrome-border); margin: 4px 2px; }
 .sd-toolbar .sd-copy.sd-done { color: var(--sd-copy-done); }
 
@@ -233,6 +235,37 @@ html.sd-anim-ready.sd-has-toc .sd-toc-toggle {
     --sd-toolbar-hairline: rgba(255, 255, 255, 0.06);
     --sd-copy-done: #5ec99a;
     --sd-chrome-accent: #7aa7ff;
+  }
+}
+
+/* (7) Skim reading mode. A toolbar toggle puts html.sd-skim on the page (the JS keeps one
+   data-sd-read-mode value and one matching sd-<mode> class, so an exclusive second mode
+   adds its own block here and never stacks). Key words keep the normal ink; every other
+   word fades by COLOR, never opacity, so a key span inside a faded paragraph stays bright.
+   Headings and th are not in the fade list, so they keep their own color. The fade selector
+   is :where() (zero weight), so any color a theme sets on purpose, like the frontmatter
+   table's, out-ranks it; the ink selector is :is(), so it out-ranks theme text colors. Themes set --sd-skim-ink and
+   --sd-skim-fade next to their palette; the -base tokens serve read, mono and custom CSS.
+   Screen only: print always renders the normal view. */
+:root {
+  --sd-skim-ink-base: var(--vscode-editor-foreground);
+  --sd-skim-fade-base: #a1a1a8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --sd-skim-fade-base: #6d7079; }
+}
+@media screen {
+  html.sd-skim :where(p, li, dd, dt, figcaption, blockquote, summary, td:not(:first-child)) {
+    color: var(--sd-skim-fade, var(--sd-skim-fade-base));
+  }
+  html.sd-skim :is(strong, b, .sd-key, :not(pre) > code, .katex, td:first-child :is(p, li)) {
+    color: var(--sd-skim-ink, var(--sd-skim-ink-base));
+  }
+}
+/* The fade eases in once the page has painted, so a saved skim state never animates in. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  html.sd-skim-anim :is(p, li, dd, dt, figcaption, blockquote, summary, td, strong, b, .sd-key, code, .katex) {
+    transition: color 150ms ease;
   }
 }
 
