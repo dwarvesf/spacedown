@@ -13,7 +13,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 | Part | What it does | Needs |
 |---|---|---|
 | `Spacedown.app` | Quick Look preview for `.md` files | macOS 13 or later |
-| `spacedown` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser | any Unix shell, `pandoc` |
+| `spacedown` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser; `spacedown docx` exports a `.docx` | any Unix shell, `pandoc` |
 | Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | build from source, the CLI and `pandoc` |
 
 ## Download
@@ -34,7 +34,7 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 
 - **Math.** Inline `$...$` and display `$$...$$` math rendered by KaTeX.
 - **Reading themes.** An `ia` theme by default (iA Writer's Quattro look), plus `tm` (serif, from thinkingmachines.ai), `paper`, a serif `read` mode and a monospace `mono` mode.
-- **Word and Google Docs export.** `spacedown-docx` turns Markdown into a `.docx` in the same iA look.
+- **Word and Google Docs export.** `spacedown docx` turns Markdown into a `.docx` in the same iA look.
 - **Dark mode.** Every mode follows the system or browser appearance through `prefers-color-scheme`. There is no flag.
 - **Outline sidebar.** A collapsible table of contents built from the headings, with scroll tracking. The `[` key toggles it.
 - **Zoom and copy source.** `Cmd +`, `Cmd -` and `Cmd 0` scale the text. A toolbar button copies the original Markdown.
@@ -69,6 +69,7 @@ The script resolves its own symlink, so `assets/` must stay next to `bin/`. Make
 
 ```bash
 spacedown notes.md                       # render and open in a browser
+spacedown docx notes.md                  # Markdown to .docx (see Export below)
 spacedown notes.md --no-open             # render only, print the output path
 spacedown notes.md --out /tmp/page.html  # choose the output path
 spacedown notes.md --watch               # re-render on save, page auto-refreshes
@@ -133,14 +134,14 @@ spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `mar
 | `64` | Usage error |
 | `130` | Ctrl-C during `--watch` |
 
-## Export to Word and Google Docs: spacedown-docx
+## Export to Word and Google Docs: spacedown docx
 
 ```bash
-spacedown-docx notes.md                      # writes notes.docx next to it, prints the path
-spacedown-docx notes.md -o ~/Desktop/notes.docx
+spacedown docx notes.md                      # writes notes.docx next to it, prints the path
+spacedown docx notes.md -o ~/Desktop/notes.docx
 ```
 
-The result uses a pandoc reference doc (`assets/docx/ia-reference.docx`) that carries the iA look: ink `#1a1a1a`, 1.64 line height, headings at body size in bold, one block gap and about 70 characters per line. Frontmatter `title:` becomes the title block. HTML comments are dropped, so a private note in a comment never reaches the reader. iA Writer Quattro is not in the Google Docs font list, so the doc uses IBM Plex Sans and IBM Plex Mono, the faces iA's fonts derive from. The script resolves its own symlink, so link `bin/spacedown-docx` onto your `PATH` the same way as `spacedown`. Exit codes: `0` ok, `2` pandoc or the reference doc missing, `64` usage, `66` input file not found.
+The result uses a pandoc reference doc (`assets/docx/ia-reference.docx`) that carries the iA look: ink `#1a1a1a`, 1.64 line height, headings at body size in bold, one block gap and about 70 characters per line. Frontmatter `title:` becomes the title block. HTML comments are dropped, so a private note in a comment never reaches the reader. iA Writer Quattro is not in the Google Docs font list, so the doc uses IBM Plex Sans and IBM Plex Mono, the faces iA's fonts derive from. It is a subcommand of the one `spacedown` CLI; there is no separate script. Plain `spacedown <file>` still renders HTML. A file literally named `docx` renders with `spacedown ./docx`. Exit codes: `0` ok, `2` pandoc or the reference doc missing, `64` usage, `66` input file not found.
 
 To open it as a Google Doc, upload the `.docx` with [GAM](https://github.com/GAM-team/GAM) and ask Drive to convert it:
 
@@ -185,7 +186,7 @@ The Safari extension must be App-Sandboxed to load, and a sandboxed extension ca
 ## Development
 
 ```bash
-bash tests/smoke.sh                                   # CLI and spacedown-docx suite, also runs the Quick Look tests
+bash tests/smoke.sh                                   # CLI and spacedown docx suite, also runs the Quick Look tests
 node integrations/safari/quick-look/test-render.js    # Quick Look render core only
 spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```

@@ -691,13 +691,13 @@ else
   no "skin build did not embed exactly 4 fonts"
 fi
 
-# 43-46. spacedown-docx: markdown to .docx in the iA look.
-DOCX="${SCRIPT_DIR}/bin/spacedown-docx"
+# 43-46. spacedown docx: markdown to .docx in the iA look.
+docx() { "$SPACEDOWN" docx "$@"; }
 docx_styles() { unzip -p "$1" word/styles.xml 2>/dev/null; }
 printf -- '---\ntitle: "T"\n---\n\n<!-- private note -->\n\n## Head\n\nBody with [a link](https://x.test).\n\n> quote\n' > "${TMP}/d.md"
 
-echo "[43] spacedown-docx writes a .docx next to the input in the iA look"
-"$DOCX" "${TMP}/d.md" >/dev/null 2>&1 || true
+echo "[43] spacedown docx writes a .docx next to the input in the iA look"
+docx "${TMP}/d.md" >/dev/null 2>&1 || true
 if [[ -f "${TMP}/d.docx" ]] && docx_styles "${TMP}/d.docx" | grep -q 'IBM Plex Sans' \
    && docx_styles "${TMP}/d.docx" | grep -q 'w:color w:val="1A1A1A"'; then
   ok "iA docx styles (IBM Plex Sans, ink 1A1A1A)"
@@ -705,22 +705,42 @@ else
   no "docx is missing the iA styles"
 fi
 
-echo "[44] spacedown-docx drops HTML comments and honors -o"
-"$DOCX" "${TMP}/d.md" -o "${TMP}/out.docx" >/dev/null 2>&1 || true
+echo "[44] spacedown docx drops HTML comments and honors -o"
+docx "${TMP}/d.md" -o "${TMP}/out.docx" >/dev/null 2>&1 || true
 if [[ -f "${TMP}/out.docx" ]] && ! unzip -p "${TMP}/out.docx" word/document.xml | grep -q 'private note'; then
   ok "-o honored, comment dropped"
 else
   no "-o ignored or the HTML comment leaked"
 fi
 
-echo "[45] spacedown-docx refuses a missing input with 66"
-set +e; "$DOCX" "${TMP}/none.md" >/dev/null 2>&1; rc=$?; set -e
+echo "[45] spacedown docx refuses a missing input with 66"
+set +e; docx "${TMP}/none.md" >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 66 ]]; then ok "exit 66"; else no "got $rc"; fi
 
-echo "[46] a symlinked spacedown-docx still finds the reference doc"
-ln -s "$DOCX" "${TMP}/linked-docx"
-"${TMP}/linked-docx" "${TMP}/d.md" -o "${TMP}/linked.docx" >/dev/null 2>&1 || true
+echo "[46] a symlinked spacedown docx still finds the reference doc"
+ln -s "$SPACEDOWN" "${TMP}/linked-sd"
+"${TMP}/linked-sd" docx "${TMP}/d.md" -o "${TMP}/linked.docx" >/dev/null 2>&1 || true
 if docx_styles "${TMP}/linked.docx" | grep -q 'IBM Plex Sans'; then ok "symlink"; else no "symlink lost the reference doc"; fi
+
+# ---- docx subcommand dispatch (separate block: keep additions here) ----
+echo "[docx-1] spacedown docx --help prints usage on stdout and exits 0"
+set +e; hout="$("$SPACEDOWN" docx --help 2>/dev/null)"; rc=$?; set -e
+if [[ $rc -eq 0 && "$hout" == *"spacedown docx <file.md>"* ]]; then ok "help exit 0"; else no "rc=$rc"; fi
+
+echo "[docx-2] spacedown docx with no file exits 64"
+set +e; "$SPACEDOWN" docx >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 64 ]]; then ok "exit 64"; else no "got $rc"; fi
+
+echo "[docx-3] spacedown docx prints only the output path on stdout"
+dpath="$("$SPACEDOWN" docx "${TMP}/d.md" -o "${TMP}/pathonly.docx" 2>/dev/null)" || true
+if [[ "$dpath" == "${TMP}/pathonly.docx" && -f "$dpath" ]]; then ok "stdout is the path"; else no "got '$dpath'"; fi
+
+echo "[docx-4] plain spacedown <file> still renders HTML, not a docx"
+hp="$("$SPACEDOWN" "${TMP}/d.md" --out "${TMP}/plain.html" --no-open 2>/dev/null)" || true
+if [[ "$hp" == "${TMP}/plain.html" ]] && grep -q '<html' "${TMP}/plain.html"; then ok "html render unchanged"; else no "plain render broke: '$hp'"; fi
+
+echo "[docx-5] the retired bin/spacedown-docx is gone"
+if [[ ! -e "${SCRIPT_DIR}/bin/spacedown-docx" ]]; then ok "removed"; else no "bin/spacedown-docx still exists"; fi
 
 # ---- reading-view polish: outline, tables, images, links, print, toolbar ----
 printf '# Polish\n\n## Section\n\nSee https://d.foundation and [Dwarves](https://dwarves.foundation).\n\n- one\n- two\n' > "${TMP}/polish.md"
