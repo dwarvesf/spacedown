@@ -1,7 +1,8 @@
 <script>
-/* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + skim + copy-source + print.
+/* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + reading modes + copy-source + print.
    Injected at end of <body> via pandoc --include-after-body, after the #sd-src element.
-   Pairs with assets/reading-chrome-head.html. Self-contained, no dependencies. */
+   Pairs with assets/reading-chrome-head.html; Skim (surprise) also needs assets/skim-surprise.html,
+   which loads before this script. Self-contained, no dependencies. */
 (function () {
   "use strict";
   var ZOOMS = [50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300];
@@ -96,6 +97,7 @@
       pctEl.setAttribute("aria-label", "Reset zoom (now " + pct + "%)");
     }
     try { localStorage.setItem(KEY, String(pct)); } catch (e) {}
+    scheduleBeeline(); // a new text size moves the line breaks
   }
   function zoomIn() { idx = clampIdx(idx + 1); apply(); }
   function zoomOut() { idx = clampIdx(idx - 1); apply(); }
@@ -114,33 +116,77 @@
     zoomIn: icon(GLASS + '<path d="M8 11h6M11 8v6"/>'),
     copy: icon('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
-    skim: icon('<path d="M4 6h16M4 18h10"/><rect x="4" y="10" width="9" height="4" rx="1" fill="currentColor"/>'),
+    read: icon('<path d="M4 6h16M4 18h10"/><rect x="4" y="10" width="9" height="4" rx="1" fill="currentColor"/>'),
+    play: icon('<path d="M8 5.5l10 6.5-10 6.5z" fill="currentColor"/>'),
+    pause: icon('<path d="M8.5 5.5v13M15.5 5.5v13"/>'),
+    back: icon('<path d="M14.5 6l-6 6 6 6"/>'),
+    forward: icon('<path d="M9.5 6l6 6-6 6"/>'),
+    minus: icon('<path d="M6 12h12"/>'),
+    plus: icon('<path d="M6 12h12M12 6v12"/>'),
+    close: icon('<path d="M6 6l12 12M18 6L6 18"/>'),
     print: icon('<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>')
   };
   var COPY_LABEL = "Copy source";
 
   // ---- read modes: one active at a time ----
   // The mode lives in data-sd-read-mode plus a matching html.sd-<mode> class that the CSS keys on.
-  // A later exclusive mode (bionic) adds its name here, its own CSS block and its own key pass.
-  var MODE_KEY = "sd-read-mode";
-  var READ_MODES = ["skim"];
-  var modeBtns = {};
+  // Leaving a mode hands the text back untouched (see restoreText), so modes never stack markup.
+  // The toolbar "Read" menu picks the mode; S toggles the last one used. RSVP is not saved as the
+  // current mode (a reload must not open an overlay) but is remembered as the last one used.
+  var MODE_KEY = "sd-read-mode", LAST_KEY = "sd-read-last";
+  var READ_MODES = ["skim", "surprise", "bionic", "beeline", "rsvp"];
+  var MODE_LABELS = { skim: "Skim", surprise: "Skim (surprise)", bionic: "Bionic", beeline: "BeeLine", rsvp: "RSVP" };
+  var MODE_HINTS = {
+    skim: "fade all but the key words",
+    surprise: "fade the words the page makes predictable",
+    bionic: "bold the start of each word",
+    beeline: "colour each line so the eye finds the next",
+    rsvp: "one word at a time"
+  };
+  var lastMode = "skim", readTrigger = null, readNote = "", readItems = {};
+  function modeAvailable(m) { return READ_MODES.indexOf(m) >= 0 && (m !== "surprise" || !!window.sdSurprise); }
   function readMode() { return doc.getAttribute("data-sd-read-mode") || ""; }
+  function updateReadTrigger() {
+    if (!readTrigger) return;
+    var m = readMode(), label = "Reading mode: " + (m ? MODE_LABELS[m] : "Off");
+    readTrigger.classList.toggle("sd-on", !!m);
+    readTrigger.setAttribute("aria-label", label + readNote);
+    readTrigger.title = label + readNote + " (S)";
+  }
   function applyReadMode(mode, persist) {
-    if (READ_MODES.indexOf(mode) < 0) mode = "";
+    if (!modeAvailable(mode)) mode = "";
+    var prev = readMode();
+    if (prev && prev !== mode) leaveMode(prev);
     READ_MODES.forEach(function (m) {
       doc.classList.toggle("sd-" + m, m === mode);
-      if (modeBtns[m]) modeBtns[m].setAttribute("aria-pressed", String(m === mode));
+      if (readItems[m]) readItems[m].setAttribute("aria-checked", String(m === mode));
     });
+    if (readItems.off) readItems.off.setAttribute("aria-checked", String(!mode));
     if (mode) doc.setAttribute("data-sd-read-mode", mode); else doc.removeAttribute("data-sd-read-mode");
-    if (persist) { try { localStorage.setItem(MODE_KEY, mode); } catch (e) {} }
+    if (mode) lastMode = mode;
+    if (mode !== prev) readNote = "";
+    if (mode && mode !== prev) {
+      try { enterMode(mode); } catch (e) { leaveMode(mode); }
+    }
+    updateReadTrigger();
+    if (persist) {
+      try {
+        localStorage.setItem(MODE_KEY, mode === "rsvp" ? "" : mode);
+        if (mode) localStorage.setItem(LAST_KEY, mode);
+      } catch (e) {}
+    }
   }
-  function toggleReadMode(mode) { applyReadMode(readMode() === mode ? "" : mode, true); }
+  function toggleLastMode() { applyReadMode(readMode() ? "" : lastMode, true); }
   var savedMode = "";
-  try { savedMode = localStorage.getItem(MODE_KEY) || ""; } catch (e) {}
-  applyReadMode(savedMode, false); // before first paint; the buttons pick up aria-pressed when built
+  try {
+    savedMode = localStorage.getItem(MODE_KEY) || "";
+    var savedLast = localStorage.getItem(LAST_KEY) || savedMode;
+    if (modeAvailable(savedLast)) lastMode = savedLast;
+  } catch (e) {}
+  // The saved mode is applied once the page is built (end of this script), so the DOM modes see final text.
 
   // ---- skim: mark the key words once, at load ----
+  // HARD, SKIP and BLOCK are shared with the other reading modes (proseNodes below).
   // Key words are wrapped in span.sd-key. strong, b, headings, th and the first td of a row stay
   // bright through CSS alone, so this pass skips them. It also skips code, links, math, the
   // frontmatter table, the outline and the toolbar, but still reads their text so it knows where
@@ -150,11 +196,11 @@
   //   proper nouns: a capitalized word that does not start a sentence, and is not "I"
   //   a name or acronym is key only the first time it appears under each h1/h2, so the subject
   //   of the page ("AI", the company name) does not light up on every line
+  var HARD = "script, style, noscript, textarea";
+  var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
+    "strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child, button, svg";
+  var BLOCK = "p, li, td, th, dd, dt, h1, h2, h3, h4, h5, h6, blockquote, figcaption, summary, pre, div, tr, table";
   function markKeyWords() {
-    var HARD = "script, style, noscript, textarea";
-    var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
-      "strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child, button, svg";
-    var BLOCK = "p, li, td, th, dd, dt, h1, h2, h3, h4, h5, h6, blockquote, figcaption, summary, pre, div, tr, table";
     var core, digit, acro, proper, openQuote;
     try {
       core = new RegExp("^[^\\p{L}\\p{N}$\u20ac\u00a3]*([$\u20ac\u00a3]?[\\p{L}\\p{N}](?:.*[\\p{L}\\p{N}%])?)", "u");
@@ -229,6 +275,342 @@
   }
   markKeyWords();
 
+  // ---- the prose modes: Skim (surprise), Bionic, BeeLine, RSVP ----
+  // They read the same prose: text inside p, li, td, blockquote, dd and figcaption, skipping what
+  // markKeyWords skips (code, links, math, bold, headings, the frontmatter table, the chrome). RSVP
+  // keeps links and bold, since dropping them would cut sentences, and reads headings too.
+  // Every wrapping mode records each text node it replaces, so restoreText() puts the very same
+  // nodes back: turning a mode off, or switching to another, leaves the original DOM.
+  var PROSE = "p, li, td, blockquote, dd, figcaption";
+  var READ_BLOCK = PROSE + ", h1, h2, h3, h4, h5, h6, summary";
+  var READ_SKIP = "code, pre, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, button, svg";
+  var undo = [];
+  function proseNodes(blocks, skip) {
+    var out = [], walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (var n = walker.nextNode(); n; n = walker.nextNode()) {
+      var p = n.parentElement;
+      if (p && n.nodeValue.trim() && !p.closest(HARD) && !p.closest(skip) && p.closest(blocks)) out.push(n);
+    }
+    return out;
+  }
+  function replaceNode(node, frag) {
+    var made = Array.prototype.slice.call(frag.childNodes);
+    node.parentNode.replaceChild(frag, node);
+    undo.push({ orig: node, made: made });
+  }
+  function restoreText() {
+    for (var i = undo.length - 1; i >= 0; i--) {
+      var u = undo[i], first = u.made[0];
+      if (!first || !first.parentNode) continue;
+      first.parentNode.insertBefore(u.orig, first);
+      u.made.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+    }
+    undo = [];
+  }
+  function textNode(s) { return document.createTextNode(s); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+
+  function enterMode(mode) {
+    if (mode === "surprise") enterSurprise();
+    else if (mode === "bionic") enterBionic();
+    else if (mode === "beeline") enterBeeline();
+    else if (mode === "rsvp") openRsvp();
+  }
+  function leaveMode(mode) {
+    if (mode === "rsvp") closeRsvp();
+    doc.classList.remove("sd-scored");
+    restoreText();
+    bl.words = [];
+  }
+
+  // ---- Skim (surprise): score the prose with assets/skim-surprise.html, fade the predictable ----
+  // One flat string for the whole page (a separator between blocks); the scorer returns a level
+  // per token, -2 (expected) to 2 (surprising). Level 0 stays plain text, so only words that
+  // move away from the middle get a span, sd-s-2 .. sd-s2. A page too short or too flat to score
+  // is left alone and the toolbar tooltip says so.
+  function enterSurprise() {
+    var core = window.sdSurprise, nodes = proseNodes(PROSE, SKIP);
+    var runs = [], parts = [], offset = 0, lastBlock = null;
+    nodes.forEach(function (node) {
+      var block = node.parentElement.closest(PROSE);
+      if (runs.length && block !== lastBlock) { parts.push(core.RUN_SEPARATOR); offset += core.RUN_SEPARATOR.length; }
+      lastBlock = block;
+      runs.push({ node: node, start: offset });
+      parts.push(node.nodeValue);
+      offset += node.nodeValue.length;
+    });
+    var res = core.analyze(parts.join(""), { minTokens: 80, intensity: 50 });
+    if (res.skipped) { readNote = ", " + res.reason; return; }
+    doc.classList.add("sd-scored");
+    var cursor = 0;
+    runs.forEach(function (run) {
+      var data = run.node.nodeValue, runEnd = run.start + data.length;
+      while (cursor < res.tokens.length && res.tokens[cursor].end <= run.start) cursor++;
+      var frag = document.createDocumentFragment(), at = run.start, marked = false;
+      for (var t = cursor; t < res.tokens.length && res.tokens[t].start < runEnd; t++) {
+        var from = Math.max(res.tokens[t].start, run.start), to = Math.min(res.tokens[t].end, runEnd);
+        if (to <= from || !res.levels[t]) continue;
+        if (from > at) frag.appendChild(textNode(data.slice(at - run.start, from - run.start)));
+        frag.appendChild(el("span", "sd-s" + res.levels[t], data.slice(from - run.start, to - run.start)));
+        at = to;
+        marked = true;
+      }
+      if (!marked) return;
+      if (at < runEnd) frag.appendChild(textNode(data.slice(at - run.start)));
+      replaceNode(run.node, frag);
+    });
+  }
+
+  // ---- Bionic: bold the start of every word ----
+  // About 45% of the letters, at least one; a word of 1 to 3 letters bolds its first letter.
+  // Letters are counted without combining marks, so a decomposed Vietnamese vowel stays whole.
+  function boldCut(word) {
+    var starts = [], i;
+    for (i = 0; i < word.length; i++) if (!/[\u0300-\u036f\udc00-\udfff]/.test(word.charAt(i))) starts.push(i);
+    var keep = starts.length <= 3 ? 1 : Math.max(1, Math.round(starts.length * 0.45));
+    return keep >= starts.length ? word.length : starts[keep];
+  }
+  function enterBionic() {
+    var wordRe;
+    try { wordRe = new RegExp("[\\p{L}\\p{M}\\p{N}]+(?:['\u2019][\\p{L}\\p{M}]+)*", "gu"); } catch (e) { return; }
+    proseNodes(PROSE, SKIP).forEach(function (node) {
+      var text = node.nodeValue, frag = document.createDocumentFragment(), at = 0, m;
+      wordRe.lastIndex = 0;
+      while ((m = wordRe.exec(text))) {
+        var cut = boldCut(m[0]);
+        if (m.index > at) frag.appendChild(textNode(text.slice(at, m.index)));
+        frag.appendChild(el("b", "sd-bi", m[0].slice(0, cut)));
+        if (cut < m[0].length) frag.appendChild(textNode(m[0].slice(cut)));
+        at = m.index + m[0].length;
+      }
+      if (!frag.childNodes.length) return;
+      if (at < text.length) frag.appendChild(textNode(text.slice(at)));
+      replaceNode(node, frag);
+    });
+  }
+
+  // ---- BeeLine: a colour gradient along each rendered line ----
+  // Each word is a span; the layout pass groups the spans of a block into lines by offsetTop and
+  // gives each word a position t (0 at the line's first word, 1 at its last). Line 1 runs ink to
+  // blue, line 2 blue to ink to red, line 3 red to ink to blue, then 2 and 3 repeat, so every line
+  // starts on the colour the one above ended on. The colour is CSS (--bl-a mixes two tokens), so a
+  // theme change recolours for free; only a change of line breaks needs the layout pass again.
+  var bl = { words: [], timer: null };
+  function enterBeeline() {
+    var wordRe = /\S+/g;
+    proseNodes(PROSE, SKIP).forEach(function (node) {
+      var block = node.parentElement.closest(PROSE), text = node.nodeValue;
+      var frag = document.createDocumentFragment(), at = 0, m;
+      wordRe.lastIndex = 0;
+      while ((m = wordRe.exec(text))) {
+        if (m.index > at) frag.appendChild(textNode(text.slice(at, m.index)));
+        var w = el("span", "sd-bl-w", m[0]);
+        frag.appendChild(w);
+        bl.words.push({ el: w, block: block });
+        at = m.index + m[0].length;
+      }
+      if (at < text.length) frag.appendChild(textNode(text.slice(at)));
+      replaceNode(node, frag);
+    });
+    layoutBeeline();
+  }
+  function paintBeeLine(from, to, lineNo, xs) {
+    var lo = Infinity, hi = -Infinity, k;
+    for (k = from; k <= to; k++) { lo = Math.min(lo, xs[k]); hi = Math.max(hi, xs[k]); }
+    for (k = from; k <= to; k++) {
+      var t = hi > lo ? (xs[k] - lo) / (hi - lo) : 0, cls, a;
+      if (lineNo === 0) { cls = "bi"; a = t; }
+      else if (t < 0.5) { cls = lineNo % 2 ? "ib" : "ir"; a = t * 2; }
+      else { cls = lineNo % 2 ? "ri" : "bi"; a = t * 2 - 1; }
+      bl.words[k].el.className = "sd-bl-w sd-bl-" + cls;
+      bl.words[k].el.style.setProperty("--bl-a", (a * 100).toFixed(1) + "%");
+    }
+  }
+  function layoutBeeline() {
+    var words = bl.words, n = words.length, tops = new Array(n), lefts = new Array(n), i;
+    for (i = 0; i < n; i++) { tops[i] = words[i].el.offsetTop; lefts[i] = words[i].el.offsetLeft; } // reads first, writes after
+    var first = 0, lineNo = 0, lineTop = n ? tops[0] : 0;
+    for (i = 1; i <= n; i++) {
+      var newBlock = i < n && words[i].block !== words[i - 1].block;
+      var newLine = i < n && Math.abs(tops[i] - lineTop) > Math.max(3, words[i].el.offsetHeight / 2);
+      if (i < n && !newBlock && !newLine) continue;
+      paintBeeLine(first, i - 1, lineNo, lefts);
+      first = i;
+      lineNo = newBlock ? 0 : lineNo + 1;
+      if (i < n) lineTop = tops[i];
+    }
+  }
+  function scheduleBeeline() {
+    if (readMode() !== "beeline") return;
+    clearTimeout(bl.timer);
+    bl.timer = setTimeout(layoutBeeline, 150);
+  }
+
+  // ---- RSVP: one word at a time in a full-screen overlay ----
+  // The words come from the prose walk. The recognition letter (about 35% into the word) is red and
+  // sits on the centre marker: the word is a three-column grid, so the middle column is always the
+  // centre of the stage. Sentence ends and block ends pause longer. Space plays and pauses, left
+  // and right step, up and down change the speed, Esc closes the overlay and leaves the mode.
+  var WPM_KEY = "sd-rsvp-wpm", WPM_MIN = 150, WPM_MAX = 700, WPM_STEP = 25;
+  var rs = { words: [], i: 0, playing: false, timer: null, wpm: 300, ui: null, prevFocus: null };
+  try {
+    var savedWpm = parseInt(localStorage.getItem(WPM_KEY), 10);
+    if (!isNaN(savedWpm)) rs.wpm = Math.max(WPM_MIN, Math.min(WPM_MAX, savedWpm));
+  } catch (e) {}
+  var LETTER_RE;
+  try { LETTER_RE = new RegExp("[\\p{L}\\p{N}]", "u"); } catch (e) { LETTER_RE = /\w/; }
+
+  function rsvpPause(word, blockEnd) {
+    if (blockEnd || /[.!?\u2026]["'\u201d\u2019)\]]*$/.test(word)) return 2.5;
+    return /[,;:]["'\u201d\u2019)\]]*$/.test(word) ? 1.6 : 1;
+  }
+  function rsvpInView(block) {
+    var r = block.getBoundingClientRect();
+    return r.bottom > 48 && r.top < window.innerHeight; // 48px is the chrome lane at the top
+  }
+  function rsvpSplit(word) {
+    var chars = Array.from(word.normalize("NFC")), lead = 0, end = chars.length;
+    while (lead < end - 1 && !LETTER_RE.test(chars[lead])) lead++;
+    while (end - 1 > lead && !LETTER_RE.test(chars[end - 1])) end--;
+    var orp = lead + Math.floor((end - lead) * 0.35);
+    return [chars.slice(0, orp).join(""), chars[orp], chars.slice(orp + 1).join("")];
+  }
+  function rsvpShow(i) {
+    rs.i = i;
+    var ui = rs.ui, w = rs.words[i], parts = rsvpSplit(w.text);
+    ui.left.textContent = parts[0];
+    ui.mid.textContent = parts[1];
+    ui.right.textContent = parts[2];
+    ui.pos.textContent = (i + 1) + " / " + rs.words.length;
+    ui.fill.style.width = ((i + 1) / rs.words.length * 100).toFixed(1) + "%";
+  }
+  function rsvpSetPlaying(on) {
+    rs.playing = on && rs.words.length > 0;
+    clearTimeout(rs.timer);
+    rs.timer = null;
+    if (rs.playing) rs.timer = setTimeout(rsvpTick, 60000 / rs.wpm * rs.words[rs.i].pause);
+    if (!rs.ui) return;
+    rs.ui.play.innerHTML = rs.playing ? ICONS.pause : ICONS.play;
+    rs.ui.play.setAttribute("aria-label", rs.playing ? "Pause" : "Play");
+    rs.ui.play.title = (rs.playing ? "Pause" : "Play") + " (Space)";
+  }
+  function rsvpTick() {
+    if (rs.i >= rs.words.length - 1) { rsvpSetPlaying(false); return; }
+    rsvpShow(rs.i + 1);
+    rsvpSetPlaying(true);
+  }
+  function rsvpStep(d) {
+    if (!rs.words.length) return;
+    rsvpShow(Math.max(0, Math.min(rs.words.length - 1, rs.i + d)));
+    if (rs.playing) rsvpSetPlaying(true); // restart the timer so the new word gets its full time
+  }
+  function rsvpTogglePlay() {
+    if (!rs.playing && rs.i >= rs.words.length - 1 && rs.words.length) rsvpShow(0);
+    rsvpSetPlaying(!rs.playing);
+  }
+  function rsvpSpeed(d) {
+    rs.wpm = Math.max(WPM_MIN, Math.min(WPM_MAX, rs.wpm + d));
+    if (rs.ui) rs.ui.wpm.textContent = rs.wpm + " wpm";
+    try { localStorage.setItem(WPM_KEY, String(rs.wpm)); } catch (e) {}
+  }
+  function rsvpOpen() { return !!rs.ui; }
+  // Returns true when the key was ours, so the page-level shortcuts stay quiet while the overlay is up.
+  function rsvpKey(e) {
+    if (e.key === "Escape" || e.key === "s" || e.key === "S") { applyReadMode("", true); return true; }
+    if (e.key === " ") { rsvpTogglePlay(); return true; }
+    if (e.key === "ArrowRight") { rsvpStep(1); return true; }
+    if (e.key === "ArrowLeft") { rsvpStep(-1); return true; }
+    if (e.key === "ArrowUp") { rsvpSpeed(WPM_STEP); return true; }
+    if (e.key === "ArrowDown") { rsvpSpeed(-WPM_STEP); return true; }
+    if (e.key === "Tab") { // keep focus inside the overlay
+      var items = rs.ui.root.querySelectorAll("button"), firstBtn = items[0], lastBtn = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === firstBtn) { lastBtn.focus(); return true; }
+      if (!e.shiftKey && document.activeElement === lastBtn) { firstBtn.focus(); return true; }
+    }
+    return false;
+  }
+  function openRsvp() {
+    var groups = [], last = null;
+    proseNodes(READ_BLOCK, READ_SKIP).forEach(function (node) {
+      var block = node.parentElement.closest(READ_BLOCK);
+      if (!last || last.block !== block) groups.push(last = { block: block, text: "" });
+      last.text += node.nodeValue;
+    });
+    rs.words = [];
+    var startAt = -1;
+    groups.forEach(function (g) {
+      var parts = g.text.split(/\s+/).filter(Boolean);
+      if (startAt < 0 && parts.length && rsvpInView(g.block)) startAt = rs.words.length;
+      parts.forEach(function (w, k) { rs.words.push({ text: w, pause: rsvpPause(w, k === parts.length - 1) }); });
+    });
+
+    var root = el("div", "sd-rsvp-overlay");
+    root.setAttribute("role", "dialog");
+    root.setAttribute("aria-modal", "true");
+    root.setAttribute("aria-label", "RSVP reader");
+    var stage = el("div", "sd-rsvp-stage"), word = el("div", "sd-rsvp-word");
+    var left = el("span", "sd-rsvp-l"), mid = el("span", "sd-rsvp-o"), right = el("span", "sd-rsvp-r");
+    word.appendChild(left); word.appendChild(mid); word.appendChild(right);
+    stage.appendChild(word);
+    var bar = el("div", "sd-rsvp-bar");
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "Reader controls");
+    function ctl(svg, label, title, fn) {
+      var b = el("button", "sd-rsvp-btn");
+      b.type = "button"; b.innerHTML = svg;
+      b.setAttribute("aria-label", label); b.title = title;
+      b.addEventListener("click", fn);
+      bar.appendChild(b);
+      return b;
+    }
+    ctl(ICONS.back, "Previous word", "Previous word (Left)", function () { rsvpStep(-1); });
+    var play = ctl(ICONS.play, "Play", "Play (Space)", rsvpTogglePlay);
+    ctl(ICONS.forward, "Next word", "Next word (Right)", function () { rsvpStep(1); });
+    bar.appendChild(el("span", "sd-sep")).setAttribute("aria-hidden", "true");
+    ctl(ICONS.minus, "Slower", "Slower (Down)", function () { rsvpSpeed(-WPM_STEP); });
+    var wpm = el("span", "sd-rsvp-wpm");
+    wpm.setAttribute("aria-live", "polite");
+    bar.appendChild(wpm);
+    ctl(ICONS.plus, "Faster", "Faster (Up)", function () { rsvpSpeed(WPM_STEP); });
+    bar.appendChild(el("span", "sd-sep")).setAttribute("aria-hidden", "true");
+    ctl(ICONS.close, "Close reader", "Close (Esc)", function () { applyReadMode("", true); });
+    var track = el("div", "sd-rsvp-track"), fill = el("div", "sd-rsvp-fill"), pos = el("div", "sd-rsvp-pos");
+    track.setAttribute("aria-hidden", "true");
+    track.appendChild(fill);
+    var hint = el("div", "sd-rsvp-hint", "Space plays or pauses. Left and right step. Up and down change the speed. Esc closes.");
+    root.appendChild(stage); root.appendChild(bar); root.appendChild(pos); root.appendChild(track); root.appendChild(hint);
+
+    root.addEventListener("keyup", function (e) { if (e.key === " ") e.preventDefault(); }); // Space must not also click a focused button
+    rs.ui = { root: root, left: left, mid: mid, right: right, play: play, wpm: wpm, pos: pos, fill: fill };
+    rs.prevFocus = readTrigger || document.activeElement;
+    document.body.appendChild(root);
+    rsvpSpeed(0);
+    if (!rs.words.length) {
+      left.textContent = "Nothing to read";
+      play.disabled = true;
+    } else {
+      rsvpShow(startAt < 0 ? 0 : startAt);
+      rsvpSetPlaying(true);
+    }
+    play.focus();
+  }
+  function closeRsvp() {
+    clearTimeout(rs.timer);
+    rs.timer = null;
+    rs.playing = false;
+    if (rs.ui && rs.ui.root.parentNode) rs.ui.root.parentNode.removeChild(rs.ui.root);
+    rs.ui = null;
+    rs.words = [];
+    var back = rs.prevFocus;
+    rs.prevFocus = null;
+    if (back && back !== document.body && document.contains(back) && back.focus) back.focus();
+  }
+
   // ---- copy-source (raw markdown, base64-embedded for UTF-8 + file:// safety) ----
   function decodeSrc() {
     var el = document.getElementById("sd-src");
@@ -264,6 +646,71 @@
     }
   }
 
+  // ---- the Read menu: Off + each mode, one checked ----
+  // A menu button (aria-haspopup) opens a role=menu of radio items. Arrow keys, Home and End move,
+  // Enter and Space pick, Esc closes and gives focus back to the button.
+  function buildReadMenu() {
+    var wrap = el("div", "sd-read-wrap"), menu = el("div", "sd-read-menu");
+    menu.id = "sd-read-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", "Reading mode");
+    menu.hidden = true;
+    readTrigger = el("button", "sd-read");
+    readTrigger.type = "button";
+    readTrigger.innerHTML = ICONS.read;
+    readTrigger.setAttribute("aria-haspopup", "menu");
+    readTrigger.setAttribute("aria-expanded", "false");
+    readTrigger.setAttribute("aria-controls", menu.id);
+    updateReadTrigger();
+    var list = ["off"].concat(READ_MODES.filter(modeAvailable)), buttons = [];
+    list.forEach(function (m) {
+      var item = el("button", "sd-read-item", m === "off" ? "Off" : MODE_LABELS[m]);
+      item.type = "button";
+      item.setAttribute("role", "menuitemradio");
+      item.setAttribute("aria-checked", String(m === "off" ? !readMode() : readMode() === m));
+      item.tabIndex = -1;
+      if (m !== "off") item.title = MODE_LABELS[m] + ": " + MODE_HINTS[m];
+      item.addEventListener("click", function () {
+        closeMenu(false);
+        applyReadMode(m === "off" ? "" : m, true);
+        if (m !== "rsvp") readTrigger.focus();
+      });
+      readItems[m] = item;
+      buttons.push(item);
+      menu.appendChild(item);
+    });
+    function isOpen() { return !menu.hidden; }
+    function focusItem(i) { buttons[(i + buttons.length) % buttons.length].focus(); }
+    function openMenu() {
+      menu.hidden = false;
+      readTrigger.setAttribute("aria-expanded", "true");
+      var at = 0;
+      buttons.forEach(function (b, i) { if (b.getAttribute("aria-checked") === "true") at = i; });
+      focusItem(at);
+    }
+    function closeMenu(refocus) {
+      menu.hidden = true;
+      readTrigger.setAttribute("aria-expanded", "false");
+      if (refocus) readTrigger.focus();
+    }
+    readTrigger.addEventListener("click", function () { if (isOpen()) closeMenu(false); else openMenu(); });
+    wrap.addEventListener("keydown", function (e) {
+      var at = buttons.indexOf(document.activeElement);
+      if (e.key === "Escape" && isOpen()) { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!isOpen()) openMenu(); else focusItem(at + (e.key === "ArrowDown" ? 1 : -1));
+      }
+      else if (isOpen() && e.key === "Home") { e.preventDefault(); focusItem(0); }
+      else if (isOpen() && e.key === "End") { e.preventDefault(); focusItem(buttons.length - 1); }
+      else if (isOpen() && e.key === "Tab") closeMenu(false);
+    });
+    document.addEventListener("click", function (e) { if (isOpen() && !wrap.contains(e.target)) closeMenu(false); });
+    wrap.appendChild(readTrigger);
+    wrap.appendChild(menu);
+    return wrap;
+  }
+
   // ---- build toolbar ----
   // Every control is a real button with an aria-label and a title tooltip.
   function btn(cls, svg, label, title, fn) {
@@ -285,9 +732,7 @@
   var sep = document.createElement("span"); sep.className = "sd-sep";
   sep.setAttribute("aria-hidden", "true");
   bar.appendChild(sep);
-  modeBtns.skim = btn("sd-skim", ICONS.skim, "Skim", "Skim: fade all but the key words (S)", function () { toggleReadMode("skim"); });
-  modeBtns.skim.setAttribute("aria-pressed", String(readMode() === "skim"));
-  bar.appendChild(modeBtns.skim);
+  bar.appendChild(buildReadMenu());
   bar.appendChild(btn("sd-copy", ICONS.copy, COPY_LABEL, "Copy the raw markdown to the clipboard", copySource));
   bar.appendChild(btn("sd-print", ICONS.print, "Print", "Print this page", function () { window.print(); }));
   document.body.appendChild(bar);
@@ -314,11 +759,20 @@
   paintProgress();
 
   apply(); // sets --sd-zoom + the pct label from saved/default
+  applyReadMode(savedMode, false); // the saved mode, now that the text and the toolbar are final
+  // BeeLine follows the line breaks: window size, the outline opening or closing, late web fonts, a theme switch.
+  window.addEventListener("resize", scheduleBeeline);
+  if (window.ResizeObserver) new ResizeObserver(scheduleBeeline).observe(document.body);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleBeeline);
+  var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  if (darkQuery.addEventListener) darkQuery.addEventListener("change", scheduleBeeline);
   // The skim fade eases only after first paint, so a saved skim state never animates in.
   requestAnimationFrame(function () { doc.classList.add("sd-skim-anim"); });
 
-  // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom) ----
+  // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom), plus the single-key shortcuts ----
   window.addEventListener("keydown", function (e) {
+    // while the RSVP overlay is up it owns the plain keys
+    if (rsvpOpen() && !e.metaKey && !e.ctrlKey && !e.altKey && rsvpKey(e)) { e.preventDefault(); return; }
     // outline toggle: bare "[", ignored when modified or while typing in an editable
     if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) {
       var ae = document.activeElement;
@@ -328,11 +782,11 @@
         e.preventDefault(); toggleToc(); return;
       }
     }
-    // skim toggle: bare "s", same guards as "["
+    // reading mode toggle: bare "s" turns the last-used mode on or off, same guards as "["
     if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey && !e.altKey) {
       var se = document.activeElement;
       var typing = se && (se.isContentEditable || /^(input|textarea|select)$/i.test(se.tagName));
-      if (!typing) { e.preventDefault(); toggleReadMode("skim"); return; }
+      if (!typing) { e.preventDefault(); toggleLastMode(); return; }
     }
     if (!(e.metaKey || e.ctrlKey)) return;
     if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomIn(); }

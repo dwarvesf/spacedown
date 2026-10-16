@@ -49,6 +49,8 @@
   --ia-link: #1d5fd1;
   --sd-skim-ink: var(--ia-fg);  /* skim mode: key words / every other word */
   --sd-skim-fade: #a3a3a3;
+  --sd-read-blue: var(--ia-link);  /* BeeLine / RSVP / surprise: line colour, overlay ground */
+  --sd-read-bg: var(--ia-bg);
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
   /* Template default: content-size-l = 18px at line-height-base 164%.

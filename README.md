@@ -38,7 +38,12 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 - **Dark mode.** Every mode follows the system or browser appearance through `prefers-color-scheme`. There is no flag.
 - **Outline sidebar.** A collapsible table of contents built from the headings, with scroll tracking. The `[` key toggles it.
 - **Zoom and copy source.** `Cmd +`, `Cmd -` and `Cmd 0` scale the text. A toolbar button copies the original Markdown.
-- **Skim.** A toolbar button (or the `S` key) fades every word to a soft grey except the key ones: bold text, headings, table headers and first cells, figures like `8x`, `10%` and `$10M`, acronyms, and capitalized names. Rules only, no model. A name or acronym lights up the first time it appears under each heading, so the subject of the page does not glow on every line. The choice is remembered, and print always renders the normal view.
+- **Reading modes.** One **Read** button in the toolbar opens a menu: Off, Skim, Skim (surprise), Bionic, BeeLine and RSVP. One mode is active at a time, and the `S` key turns the last one on or off. The choice is remembered (RSVP is not reopened on load), and print always renders the normal view.
+  - **Skim** fades every word to a soft grey except the key ones: bold text, headings, table headers and first cells, figures like `8x`, `10%` and `$10M`, acronyms, and capitalized names. Rules only, no model. A name or acronym lights up the first time it appears under each heading, so the subject of the page does not glow on every line.
+  - **Skim (surprise)** scores every word by how unexpected it is, from an English word-frequency prior blended with a model fitted on the page itself (a port of the scoring in [skimgram](https://github.com/awesomedog/skimgram)), and fades the predictable ones. A page that is not English, such as Vietnamese, is scored on its own words only. A page too short or too flat to score is left alone.
+  - **Bionic** bolds the first part of each word, about 45% of its letters.
+  - **BeeLine** colours each line from ink to blue, then blue to ink to red, so each line starts on the colour the one above ended on.
+  - **RSVP** opens an overlay that shows one word at a time with the recognition letter in red on a centre marker. `Space` plays and pauses, the arrow keys step and change the speed (150 to 700 words per minute), `Esc` closes it. It starts from the first paragraph on screen.
 - **Frontmatter as a table.** A leading YAML block renders as a key and value table. Frontmatter that strict YAML parsers reject still renders.
 - **Callouts.** Obsidian-style `> [!note] Title` blocks render as styled callouts.
 - **Wikilinks.** `[[target]]` and `[[target|title]]` render as links.

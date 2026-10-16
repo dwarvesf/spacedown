@@ -33,6 +33,8 @@ STYLE_HEAD="${SCRIPT_DIR}/../assets/vscode-preview-head.html"
 # Reading chrome (outline sidebar + zoom + copy-source): CSS head + JS foot partials.
 CHROME_HEAD="${SCRIPT_DIR}/../assets/reading-chrome-head.html"
 CHROME_FOOT="${SCRIPT_DIR}/../assets/reading-chrome-foot.html"
+# Optional engine for the "Skim (surprise)" reading mode; without it that menu entry is absent.
+SKIM_SURPRISE="${SCRIPT_DIR}/../assets/skim-surprise.html"
 # Reading themes: "ia" (--font-mode=ia, the default), "tm" and "paper". Each is one plain
 # .css file (not a pre-wrapped .html head partial like the other assets) so the SAME file
 # also works directly as a VS Code / VSCodium `markdown.styles` entry; the CLI wraps it in
@@ -541,6 +543,8 @@ MODECSS
           base64 < "$FILE" | tr -d '\n'
           printf '</script>\n'
         } > "$SRC_FOOT"
+        # The surprise engine goes before the chrome script, which looks for window.sdSurprise at load.
+        [[ -f "$SKIM_SURPRISE" ]] && pandoc_flags+=( --include-after-body "$SKIM_SURPRISE" )
         pandoc_flags+=( --include-after-body "$SRC_FOOT" --include-after-body "$CHROME_FOOT" )
       fi
     fi
