@@ -1004,14 +1004,14 @@ else
   parity_out="$(node "${SCRIPT_DIR}/scripts/skim-parity.mjs" 2>&1 || true)"
   if grep -qF 'skim-parity: OK' <<<"$parity_out" \
      && grep -qE '^0 mismatched tokens over [0-9]+ fixtures, 0 flatten differences, 0 word list differences, 0 token count differences$' <<<"$parity_out" \
-     && [[ "$(grep -cE '^(cjk|code-mixed|en-599|en-600|en-long|en-medium|en-short|identifiers|tiny) ' <<<"$parity_out")" -eq 9 ]]; then
-    ok "nine fixtures, 0 mismatched tokens, 0 flatten, word list and token count differences against the goldens"
+     && [[ "$(grep -cE '^(cjk|code-mixed|en-599|en-600|en-long|en-medium|en-short|flat|identifiers|numbers|tiny) ' <<<"$parity_out")" -eq 11 ]]; then
+    ok "eleven fixtures, 0 mismatched tokens, 0 flatten, word list and token count differences against the goldens"
   else
     no "the port differs from the skimgram goldens"
     sed 's/^/    /' <<<"$parity_out" | head -30 >&2
   fi
 
-  echo "[parity-2] the fixtures reach the boundaries: gain switch at 600, lambda plateaus, CJK, identifier-heavy English, too short, the 400k cap"
+  echo "[parity-2] the fixtures reach the boundaries: gain switch at 600, lambda plateaus, CJK, identifier-heavy English, the three skip reasons, the 400k cap"
   if node -e '
     const fs = require("fs"), dir = process.argv[1] + "/tests/fixtures/skim/golden/";
     const g = (n) => JSON.parse(fs.readFileSync(dir + n + ".json", "utf8"));
@@ -1020,13 +1020,15 @@ else
     const ok = seq(g("en-long")) > 6000 && g("en-599").cases["auto/50"].basis === "surprisal" && seq(g("en-599")) === 599
       && g("en-600").cases["auto/50"].basis === "gain" && seq(g("en-600")) === 600
       && seq(g("en-short")) > 400 && seq(g("en-short")) < 600 && seq(g("en-medium")) > 600 && seq(g("en-medium")) < 6000
-      && g("tiny").cases["auto/50"].skipped && seq(g("tiny")) < 80
+      && g("tiny").cases["auto/50"].reason === "page is too short to analyse" && seq(g("tiny")) < 80
+      && g("numbers").cases["auto/50"].reason === "not enough scoreable tokens" && seq(g("numbers")) >= 80
+      && g("flat").cases["auto/50"].reason === "page is statistically flat"
       && Array.from(g("cjk").tokens.kinds).filter((c) => c === "c").length > 500
       && meta.cap["over-cap"].length > 400000 && meta.cap["cap-exact-400000"].runs === 400 && meta.cap["cap-just-under"].runs === 401
       && meta.upstream === "4ebb78a";
     process.exit(ok ? 0 : 1);
   ' "${SCRIPT_DIR}"; then
-    ok "599 tokens scores by surprisal, 600 by gain; long, medium, short, tiny, CJK and identifier fixtures; the cap trips at 400000 exactly"
+    ok "599 tokens scores by surprisal, 600 by gain; long, medium, short, CJK and identifier fixtures; too short, too few scoreable and flat pages skip; the cap trips at 400000 exactly"
   else
     no "a golden no longer covers a boundary it should"
   fi
