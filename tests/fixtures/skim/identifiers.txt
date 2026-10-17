@@ -1,0 +1,17 @@
+The runtime exposes a flat namespace. Each export below is documented in the source; this page only lists them, grouped by what they touch.
+
+Group 1 covers zorbBuf(), quixBuf(), mevlBuf(), tarnBuf(), ployBuf(), brevBuf(), skodBuf(), hirnBuf(), vellBuf(), draxBuf(), nukeBuf(), fothBuf(), glimBuf(), yarnBuf(), kelpBuf(), wispBuf(), zorbCtx(), quixCtx(), mevlCtx(), tarnCtx(), ployCtx(), brevCtx(), skodCtx(), hirnCtx(), vellCtx(), draxCtx(), nukeCtx(), fothCtx(), glimCtx(), yarnCtx(). Its settings are KELPCTX and WISPCTX; the loader reads them once at start.
+
+Group 2 covers zorbIdx(), quixIdx(), mevlIdx(), tarnIdx(), ployIdx(), brevIdx(), skodIdx(), hirnIdx(), vellIdx(), draxIdx(), nukeIdx(), fothIdx(), glimIdx(), yarnIdx(), kelpIdx(), wispIdx(), zorbFn(), quixFn(), mevlFn(), tarnFn(), ployFn(), brevFn(), skodFn(), hirnFn(), vellFn(), draxFn(), nukeFn(), fothFn(), glimFn(), yarnFn(). Its settings are KELPFN and WISPFN; the loader reads them once at start.
+
+Group 3 covers zorbCfg(), quixCfg(), mevlCfg(), tarnCfg(), ployCfg(), brevCfg(), skodCfg(), hirnCfg(), vellCfg(), draxCfg(), nukeCfg(), fothCfg(), glimCfg(), yarnCfg(), kelpCfg(), wispCfg(), zorbTbl(), quixTbl(), mevlTbl(), tarnTbl(), ployTbl(), brevTbl(), skodTbl(), hirnTbl(), vellTbl(), draxTbl(), nukeTbl(), fothTbl(), glimTbl(), yarnTbl(). Its settings are KELPTBL and WISPTBL; the loader reads them once at start.
+
+Group 4 covers zorbHdl(), quixHdl(), mevlHdl(), tarnHdl(), ployHdl(), brevHdl(), skodHdl(), hirnHdl(), vellHdl(), draxHdl(), nukeHdl(), fothHdl(), glimHdl(), yarnHdl(), kelpHdl(), wispHdl(), zorbPtr(), quixPtr(), mevlPtr(), tarnPtr(), ployPtr(), brevPtr(), skodPtr(), hirnPtr(), vellPtr(), draxPtr(), nukePtr(), fothPtr(), glimPtr(), yarnPtr(). Its settings are KELPPTR and WISPPTR; the loader reads them once at start.
+
+Group 5 covers zorbVec(), quixVec(), mevlVec(), tarnVec(), ployVec(), brevVec(), skodVec(), hirnVec(), vellVec(), draxVec(), nukeVec(), fothVec(), glimVec(), yarnVec(), kelpVec(), wispVec(), zorbSeq(), quixSeq(), mevlSeq(), tarnSeq(), ploySeq(), brevSeq(), skodSeq(), hirnSeq(), vellSeq(), draxSeq(), nukeSeq(), fothSeq(), glimSeq(), yarnSeq(). Its settings are KELPSEQ and WISPSEQ; the loader reads them once at start.
+
+Group 6 covers zorbBuf(), quixBuf(), mevlBuf(), tarnBuf(), ployBuf(), brevBuf(), skodBuf(), hirnBuf(), vellBuf(), draxBuf(), nukeBuf(), fothBuf(), glimBuf(), yarnBuf(), kelpBuf(), wispBuf(), zorbCtx(), quixCtx(), mevlCtx(), tarnCtx(), ployCtx(), brevCtx(), skodCtx(), hirnCtx(), vellCtx(), draxCtx(), nukeCtx(), fothCtx(), glimCtx(), yarnCtx(). Its settings are KELPCTX and WISPCTX; the loader reads them once at start.
+
+Group 7 covers zorbIdx(), quixIdx(), mevlIdx(), tarnIdx(), ployIdx(), brevIdx(), skodIdx(), hirnIdx(), vellIdx(), draxIdx(), nukeIdx(), fothIdx(), glimIdx(), yarnIdx(), kelpIdx(), wispIdx(), zorbFn(), quixFn(), mevlFn(), tarnFn(), ployFn(), brevFn(), skodFn(), hirnFn(), vellFn(), draxFn(), nukeFn(), fothFn(), glimFn(), yarnFn(). Its settings are KELPFN and WISPFN; the loader reads them once at start.
+
+Every call returns a plain value and never throws, so the caller can check the result and move on.
