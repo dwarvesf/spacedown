@@ -395,11 +395,14 @@
   }
 
   // ---- BeeLine: a colour gradient along each rendered line ----
-  // Each word is a span; the layout pass groups the spans of a block into lines by offsetTop and
-  // gives each word a position t (0 at the line's first word, 1 at its last). Line 1 runs ink to
-  // blue, line 2 blue to ink to red, line 3 red to ink to blue, then 2 and 3 repeat, so every line
-  // starts on the colour the one above ended on. The colour is CSS (--bl-a mixes two tokens), so a
-  // theme change recolours for free; only a change of line breaks needs the layout pass again.
+  // Each word is a span; the layout pass groups the spans of a block into lines by offsetTop. Line 1
+  // runs ink to blue, line 2 blue to ink to red, line 3 red to ink to blue, then 2 and 3 repeat, so
+  // every line starts on the colour the one above ended on. Each span paints its own slice of the
+  // line gradient: a linear-gradient (kept in --bl-g, drawn as its background-image by screen-only CSS)
+  // from the colour at its left edge to the colour at its right edge, clipped to the text, so neighbouring words join without a step. The slice colours are
+  // worked out here from the resolved ink, blue and red, so the layout pass runs again on a
+  // resize, a late font or a theme change. A browser without background-clip: text keeps the
+  // solid per-word colour of the sd-bl-* classes (--bl-a mixes two tokens).
   var bl = { words: [], timer: null };
   function enterBeeline() {
     var wordRe = /\S+/g;
@@ -419,27 +422,78 @@
     });
     layoutBeeline();
   }
-  function paintBeeLine(from, to, lineNo, xs) {
-    var lo = Infinity, hi = -Infinity, k;
-    for (k = from; k <= to; k++) { lo = Math.min(lo, xs[k]); hi = Math.max(hi, xs[k]); }
+  // a computed colour as [r, g, b] in 0..255, or null (rgb() and color(srgb ...) are what browsers return)
+  function parseRgb(c) {
+    var m = /^rgba?\(\s*([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)/.exec(c) || /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(c);
+    if (!m) return null;
+    var k = c.indexOf("color(") === 0 ? 255 : 1;
+    return [m[1] * k, m[2] * k, m[3] * k];
+  }
+  function mixRgb(a, b, t) {
+    return "rgb(" + [0, 1, 2].map(function (i) { return (a[i] + (b[i] - a[i]) * t).toFixed(1); }).join(", ") + ")";
+  }
+  // the colour stops of line n: line 0 ink to blue, odd lines blue, ink, red, even lines red, ink, blue
+  function beeStops(lineNo, ink, blue, red) {
+    if (lineNo === 0) return [ink, blue];
+    return lineNo % 2 ? [blue, ink, red] : [red, ink, blue];
+  }
+  function beeAt(stops, t) {
+    var segs = stops.length - 1, pos = Math.min(Math.max(t, 0), 1) * segs, i = Math.min(Math.floor(pos), segs - 1);
+    return mixRgb(stops[i], stops[i + 1], pos - i);
+  }
+  // linear-gradient for the slice [t0, t1] of a line; a stop that falls inside the slice is kept
+  function beeSlice(stops, t0, t1) {
+    var segs = stops.length - 1, parts = [beeAt(stops, t0)], i;
+    if (t1 > t0) {
+      for (i = 1; i < segs; i++) {
+        var edge = i / segs;
+        if (edge > t0 && edge < t1) parts.push(beeAt(stops, edge) + " " + (((edge - t0) / (t1 - t0)) * 100).toFixed(2) + "%");
+      }
+    }
+    parts.push(beeAt(stops, t1));
+    return "linear-gradient(to right, " + parts.join(", ") + ")";
+  }
+  function paintBeeLine(from, to, lineNo, lefts, rights, inks, pal) {
+    var lo = Infinity, hi = -Infinity, edgeHi = -Infinity, k;
+    for (k = from; k <= to; k++) { lo = Math.min(lo, lefts[k]); hi = Math.max(hi, lefts[k]); edgeHi = Math.max(edgeHi, rights[k]); }
     for (k = from; k <= to; k++) {
-      var t = hi > lo ? (xs[k] - lo) / (hi - lo) : 0, cls, a;
+      var t = hi > lo ? (lefts[k] - lo) / (hi - lo) : 0, cls, a, wordEl = bl.words[k].el;
       if (lineNo === 0) { cls = "bi"; a = t; }
       else if (t < 0.5) { cls = lineNo % 2 ? "ib" : "ir"; a = t * 2; }
       else { cls = lineNo % 2 ? "ri" : "bi"; a = t * 2 - 1; }
-      bl.words[k].el.className = "sd-bl-w sd-bl-" + cls;
-      bl.words[k].el.style.setProperty("--bl-a", (a * 100).toFixed(1) + "%");
+      wordEl.className = "sd-bl-w sd-bl-" + cls; // the solid colour, kept as the fallback
+      wordEl.style.setProperty("--bl-a", (a * 100).toFixed(1) + "%");
+      if (!pal || !inks[k] || !(edgeHi > lo)) { wordEl.style.removeProperty("--bl-g"); continue; }
+      var stops = beeStops(lineNo, inks[k], pal.blue, pal.red), span = edgeHi - lo;
+      // the slice ends where the next word starts when only a space lies between, so neighbours meet exactly
+      var next = k < to && lefts[k + 1] - rights[k] <= bl.words[k].h * 0.5 ? lefts[k + 1] : rights[k];
+      wordEl.style.setProperty("--bl-g", beeSlice(stops, (lefts[k] - lo) / span, (next - lo) / span));
+      wordEl.className += " sd-bl-g";
     }
   }
   function layoutBeeline() {
-    var words = bl.words, n = words.length, tops = new Array(n), lefts = new Array(n), i;
-    for (i = 0; i < n; i++) { tops[i] = words[i].el.offsetTop; lefts[i] = words[i].el.offsetLeft; } // reads first, writes after
+    var words = bl.words, n = words.length, tops = new Array(n), lefts = new Array(n), rights = new Array(n), inks = new Array(n), i;
+    // reads first, writes after: the palette, then every word's box and the ink it inherits
+    var probe = document.createElement("span"), pal = null, blue, red;
+    probe.style.display = "none";
+    document.body.appendChild(probe);
+    probe.style.color = "var(--sd-bl-blue)"; blue = parseRgb(getComputedStyle(probe).color);
+    probe.style.color = "var(--sd-bl-red)"; red = parseRgb(getComputedStyle(probe).color);
+    document.body.removeChild(probe);
+    if (blue && red) pal = { blue: blue, red: red };
+    var lastParent = null, lastInk = null;
+    for (i = 0; i < n; i++) {
+      var w = words[i].el, parent = w.parentElement;
+      tops[i] = w.offsetTop; lefts[i] = w.offsetLeft; rights[i] = w.offsetLeft + w.offsetWidth; words[i].h = w.offsetHeight;
+      if (parent !== lastParent) { lastParent = parent; lastInk = parseRgb(getComputedStyle(parent).color); }
+      inks[i] = lastInk;
+    }
     var first = 0, lineNo = 0, lineTop = n ? tops[0] : 0;
     for (i = 1; i <= n; i++) {
       var newBlock = i < n && words[i].block !== words[i - 1].block;
       var newLine = i < n && Math.abs(tops[i] - lineTop) > Math.max(3, words[i].el.offsetHeight / 2);
       if (i < n && !newBlock && !newLine) continue;
-      paintBeeLine(first, i - 1, lineNo, lefts);
+      paintBeeLine(first, i - 1, lineNo, lefts, rights, inks, pal);
       first = i;
       lineNo = newBlock ? 0 : lineNo + 1;
       if (i < n) lineTop = tops[i];
