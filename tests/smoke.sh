@@ -959,7 +959,7 @@ echo "[read-3] the scorer port: NFC keys, page-only model for non-English, short
 if grep -qF 'text.normalize("NFC")' "$READ_PART" \
    && grep -qF 'lang === "other" ? 0 : blendWeight(tokenCount)' "$READ_PART" \
    && grep -qF 'VI_RE' "$READ_PART" \
-   && grep -qF 'page is too short to score' "$READ_PART" \
+   && grep -qF 'page is too short to analyse' "$READ_PART" \
    && grep -qF 'page is statistically flat' "$READ_PART" \
    && grep -qF 'var MIN_SPREAD_BITS = 0.25;' "$READ_PART"; then
   ok "NFC fold, lambda 0 off the English prior, minTokens and spread guards present"
