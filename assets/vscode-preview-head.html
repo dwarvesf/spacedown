@@ -12,7 +12,7 @@
    Light values are the originals, so the light page is byte-identical. */
 :root {
   /* The one reading measure. The page column, prose, tables, rules and the RSVP stage all
-     read this. 50rem = ~78 mono chars: narrower than the old 60rem (~94) so the eye
+     read this. 50rem = about 83 chars per line in the ia font: narrower than the old 60rem (about 106) so the eye
      travels less side to side on a large screen. */
   --sd-measure: 50rem;
   --markdown-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif;
@@ -772,7 +772,7 @@ h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { background: none; padding
    Cap the measure on TEXT blocks only. The 2026-06-11 body-wide max-width was removed
    because it clipped display math and code; scoping the cap to prose-type elements
    excludes pre / table / .katex-display, so those keep full width + their own
-   horizontal scroll and that regression cannot recur. --sd-measure (50rem) = ~78 mono chars, a narrower measure than the old 60rem (~94) to cut side-to-side eye travel. */
+   horizontal scroll and that regression cannot recur. --sd-measure (50rem) = about 83 chars per line in the ia font, narrower than the old 60rem (about 106) to cut side-to-side eye travel. */
 body > p, body > ul, body > ol, body > blockquote,
 body > h1, body > h2, body > h3, body > h4, body > h5, body > h6 {
   max-width: var(--sd-measure);
