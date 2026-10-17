@@ -38,9 +38,8 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 - **Dark mode.** Every mode follows the system or browser appearance through `prefers-color-scheme`. There is no flag.
 - **Outline sidebar.** A collapsible table of contents built from the headings, with scroll tracking. The `[` key toggles it.
 - **Zoom and copy source.** `Cmd +`, `Cmd -` and `Cmd 0` scale the text. A toolbar button copies the original Markdown.
-- **Reading modes.** One **Read** button in the toolbar opens a menu: Off, Skim, Skim (surprise), Bionic, BeeLine and RSVP. One mode is active at a time, and the `S` key turns the last one on or off. The choice is remembered (RSVP is not reopened on load), and print always renders the normal view.
-  - **Skim** fades every word to a soft grey except the key ones: bold text, headings, table headers and first cells, figures like `8x`, `10%` and `$10M`, acronyms, and capitalized names. Rules only, no model. A name or acronym lights up the first time it appears under each heading, so the subject of the page does not glow on every line.
-  - **Skim (surprise)** scores every word by how unexpected it is, from an English word-frequency prior blended with a model fitted on the page itself (a port of the scoring in [skimgram](https://github.com/awesomedog/skimgram)), and fades the predictable ones. A page that is not English, such as Vietnamese, is scored on its own words only. A page too short or too flat to score is left alone.
+- **Reading modes.** One **Read** button in the toolbar opens a menu: Off, Skim, Bionic, BeeLine and RSVP. One mode is active at a time, and the `S` key turns the last one on or off (Skim until you pick another). The choice is remembered (RSVP is not reopened on load), and print always renders the normal view.
+  - **Skim** scores every word by how unexpected it is, from an English word-frequency prior blended with a model fitted on the page itself, and fades the predictable ones. It is a port of the scoring in [skimgram](https://github.com/awesomedog/skimgram), pinned to commit 4ebb78a and checked against it token by token (`node scripts/skim-parity.mjs`). While Skim is on, the menu shows its settings, remembered like the mode: **Emphasis** (Dim, Heat, Underline; combine any, Dim and Heat by default), **Intensity** (0 to 100, default 50: how much of the page is marked) and **Score** (Auto, Surprisal or Contextual gain; Auto picks gain on pages of 600 tokens or more). A page that is not English, such as Vietnamese, is scored on its own words only. A page too short or too flat to score is left alone.
   - **Bionic** bolds the first part of each word, about 45% of its letters.
   - **BeeLine** colours each line from ink to blue, then blue to ink to red, so each line starts on the colour the one above ended on.
   - **RSVP** opens an overlay that shows one word at a time with the recognition letter in red on a centre marker. `Space` plays and pauses, the arrow keys step and change the speed (150 to 700 words per minute), `Esc` closes it. It starts from the first paragraph on screen.
@@ -199,6 +198,7 @@ The Safari extension must be App-Sandboxed to load, and a sandboxed extension ca
 
 ```bash
 bash tests/smoke.sh                                   # CLI and spacedown docx suite, also runs the Quick Look tests
+node scripts/skim-parity.mjs                          # Skim engine against the skimgram goldens (also part of smoke.sh); add --upstream <clone> to run skimgram live
 node integrations/safari/quick-look/test-render.js    # Quick Look render core only
 spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```
@@ -219,7 +219,7 @@ The Releases page carries one release: each new version replaces the previous on
    - `scripts/mas-altool.sh`: runs `altool` validate or upload for the signed `.pkg`, reading the API key from the same 1Password item at call time. Usage: `mas-altool.sh validate|upload <pkg>`.
    - `scripts/store-shots.sh`: renders the two App Store screenshots from the real Quick Look preview through headless Brave. Needs Brave Browser and Node. Renders the fixtures `scripts/launch.md` (light) and `scripts/showcase.md` (dark).
    - `scripts/readme-shots.sh`: renders the test fixture through the same Quick Look pipeline and screenshots it into `docs/images/` for this README. Needs Brave Browser and Node.
-   - `scripts/layout-check`: renders a markdown file with `bin/spacedown`, measures the layout in a private headless Helium at 390, 768, 1470 and 1728px (overflow, content edges, side gaps, right edges, optional skim bright-word share, optional dark palette), screenshots each width, and exits 1 when any width scrolls sideways. Needs Helium; `BROWSER` overrides it.
+   - `scripts/layout-check`: renders a markdown file with `bin/spacedown`, measures the layout in a private headless Helium at 390, 768, 1470 and 1728px (overflow, content edges, side gaps, right edges, optional Skim marked-word share, optional dark palette), screenshots each width, and exits 1 when any width scrolls sideways. Needs Helium; `BROWSER` overrides it.
    - `scripts/window-shots.sh`: screenshots the app window page, Quick Look only and with Safari, light and dark, at the sizes `ViewController` sets. Needs Brave Browser.
    - `scripts/qlwrap.js`: wraps a Quick Look render body the way `MarkdownPreviewProvider.buildPreviewHTML` does. Used by `store-shots.sh` and `readme-shots.sh`. Needs Node.
 

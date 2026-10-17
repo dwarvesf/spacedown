@@ -47,9 +47,8 @@
   --ia-table-rule: #e3e3e3; /* soft table hairlines (owner choice over iA's ink rules) */
   --ia-code-bg: rgba(36, 36, 36, 0.055);
   --ia-link: #1d5fd1;
-  --sd-skim-ink: var(--ia-fg);  /* skim mode: key words / every other word */
-  --sd-skim-fade: #a3a3a3;
-  --sd-read-blue: var(--ia-link);  /* BeeLine / RSVP / surprise: line colour, overlay ground */
+  --sd-skim-ink: var(--ia-fg);  /* RSVP overlay ink */
+  --sd-read-blue: var(--ia-link);  /* BeeLine / RSVP: line colour, overlay ground */
   --sd-read-bg: var(--ia-bg);
   --ia-font-sans: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
   --ia-font-mono: "iA Writer Mono V", "iA Writer Mono S", "SD Diagram Fallback", ui-monospace, "SF Mono", Menlo, monospace;
@@ -274,7 +273,6 @@ mark { background-color: rgba(250, 222, 76, 0.5); color: inherit; }
     --ia-table-rule: #3a3a3a;
     --ia-code-bg: rgba(245, 245, 245, 0.06);
     --ia-link: #7aa7ff;
-    --sd-skim-fade: #6b6b6b;
     /* Code tokens in iA's dark editor accents (measured from the app: amber
        #c1944e, purple #ba8db2, green #82a56f, muted #878787). Redefines the
        base stylesheet's --sd-syn-* vars; its `code span.*` rules consume

@@ -240,49 +240,41 @@ html.sd-anim-ready.sd-has-toc .sd-toc-toggle {
   }
 }
 
-/* (7) Skim reading mode. A toolbar toggle puts html.sd-skim on the page (the JS keeps one
-   data-sd-read-mode value and one matching sd-<mode> class, so an exclusive second mode
-   adds its own block here and never stacks). Key words keep the normal ink; every other
-   word fades by COLOR, never opacity, so a key span inside a faded paragraph stays bright.
-   Headings and th are not in the fade list, so they keep their own color. The fade selector
-   is :where() (zero weight), so any color a theme sets on purpose, like the frontmatter
-   table's, out-ranks it; the ink selector is :is(), so it out-ranks theme text colors. Themes set --sd-skim-ink and
-   --sd-skim-fade next to their palette; the -base tokens serve read, mono and custom CSS.
-   Screen only: print always renders the normal view. */
-:root {
-  --sd-skim-ink-base: var(--vscode-editor-foreground);
-  --sd-skim-fade-base: #a1a1a8;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --sd-skim-fade-base: #6d7079; }
-}
+/* (7) Skim reading mode. The Read menu puts html.sd-skim on the page (the JS keeps one
+   data-sd-read-mode value and one matching sd-<mode> class, so each mode adds its own block and
+   never stacks). Skim scores the prose and wraps the words that move away from the middle in
+   span.sd-sk[data-sk]: -2 and -1 are the predictable ones, 1 and 2 the surprising ones. Level 0 is
+   plain text and has no span. html[data-sd-skim] is a token list of the emphasis styles in force
+   (dim, heat, underline), and ~= makes any mix the union of the rules below. The values are skimgram's
+   own: opacity and an alpha-only red work on a light and a dark ground alike, so no theme token is
+   needed. How much of the page is marked is the intensity setting, which moves the levels, not these
+   values. Screen only: print always renders the normal view. */
 @media screen {
-  html.sd-skim :where(p, li, dd, dt, figcaption, blockquote, summary, td:not(:first-child)) {
-    color: var(--sd-skim-fade, var(--sd-skim-fade-base));
-  }
-  html.sd-skim :is(strong, b, .sd-key, :not(pre) > code, .katex, td:first-child :is(p, li)) {
-    color: var(--sd-skim-ink, var(--sd-skim-ink-base));
-  }
-}
-/* The fade eases in once the page has painted, so a saved skim state never animates in. */
-@media screen and (prefers-reduced-motion: no-preference) {
-  html.sd-skim-anim :is(p, li, dd, dt, figcaption, blockquote, summary, td, strong, b, .sd-key, code, .katex) {
-    transition: color 150ms ease;
-  }
+  html.sd-skim .sd-sk { display: inline; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  html[data-sd-skim~="heat"] .sd-sk[data-sk="1"] { background: rgba(255, 71, 64, 0.18); border-radius: 2px; }
+  html[data-sd-skim~="heat"] .sd-sk[data-sk="2"] { background: rgba(255, 71, 64, 0.42); border-radius: 2px; }
+  html[data-sd-skim~="underline"] .sd-sk[data-sk="1"] { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  html[data-sd-skim~="underline"] .sd-sk[data-sk="2"] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; font-weight: 600; }
+  /* dim comes last, so its font-weight beats underline's 600 */
+  html[data-sd-skim~="dim"] .sd-sk[data-sk="-1"] { opacity: .62; }
+  html[data-sd-skim~="dim"] .sd-sk[data-sk="-2"] { opacity: .34; }
+  html[data-sd-skim~="dim"] .sd-sk[data-sk="1"] { font-weight: 600; }
+  html[data-sd-skim~="dim"] .sd-sk[data-sk="2"] { font-weight: 700; }
 }
 
 /* (7b) The Read menu in the toolbar. The button shows the pressed look while any mode is on; the
-   menu drops from the toolbar's right edge. Items beat the 28px toolbar button size by class
-   specificity. The menu is part of the toolbar, so print hides it with the rest. */
+   popover drops from the toolbar's right edge and holds the menu of modes, then the Skim settings
+   while Skim is on. Items beat the 28px toolbar button size by class specificity. The popover is
+   part of the toolbar, so print hides it with the rest. */
 .sd-toolbar .sd-read.sd-on { background: var(--sd-chrome-active); color: var(--sd-chrome-ink-strong); }
 .sd-read-wrap { position: relative; display: inline-flex; }
-.sd-read-menu {
-  position: absolute; top: calc(100% + 10px); right: -6px; z-index: 1;
-  display: flex; flex-direction: column; gap: 1px; min-width: 176px; padding: 4px;
+.sd-read-pop {
+  position: absolute; top: calc(100% + 10px); right: -6px; z-index: 1; min-width: 176px;
   background: var(--sd-toolbar-bg-opaque); border: 1px solid var(--sd-toolbar-border); border-radius: 8px;
   box-shadow: 0 4px 14px var(--sd-toolbar-shadow), 0 0 0 0.5px var(--sd-toolbar-hairline);
 }
-.sd-read-menu[hidden] { display: none; }
+.sd-read-pop[hidden] { display: none; }
+.sd-read-menu { display: flex; flex-direction: column; gap: 1px; padding: 4px; }
 .sd-toolbar .sd-read-item {
   position: relative; width: 100%; height: auto; padding: 7px 10px 7px 26px;
   justify-content: flex-start; white-space: nowrap; text-align: left;
@@ -290,13 +282,35 @@ html.sd-anim-ready.sd-has-toc .sd-toc-toggle {
 }
 .sd-toolbar .sd-read-item[aria-checked="true"] { background: var(--sd-chrome-active); color: var(--sd-chrome-ink-strong); }
 .sd-toolbar .sd-read-item[aria-checked="true"]::before { content: "\2713"; position: absolute; left: 9px; }
+.sd-skim-panel {
+  display: flex; flex-direction: column; gap: 10px; min-width: 208px; padding: 10px 12px 12px;
+  border-top: 1px solid var(--sd-chrome-rule); font-size: 12px; color: var(--sd-chrome-ink);
+}
+.sd-skim-panel[hidden] { display: none; }
+.sd-sk-row { display: flex; flex-direction: column; gap: 6px; }
+.sd-sk-label { display: flex; justify-content: space-between; color: var(--sd-chrome-ink-muted); }
+.sd-sk-value { font-variant-numeric: tabular-nums; }
+.sd-sk-seg { display: flex; gap: 3px; }
+.sd-toolbar .sd-sk-opt {
+  flex: 1; width: auto; height: 26px; padding: 0 8px; font-size: 12px;
+  border: 1px solid var(--sd-chrome-border); background: transparent;
+}
+.sd-toolbar .sd-sk-opt[aria-pressed="true"] { border-color: var(--sd-chrome-accent); }
+.sd-skim-panel input[type="range"] { width: 100%; margin: 0; accent-color: var(--sd-chrome-accent); }
+.sd-skim-panel select {
+  font: inherit; padding: 4px 6px; color: var(--sd-chrome-ink); background: var(--sd-toolbar-bg-opaque);
+  border: 1px solid var(--sd-chrome-border); border-radius: 5px;
+}
+.sd-skim-panel select:focus-visible, .sd-skim-panel input:focus-visible { outline: 2px solid var(--sd-chrome-accent); outline-offset: 1px; }
 
 /* (8) The other reading modes, same contract as Skim: one html.sd-<mode> class at a time, colour
    (never opacity), screen only. The JS puts the markup in and takes it out again, so print sees
    the plain page; b.sd-bi is the one rule outside @media screen, and it only undoes the default
-   bold of <b>. Themes may set --sd-read-blue, --sd-read-red and --sd-read-bg next to their palette;
-   the -base tokens serve read, mono and custom CSS. */
+   bold of <b>. Themes may set --sd-read-blue, --sd-read-red and --sd-read-bg next to their palette,
+   and --sd-skim-ink, the text colour of the RSVP overlay; the -base tokens serve read, mono and
+   custom CSS. */
 :root {
+  --sd-skim-ink-base: var(--vscode-editor-foreground);
   --sd-read-blue-base: #1d5fd1;
   --sd-read-red-base: #b3261e;
   --sd-read-bg-base: var(--vscode-editor-background);
@@ -306,23 +320,6 @@ html.sd-anim-ready.sd-has-toc .sd-toc-toggle {
 }
 b.sd-bi { font-weight: inherit; }
 @media screen {
-  /* Skim (surprise): five steps from the faded colour to the ink. Level 0 is the plain text of a
-     scored page, held a little back from the ink so the surprising words can stand above it. */
-  html.sd-surprise {
-    --sd-sp-ink: var(--sd-skim-ink, var(--sd-skim-ink-base));
-    --sd-sp-fade: var(--sd-skim-fade, var(--sd-skim-fade-base));
-    --sd-sp-hot: var(--sd-read-red, var(--sd-read-red-base));
-  }
-  html.sd-surprise.sd-scored :where(p, li, dd, dt, figcaption, blockquote, td:not(:first-child)) {
-    color: var(--sd-sp-ink);
-    color: color-mix(in srgb, var(--sd-sp-fade) 30%, var(--sd-sp-ink));
-  }
-  html.sd-surprise.sd-scored :is(strong, b, :not(pre) > code, .katex, td:first-child :is(p, li)) { color: var(--sd-sp-ink); }
-  html.sd-surprise .sd-s-2 { color: var(--sd-sp-fade); }
-  html.sd-surprise .sd-s-1 { color: var(--sd-sp-fade); color: color-mix(in srgb, var(--sd-sp-fade) 60%, var(--sd-sp-ink)); }
-  html.sd-surprise .sd-s1 { color: var(--sd-sp-ink); }
-  html.sd-surprise .sd-s2 { color: var(--sd-sp-ink); color: color-mix(in srgb, var(--sd-sp-hot) 85%, var(--sd-sp-ink)); }
-
   html.sd-bionic b.sd-bi { font-weight: 700; }
 
   /* BeeLine: --bl-a is how much of the first colour (--bl-x) is mixed over the second (--bl-y). */

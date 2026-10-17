@@ -1,7 +1,7 @@
 <script>
 /* spacedown reading chrome JS: outline scroll-spy + progress bar + zoom + reading modes + copy-source + print.
    Injected at end of <body> via pandoc --include-after-body, after the #sd-src element.
-   Pairs with assets/reading-chrome-head.html; Skim (surprise) also needs assets/skim-surprise.html,
+   Pairs with assets/reading-chrome-head.html; Skim also needs assets/skim-surprise.html,
    which loads before this script. Self-contained, no dependencies. */
 (function () {
   "use strict";
@@ -134,17 +134,16 @@
   // The toolbar "Read" menu picks the mode; S toggles the last one used. RSVP is not saved as the
   // current mode (a reload must not open an overlay) but is remembered as the last one used.
   var MODE_KEY = "sd-read-mode", LAST_KEY = "sd-read-last";
-  var READ_MODES = ["skim", "surprise", "bionic", "beeline", "rsvp"];
-  var MODE_LABELS = { skim: "Skim", surprise: "Skim (surprise)", bionic: "Bionic", beeline: "BeeLine", rsvp: "RSVP" };
+  var READ_MODES = ["skim", "bionic", "beeline", "rsvp"];
+  var MODE_LABELS = { skim: "Skim", bionic: "Bionic", beeline: "BeeLine", rsvp: "RSVP" };
   var MODE_HINTS = {
-    skim: "fade all but the key words",
-    surprise: "fade the words the page makes predictable",
+    skim: "fade the words the page makes predictable",
     bionic: "bold the start of each word",
     beeline: "colour each line so the eye finds the next",
     rsvp: "one word at a time"
   };
   var lastMode = "skim", readTrigger = null, readNote = "", readItems = {};
-  function modeAvailable(m) { return READ_MODES.indexOf(m) >= 0 && (m !== "surprise" || !!window.sdSurprise); }
+  function modeAvailable(m) { return READ_MODES.indexOf(m) >= 0 && (m !== "skim" || !!window.sdSurprise); }
   function readMode() { return doc.getAttribute("data-sd-read-mode") || ""; }
   function updateReadTrigger() {
     if (!readTrigger) return;
@@ -169,6 +168,7 @@
       try { enterMode(mode); } catch (e) { leaveMode(mode); }
     }
     updateReadTrigger();
+    updateSkimPanel();
     if (persist) {
       try {
         localStorage.setItem(MODE_KEY, mode === "rsvp" ? "" : mode);
@@ -177,107 +177,47 @@
     }
   }
   function toggleLastMode() { applyReadMode(readMode() ? "" : lastMode, true); }
+  // "surprise" was the name of the scored Skim before it became the only one, and an older "skim"
+  // meant a rules-based fade; both now mean the one Skim.
+  function savedName(v) { return v === "surprise" ? "skim" : v; }
   var savedMode = "";
   try {
-    savedMode = localStorage.getItem(MODE_KEY) || "";
-    var savedLast = localStorage.getItem(LAST_KEY) || savedMode;
+    savedMode = savedName(localStorage.getItem(MODE_KEY) || "");
+    var savedLast = savedName(localStorage.getItem(LAST_KEY) || savedMode);
     if (modeAvailable(savedLast)) lastMode = savedLast;
   } catch (e) {}
+  if (!modeAvailable(lastMode)) lastMode = "bionic"; // no Skim engine on this page
   // The saved mode is applied once the page is built (end of this script), so the DOM modes see final text.
 
-  // ---- skim: mark the key words once, at load ----
-  // HARD, SKIP and BLOCK are shared with the other reading modes (proseNodes below).
-  // Key words are wrapped in span.sd-key. strong, b, headings, th and the first td of a row stay
-  // bright through CSS alone, so this pass skips them. It also skips code, links, math, the
-  // frontmatter table, the outline and the toolbar, but still reads their text so it knows where
-  // a sentence starts. Rules, no model:
-  //   figures:      any word with a digit (8x, 10%, $10M, 2.5, Q1, 2026)
-  //   acronyms:     2+ capitals (CTO, PMF)
-  //   proper nouns: a capitalized word that does not start a sentence, and is not "I"
-  //   a name or acronym is key only the first time it appears under each h1/h2, so the subject
-  //   of the page ("AI", the company name) does not light up on every line
+  // ---- Skim settings: the emphasis styles, how much of the page is marked, and what the score measures ----
+  // The same three settings skimgram has, with its defaults. They live in localStorage like the mode.
+  var SK_EMPH = ["dim", "heat", "underline"], SK_BASES = ["auto", "surprisal", "gain"];
+  var sk = { emph: ["dim", "heat"], intensity: 50, basis: "auto" };
+  try {
+    var savedEmph = localStorage.getItem("sd-skim-emph");
+    if (savedEmph !== null) sk.emph = SK_EMPH.filter(function (m) { return savedEmph.split(",").indexOf(m) >= 0; });
+    var savedIntensity = parseInt(localStorage.getItem("sd-skim-intensity"), 10);
+    if (!isNaN(savedIntensity)) sk.intensity = Math.max(0, Math.min(100, savedIntensity));
+    var savedBasis = localStorage.getItem("sd-skim-basis");
+    if (SK_BASES.indexOf(savedBasis) >= 0) sk.basis = savedBasis;
+  } catch (e) {}
+  function saveSkim() {
+    try {
+      localStorage.setItem("sd-skim-emph", sk.emph.join(","));
+      localStorage.setItem("sd-skim-intensity", String(sk.intensity));
+      localStorage.setItem("sd-skim-basis", sk.basis);
+    } catch (e) {}
+  }
+
+  // ---- what the reading modes skip ----
+  // HARD and SKIP are shared by the prose modes (proseNodes below).
   var HARD = "script, style, noscript, textarea";
   var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
     "strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child, button, svg";
-  var BLOCK = "p, li, td, th, dd, dt, h1, h2, h3, h4, h5, h6, blockquote, figcaption, summary, pre, div, tr, table";
-  function markKeyWords() {
-    var core, digit, acro, proper, openQuote;
-    try {
-      core = new RegExp("^[^\\p{L}\\p{N}$\u20ac\u00a3]*([$\u20ac\u00a3]?[\\p{L}\\p{N}](?:.*[\\p{L}\\p{N}%])?)", "u");
-      digit = new RegExp("\\p{N}", "u");
-      acro = new RegExp("^\\p{Lu}{2,}s?$", "u");
-      proper = new RegExp("^\\p{Lu}\\p{Ll}", "u");
-      openQuote = new RegExp("[,:]\\s*[\"\u201c\u2018]\\s*$", "u");
-    } catch (e) { return; } // no Unicode property escapes: skip the pass, the page reads normally
 
-    function atSentenceStart(before) {
-      if (openQuote.test(before)) return true;
-      var p = before.replace(/[\s"'\u201c\u2018(\[*_]+$/, "");
-      return p === "" || /[.!?\u2026:]["'\u201d\u2019)\]*_]*$/.test(p);
-    }
-
-    var nodes = [];
-    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    for (var n = walker.nextNode(); n; n = walker.nextNode()) {
-      if (n.parentElement && !n.parentElement.closest(HARD) && n.nodeValue.trim()) nodes.push(n);
-    }
-
-    var lastBlock = null, tail = "", seenName = {};
-    nodes.forEach(function (node) {
-      var parent = node.parentElement;
-      var block = parent.closest(BLOCK);
-      if (block !== lastBlock) {
-        lastBlock = block; tail = "";
-        if (block && /^H[12]$/.test(block.tagName)) seenName = {}; // a new section re-introduces its names
-      }
-      var text = node.nodeValue;
-      var skip = !!parent.closest(SKIP);
-      var spans = []; // [start, end) of each key run in this node
-      if (!skip) {
-        var tokenRe = /\S+/g, m, prevEnd = -1;
-        while ((m = tokenRe.exec(text))) {
-          var c = core.exec(m[0]);
-          if (!c) continue;
-          var start = m.index + (c[0].length - c[1].length);
-          var end = start + c[1].length;
-          var word = c[1].replace(/['\u2019]s$/i, "");
-          var midSentence = !atSentenceStart(tail + text.slice(0, start));
-          var key = false;
-          if (digit.test(word)) key = true;
-          else word.split(/[-\u2013\/]/).forEach(function (part, i) {
-            if (!part) return;
-            var isName = acro.test(part) || (i === 0 ? midSentence && proper.test(part) : proper.test(part));
-            if (!isName || seenName[part]) return;
-            seenName[part] = true;
-            key = true;
-          });
-          if (!key) continue;
-          // Join neighbours separated by spaces only ("Ethan Phan") into one span.
-          if (prevEnd >= 0 && /^\s+$/.test(text.slice(prevEnd, start)) && spans.length) spans[spans.length - 1][1] = end;
-          else spans.push([start, end]);
-          prevEnd = end;
-        }
-      }
-      tail = (tail + text).slice(-8);
-      if (!spans.length) return;
-      var frag = document.createDocumentFragment(), at = 0;
-      spans.forEach(function (r) {
-        if (r[0] > at) frag.appendChild(document.createTextNode(text.slice(at, r[0])));
-        var el = document.createElement("span");
-        el.className = "sd-key";
-        el.textContent = text.slice(r[0], r[1]);
-        frag.appendChild(el);
-        at = r[1];
-      });
-      if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
-      node.parentNode.replaceChild(frag, node);
-    });
-  }
-  markKeyWords();
-
-  // ---- the prose modes: Skim (surprise), Bionic, BeeLine, RSVP ----
-  // They read the same prose: text inside p, li, td, blockquote, dd and figcaption, skipping what
-  // markKeyWords skips (code, links, math, bold, headings, the frontmatter table, the chrome). RSVP
+  // ---- the prose modes: Skim, Bionic, BeeLine, RSVP ----
+  // They read the same prose: text inside p, li, td, blockquote, dd and figcaption, skipping code,
+  // links, math, bold, headings, the first table cell, the frontmatter table and the chrome. RSVP
   // keeps links and bold, since dropping them would cut sentences, and reads headings too.
   // Every wrapping mode records each text node it replaces, so restoreText() puts the very same
   // nodes back: turning a mode off, or switching to another, leaves the original DOM.
@@ -316,54 +256,121 @@
   }
 
   function enterMode(mode) {
-    if (mode === "surprise") enterSurprise();
+    if (mode === "skim") enterSkim();
     else if (mode === "bionic") enterBionic();
     else if (mode === "beeline") enterBeeline();
     else if (mode === "rsvp") openRsvp();
   }
   function leaveMode(mode) {
     if (mode === "rsvp") closeRsvp();
-    doc.classList.remove("sd-scored");
+    doc.removeAttribute("data-sd-skim");
     restoreText();
     bl.words = [];
   }
 
-  // ---- Skim (surprise): score the prose with assets/skim-surprise.html, fade the predictable ----
-  // One flat string for the whole page (a separator between blocks); the scorer returns a level
-  // per token, -2 (expected) to 2 (surprising). Level 0 stays plain text, so only words that
-  // move away from the middle get a span, sd-s-2 .. sd-s2. A page too short or too flat to score
-  // is left alone and the toolbar tooltip says so.
-  function enterSurprise() {
+  // ---- Skim: score the prose with assets/skim-surprise.html, fade the predictable ----
+  // The text nodes become one flat string (a separator between nodes, cut at the engine's size cap);
+  // the scorer returns a level per token, -2 (expected) to 2 (surprising). Level 0 stays plain text,
+  // so only words that move away from the middle get a span: span.sd-sk with data-sk set to the
+  // level. html[data-sd-skim] lists the emphasis styles in force; the CSS keys on it. A page too
+  // short or too flat to score is left alone and the toolbar tooltip says so.
+  function enterSkim() {
     var core = window.sdSurprise, nodes = proseNodes(PROSE, SKIP);
-    var runs = [], parts = [], offset = 0, lastBlock = null;
-    nodes.forEach(function (node) {
-      var block = node.parentElement.closest(PROSE);
-      if (runs.length && block !== lastBlock) { parts.push(core.RUN_SEPARATOR); offset += core.RUN_SEPARATOR.length; }
-      lastBlock = block;
-      runs.push({ node: node, start: offset });
-      parts.push(node.nodeValue);
-      offset += node.nodeValue.length;
-    });
-    var res = core.analyze(parts.join(""), { minTokens: 80, intensity: 50 });
+    var flat = core.flatten(nodes.map(function (node) { return node.nodeValue; }));
+    var res = core.analyze(flat.text, { minTokens: 80, intensity: sk.intensity, basis: sk.basis });
     if (res.skipped) { readNote = ", " + res.reason; return; }
-    doc.classList.add("sd-scored");
+    doc.setAttribute("data-sd-skim", sk.emph.join(" "));
     var cursor = 0;
-    runs.forEach(function (run) {
-      var data = run.node.nodeValue, runEnd = run.start + data.length;
-      while (cursor < res.tokens.length && res.tokens[cursor].end <= run.start) cursor++;
-      var frag = document.createDocumentFragment(), at = run.start, marked = false;
+    flat.starts.forEach(function (start, n) {
+      var node = nodes[n], data = node.nodeValue, runEnd = start + data.length;
+      while (cursor < res.tokens.length && res.tokens[cursor].end <= start) cursor++;
+      var frag = document.createDocumentFragment(), at = start, marked = false;
       for (var t = cursor; t < res.tokens.length && res.tokens[t].start < runEnd; t++) {
-        var from = Math.max(res.tokens[t].start, run.start), to = Math.min(res.tokens[t].end, runEnd);
+        var from = Math.max(res.tokens[t].start, start), to = Math.min(res.tokens[t].end, runEnd);
         if (to <= from || !res.levels[t]) continue;
-        if (from > at) frag.appendChild(textNode(data.slice(at - run.start, from - run.start)));
-        frag.appendChild(el("span", "sd-s" + res.levels[t], data.slice(from - run.start, to - run.start)));
+        if (from > at) frag.appendChild(textNode(data.slice(at - start, from - start)));
+        var span = el("span", "sd-sk", data.slice(from - start, to - start));
+        span.setAttribute("data-sk", String(res.levels[t]));
+        frag.appendChild(span);
         at = to;
         marked = true;
       }
       if (!marked) return;
-      if (at < runEnd) frag.appendChild(textNode(data.slice(at - run.start)));
-      replaceNode(run.node, frag);
+      if (at < runEnd) frag.appendChild(textNode(data.slice(at - start)));
+      replaceNode(node, frag);
     });
+  }
+  // A new intensity or score basis changes the levels, so the page is scored again from its original text.
+  function rescoreSkim() {
+    if (readMode() !== "skim") return;
+    doc.removeAttribute("data-sd-skim");
+    restoreText();
+    readNote = "";
+    try { enterSkim(); } catch (e) { doc.removeAttribute("data-sd-skim"); restoreText(); }
+    updateReadTrigger();
+  }
+  // The emphasis styles only change the CSS keys, so no scoring is needed.
+  function applySkimStyles() {
+    if (doc.hasAttribute("data-sd-skim")) doc.setAttribute("data-sd-skim", sk.emph.join(" "));
+  }
+  var skimPanel = null;
+  function updateSkimPanel() { if (skimPanel) skimPanel.hidden = readMode() !== "skim"; }
+  function buildSkimPanel() {
+    var panel = el("div", "sd-skim-panel");
+    panel.setAttribute("role", "group");
+    panel.setAttribute("aria-label", "Skim settings");
+    panel.hidden = true;
+    function row(label, valueEl) {
+      var r = el("div", "sd-sk-row"), l = el("div", "sd-sk-label");
+      l.appendChild(el("span", "", label));
+      if (valueEl) l.appendChild(valueEl);
+      r.appendChild(l);
+      panel.appendChild(r);
+      return r;
+    }
+    var seg = el("div", "sd-sk-seg"), optButtons = {};
+    seg.setAttribute("role", "group");
+    seg.setAttribute("aria-label", "Emphasis");
+    function syncEmph() { SK_EMPH.forEach(function (m) { optButtons[m].setAttribute("aria-pressed", String(sk.emph.indexOf(m) >= 0)); }); }
+    SK_EMPH.forEach(function (m) {
+      var b = el("button", "sd-sk-opt", m.charAt(0).toUpperCase() + m.slice(1));
+      b.type = "button";
+      b.addEventListener("click", function () {
+        sk.emph = SK_EMPH.filter(function (x) { return x === m ? sk.emph.indexOf(m) < 0 : sk.emph.indexOf(x) >= 0; });
+        saveSkim(); syncEmph(); applySkimStyles();
+      });
+      optButtons[m] = b;
+      seg.appendChild(b);
+    });
+    syncEmph();
+    row("Emphasis").appendChild(seg);
+
+    var value = el("output", "sd-sk-value", String(sk.intensity)), range = el("input");
+    range.type = "range"; range.min = "0"; range.max = "100"; range.step = "5"; range.value = String(sk.intensity);
+    range.setAttribute("aria-label", "Intensity");
+    var rescoreTimer = null;
+    range.addEventListener("input", function () {
+      sk.intensity = parseInt(range.value, 10);
+      value.textContent = range.value;
+      saveSkim();
+      clearTimeout(rescoreTimer);
+      rescoreTimer = setTimeout(rescoreSkim, 120);
+    });
+    row("Intensity", value).appendChild(range);
+
+    var basis = el("select");
+    basis.setAttribute("aria-label", "Score basis");
+    [["auto", "Auto"], ["surprisal", "Surprisal"], ["gain", "Contextual gain"]].forEach(function (o) {
+      var opt = el("option", "", o[1]);
+      opt.value = o[0];
+      basis.appendChild(opt);
+    });
+    basis.title = "Auto picks contextual gain on long pages and surprisal on short ones. Surprisal marks what is hardest to predict. Gain marks where the context failed to help.";
+    basis.value = sk.basis;
+    basis.addEventListener("change", function () { sk.basis = basis.value; saveSkim(); rescoreSkim(); });
+    row("Score").appendChild(basis);
+    skimPanel = panel;
+    return panel;
   }
 
   // ---- Bionic: bold the start of every word ----
@@ -701,14 +708,16 @@
   }
 
   // ---- the Read menu: Off + each mode, one checked ----
-  // A menu button (aria-haspopup) opens a role=menu of radio items. Arrow keys, Home and End move,
-  // Enter and Space pick, Esc closes and gives focus back to the button.
+  // A menu button (aria-haspopup) opens a popover holding a role=menu of radio items, and under it the
+  // Skim settings while Skim is on. Arrow keys, Home and End move over the items, Enter and Space pick,
+  // Esc closes and gives focus back to the button. Tab walks on into the settings, and out closes the popover.
   function buildReadMenu() {
-    var wrap = el("div", "sd-read-wrap"), menu = el("div", "sd-read-menu");
+    var wrap = el("div", "sd-read-wrap"), pop = el("div", "sd-read-pop"), menu = el("div", "sd-read-menu");
+    pop.id = "sd-read-pop";
+    pop.hidden = true;
     menu.id = "sd-read-menu";
     menu.setAttribute("role", "menu");
     menu.setAttribute("aria-label", "Reading mode");
-    menu.hidden = true;
     readTrigger = el("button", "sd-read");
     readTrigger.type = "button";
     readTrigger.innerHTML = ICONS.read;
@@ -733,17 +742,17 @@
       buttons.push(item);
       menu.appendChild(item);
     });
-    function isOpen() { return !menu.hidden; }
+    function isOpen() { return !pop.hidden; }
     function focusItem(i) { buttons[(i + buttons.length) % buttons.length].focus(); }
     function openMenu() {
-      menu.hidden = false;
+      pop.hidden = false;
       readTrigger.setAttribute("aria-expanded", "true");
       var at = 0;
       buttons.forEach(function (b, i) { if (b.getAttribute("aria-checked") === "true") at = i; });
       focusItem(at);
     }
     function closeMenu(refocus) {
-      menu.hidden = true;
+      pop.hidden = true;
       readTrigger.setAttribute("aria-expanded", "false");
       if (refocus) readTrigger.focus();
     }
@@ -751,17 +760,19 @@
     wrap.addEventListener("keydown", function (e) {
       var at = buttons.indexOf(document.activeElement);
       if (e.key === "Escape" && isOpen()) { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
-      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && (at >= 0 || document.activeElement === readTrigger)) {
         e.preventDefault();
         if (!isOpen()) openMenu(); else focusItem(at + (e.key === "ArrowDown" ? 1 : -1));
       }
-      else if (isOpen() && e.key === "Home") { e.preventDefault(); focusItem(0); }
-      else if (isOpen() && e.key === "End") { e.preventDefault(); focusItem(buttons.length - 1); }
-      else if (isOpen() && e.key === "Tab") closeMenu(false);
+      else if (isOpen() && at >= 0 && e.key === "Home") { e.preventDefault(); focusItem(0); }
+      else if (isOpen() && at >= 0 && e.key === "End") { e.preventDefault(); focusItem(buttons.length - 1); }
+      else if (isOpen() && e.key === "Tab") setTimeout(function () { if (!wrap.contains(document.activeElement)) closeMenu(false); }, 0);
     });
     document.addEventListener("click", function (e) { if (isOpen() && !wrap.contains(e.target)) closeMenu(false); });
+    pop.appendChild(menu);
+    pop.appendChild(buildSkimPanel());
     wrap.appendChild(readTrigger);
-    wrap.appendChild(menu);
+    wrap.appendChild(pop);
     return wrap;
   }
 
@@ -820,8 +831,6 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleBeeline);
   var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   if (darkQuery.addEventListener) darkQuery.addEventListener("change", scheduleBeeline);
-  // The skim fade eases only after first paint, so a saved skim state never animates in.
-  requestAnimationFrame(function () { doc.classList.add("sd-skim-anim"); });
 
   // ---- keyboard: Cmd/Ctrl +/-/0 (override the browser's own page zoom), plus the single-key shortcuts ----
   window.addEventListener("keydown", function (e) {
