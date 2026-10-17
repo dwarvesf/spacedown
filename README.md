@@ -174,6 +174,8 @@ integrations/build-safari.sh --with-safari  # also the Safari drop extension and
 
 `integrations/build-safari.sh` also copies the CLI and its assets into the app with `scripts/bundle-cli` before signing. `BUNDLE_CLI=0` leaves them out; the Mac App Store build does.
 
+To notarize, sign with a Developer ID (`SIGN_ID`) and set `NOTARIZE=<notarytool keychain profile>`, or an App Store Connect API key with `NOTARY_KEY=<.p8 path> NOTARY_KEY_ID=<id> NOTARY_ISSUER=<issuer>` (headless, same variables as `scripts/release.sh`). Either one triggers notarization and stapling; the key wins when both are set.
+
 | Installed item | Path | When |
 |---|---|---|
 | `Spacedown.app` | `~/Applications/` | always |

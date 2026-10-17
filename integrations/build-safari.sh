@@ -34,6 +34,10 @@
 #                       Developer ID extension that is not notarized ("does not have a
 #                       code signature" in its log), so a --with-safari build needs this
 #                       to appear in Settings > Extensions without "Allow unsigned".
+#   NOTARY_KEY=<.p8>    notarize with an App Store Connect API key instead of a keychain
+#                       profile (headless, as in scripts/release.sh). Needs NOTARY_KEY_ID
+#                       and NOTARY_ISSUER too; setting NOTARY_KEY alone also triggers
+#                       notarization, with no NOTARIZE profile.
 #   APP_DEST=<dir>      install location (default ~/Applications).
 #   NO_INSTALL=1        stop after signing and print the built app's path.
 #   BUNDLE_CLI=0        leave the spacedown CLI out of the app. By default the CLI and its
@@ -48,6 +52,7 @@ set -euo pipefail
 SIGN_ID="${SIGN_ID:--}"
 NO_INSTALL="${NO_INSTALL:-0}"
 NOTARIZE="${NOTARIZE:-}"
+NOTARY_KEY="${NOTARY_KEY:-}"
 SKIN_CSS="${SKIN_CSS:-}"
 BUNDLE_CLI="${BUNDLE_CLI:-1}"
 [[ -z "$SKIN_CSS" || -f "$SKIN_CSS" ]] || { echo "build-safari: SKIN_CSS not found: $SKIN_CSS" >&2; exit 1; }
@@ -73,6 +78,10 @@ PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
 QL_ID="dfoundation.spacedown.quicklook"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 UID_NUM="$(id -u)"
+source "${HERE}/notary-auth.sh"
+# Resolve the credentials now, so a missing NOTARY_KEY_ID or NOTARY_ISSUER fails before the build.
+NOTARY_AUTH=()
+[[ -z "$NOTARIZE" && -z "$NOTARY_KEY" ]] || notary_auth
 
 command -v xcodebuild >/dev/null 2>&1 || { echo "build-safari: xcodebuild not found (install Xcode)" >&2; exit 1; }
 command -v swiftc     >/dev/null 2>&1 || { echo "build-safari: swiftc not found (install Xcode)" >&2; exit 1; }
@@ -172,11 +181,11 @@ codesign --verify --deep --strict "$APP" || { echo "build-safari: signature veri
 # it can outlive its directory and Safari resolves the extension id to a missing bundle.
 "$LSREGISTER" -u "$APP" 2>/dev/null || true
 
-if [[ -n "$NOTARIZE" ]]; then
-  [[ "$SIGN_ID" != "-" ]] || { echo "build-safari: NOTARIZE needs a Developer ID SIGN_ID" >&2; exit 1; }
-  echo "build-safari: notarizing (profile $NOTARIZE)..."
+if [[ -n "$NOTARIZE" || -n "$NOTARY_KEY" ]]; then
+  [[ "$SIGN_ID" != "-" ]] || { echo "build-safari: NOTARIZE and NOTARY_KEY need a Developer ID SIGN_ID" >&2; exit 1; }
+  echo "build-safari: notarizing (${NOTARY_AUTH[*]})..."
   ditto -c -k --keepParent "$APP" "$PROJ/build/notarize.zip"
-  NOTARY_OUT="$(xcrun notarytool submit "$PROJ/build/notarize.zip" --keychain-profile "$NOTARIZE" --wait 2>&1)" || true
+  NOTARY_OUT="$(xcrun notarytool submit "$PROJ/build/notarize.zip" "${NOTARY_AUTH[@]}" --wait 2>&1)" || true
   [[ "$NOTARY_OUT" == *"status: Accepted"* ]] || { echo "build-safari: notarization not accepted" >&2; echo "$NOTARY_OUT" >&2; exit 1; }
   xcrun stapler staple "$APP" >/dev/null
 fi
