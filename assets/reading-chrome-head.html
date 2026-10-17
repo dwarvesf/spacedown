@@ -335,6 +335,15 @@ b.sd-bi { font-weight: inherit; }
   html.sd-beeline .sd-bl-ib { --bl-x: currentcolor; --bl-y: var(--sd-bl-blue); }
   html.sd-beeline .sd-bl-ri { --bl-x: var(--sd-bl-red); --bl-y: currentcolor; }
   html.sd-beeline .sd-bl-ir { --bl-x: currentcolor; --bl-y: var(--sd-bl-red); }
+  /* The word paints its own slice of the line gradient (the JS keeps it in --bl-g, so print never
+     sees it): clipped to the glyphs, with the text fill clear, so color stays the ink. */
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    html.sd-beeline .sd-bl-g { background-image: var(--bl-g); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    html.sd-beeline .sd-bl-g::selection { -webkit-text-fill-color: currentcolor; }
+  }
+  @media (forced-colors: active) {
+    html.sd-beeline .sd-bl-g { background-image: none; -webkit-text-fill-color: currentcolor; }
+  }
 
   /* RSVP: a full-screen overlay; the three-column word keeps its middle letter on the centre. */
   html.sd-rsvp body { overflow: hidden; }

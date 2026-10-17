@@ -17,6 +17,20 @@
     var x = rgb(a), y = rgb(b);
     return x && y ? Math.max(Math.abs(x[0] - y[0]), Math.abs(x[1] - y[1]), Math.abs(x[2] - y[2])) : 999;
   }
+  // the colours of a BeeLine word's gradient, left edge first: [[r,g,b], ...] or null when it has none
+  function gradient(el) {
+    var bg = getComputedStyle(el).backgroundImage;
+    if (bg.indexOf("linear-gradient") !== 0) return null;
+    var out = [], re = /rgba?\(([^)]*)\)|color\(srgb ([^)]*)\)/g, m;
+    while ((m = re.exec(bg))) {
+      var parts = (m[1] || m[2]).split(/[ ,\/]+/).filter(Boolean).map(Number), k = m[1] ? 1 : 255;
+      out.push([parts[0] * k, parts[1] * k, parts[2] * k]);
+    }
+    return out.length >= 2 ? out : null;
+  }
+  function gdist(a, b) { return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2])); }
+  function gLeft(el) { var g = gradient(el); return g ? g[0] : null; }
+  function gRight(el) { var g = gradient(el); return g ? g[g.length - 1] : null; }
   // text of every prose element plus how many text nodes it holds: equal before and after means restored
   function sig() {
     var out = [], nodes = 0;
@@ -43,7 +57,7 @@
     return {
       surprise: count("[class^='sd-s-'], [class^='sd-s1'], [class^='sd-s2']"),
       bionic: count("b.sd-bi"),
-      beeline: count(".sd-bl-w"),
+      beeline: count(".sd-bl-w, .sd-bl-g, [style*='--bl-']"),
       rsvp: count(".sd-rsvp-overlay")
     };
   }
@@ -128,19 +142,42 @@
         line.words.push(w);
       });
     }
-    var join = 0, startInk = null, endBlue = null;
+    // each word paints its own slice of the line gradient: left and right colours, joined word to word
+    var join = 0, startInk = null, endBlue = null, seam = 0, seamPairs = 0, withGradient = 0, clipped = 0, clear = 0, flat = 0, wide = 0, midInk = false;
+    var allWords = longP ? Array.prototype.slice.call(longP.querySelectorAll(".sd-bl-w")) : [];
+    allWords.forEach(function (w) {
+      var cs = getComputedStyle(w);
+      if (gradient(w)) withGradient++;
+      if (cs.webkitBackgroundClip === "text" || cs.backgroundClip === "text") clipped++;
+      if (cs.webkitTextFillColor === "rgba(0, 0, 0, 0)") clear++;
+    });
     if (lines.length > 2) {
-      var ink = color(longP);
-      startInk = dist(color(lines[0].words[0]), ink);
-      endBlue = color(lines[0].words[lines[0].words.length - 1]);
+      var ink = color(longP), inkRgb = rgb(ink);
+      startInk = gdist(gLeft(lines[0].words[0]), inkRgb);
+      endBlue = gRight(lines[0].words[lines[0].words.length - 1]);
       for (var i = 0; i + 1 < lines.length; i++) {
         var a = lines[i].words[lines[i].words.length - 1], b = lines[i + 1].words[0];
-        join = Math.max(join, dist(color(a), color(b)));
+        join = Math.max(join, gdist(gRight(a), gLeft(b)));
       }
+      lines.forEach(function (line) {
+        for (var j = 0; j + 1 < line.words.length; j++) {
+          var gap = line.words[j + 1].offsetLeft - (line.words[j].offsetLeft + line.words[j].offsetWidth);
+          if (gap > 10) continue; // a link or bold word sits between: it is not a BeeLine word, so no seam to compare
+          seam = Math.max(seam, gdist(gRight(line.words[j]), gLeft(line.words[j + 1])));
+          seamPairs++;
+        }
+        line.words.forEach(function (w) {
+          if (w.offsetWidth < 40) return;
+          wide++;
+          if (gdist(gLeft(w), gRight(w)) < 0.5) flat++;
+        });
+      });
+      var mid = lines[1].words[Math.floor(lines[1].words.length / 2)];
+      midInk = gdist(gLeft(mid), inkRgb) < 60;
     }
     R.beeline = { classes: modeClasses(), words: count(".sd-bl-w"), lines: lines.length, startInk: startInk, join: join,
-      endDiffersFromInk: endBlue ? dist(endBlue, color(longP)) > 40 : false,
-      midInk: lines.length > 1 ? dist(color(lines[1].words[Math.floor(lines[1].words.length / 2)]), color(longP)) < 60 : false,
+      endDiffersFromInk: endBlue ? gdist(endBlue, rgb(color(longP))) > 40 : false, midInk: midInk,
+      gradient: { words: allWords.length, withGradient: withGradient, clipped: clipped, clear: clear, seam: seam, seamPairs: seamPairs, wide: wide, flat: flat },
       inSkipped: count("pre .sd-bl-w, code .sd-bl-w, a .sd-bl-w, h1 .sd-bl-w"), left: leftovers() };
 
     // rsvp: opens over the page, Space pauses, arrows step, Esc closes and exits the mode

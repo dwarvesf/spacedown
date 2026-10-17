@@ -1096,6 +1096,13 @@ else
     no "beeline gradient or continuity wrong"
   fi
 
+  echo "[read-12b] BeeLine is smooth: every word paints its own linear-gradient slice, clipped to the text, and neighbours meet at the same colour"
+  if rj reading-en 'r["beeline"]["gradient"]["words"] > 30 and r["beeline"]["gradient"]["withGradient"] == r["beeline"]["gradient"]["words"] and r["beeline"]["gradient"]["clipped"] == r["beeline"]["gradient"]["words"] and r["beeline"]["gradient"]["clear"] == r["beeline"]["gradient"]["words"] and r["beeline"]["gradient"]["seamPairs"] > 20 and r["beeline"]["gradient"]["seam"] < 3 and r["beeline"]["gradient"]["wide"] > 5 and r["beeline"]["gradient"]["flat"] == 0'; then
+    ok "linear-gradient background on every word, background-clip text, clear text fill, no flat word, seams under 3 channel units"
+  else
+    no "beeline words are not smooth gradient slices, or neighbouring words do not meet"
+  fi
+
   echo "[read-13] RSVP: dialog overlay, recognition letter near 35%, Space pauses, arrows step and change speed, Esc closes and exits"
   if rj reading-en 'r["rsvp"]["open"] and r["rsvp"]["role"] == "dialog" and r["rsvp"]["modal"] == "true" and r["rsvp"]["paused"] and r["rsvp"]["word0"] == "Reading" and r["rsvp"]["orp"]["before"] == int(r["rsvp"]["orp"]["len"] * 0.35) and r["rsvp"]["orp"]["mid"] == 1 and r["rsvp"]["word1"] == "modes" and r["rsvp"]["pos"].startswith("2 / ") and r["rsvp"]["wpm"] == "325 wpm" and r["rsvp"]["wpmDown"] == "275 wpm" and r["rsvp"]["closed"] and r["rsvp"]["triggerOff"]' \
      && rj reading-en '" const " not in r["rsvp"]["allWords"] and " return " not in r["rsvp"]["allWords"] and " project page, " in r["rsvp"]["allWords"] and " bold text stays bold " in r["rsvp"]["allWords"] and r["rsvp"]["startTop"] == "Reading" and r["rsvp"]["startScrolled"] != "Reading" and r["rsvp"]["stored"] == ["", "rsvp"]'; then
