@@ -1281,6 +1281,48 @@ else
   no "build wiring missing"
 fi
 
+# notary-auth: build-safari.sh picks the notarytool credentials like scripts/release.sh.
+# A fake xcrun on PATH records its argv; the real build needs Xcode, so only the choice runs.
+echo "[notary-auth] NOTARY_KEY selects the API key; else the keychain profile"
+mkdir -p "${TMP}/fakebin"
+printf '#!/bin/bash\nprintf "%%s\\n" "$*" >> "%s/xcrun.argv"\n' "$TMP" > "${TMP}/fakebin/xcrun"
+chmod +x "${TMP}/fakebin/xcrun"
+notary_argv() {
+  : > "${TMP}/xcrun.argv"
+  ( PATH="${TMP}/fakebin:$PATH"; source "${SCRIPT_DIR}/integrations/notary-auth.sh"; notary_auth
+    xcrun notarytool submit z.zip "${NOTARY_AUTH[@]}" --wait ) 2>"${TMP}/notary.err" || return $?
+  cat "${TMP}/xcrun.argv"
+}
+got="$(NOTARY_KEY=/k/AuthKey.p8 NOTARY_KEY_ID=KID NOTARY_ISSUER=ISS NOTARIZE=prof notary_argv)"
+if [[ "$got" == "notarytool submit z.zip --key /k/AuthKey.p8 --key-id KID --issuer ISS --wait" ]]; then
+  ok "NOTARY_KEY gives --key/--key-id/--issuer, ahead of NOTARIZE"
+else
+  no "api key argv: $got"
+fi
+got="$(NOTARY_KEY= NOTARIZE=prof notary_argv)"
+if [[ "$got" == "notarytool submit z.zip --keychain-profile prof --wait" ]]; then
+  ok "NOTARY_KEY unset gives --keychain-profile <name>"
+else
+  no "profile argv: $got"
+fi
+set +e
+NOTARY_KEY=/k/AuthKey.p8 NOTARY_ISSUER=ISS notary_argv >/dev/null 2>&1; rc_noid=$?
+NOTARY_KEY=/k/AuthKey.p8 NOTARY_KEY_ID=KID notary_argv >/dev/null 2>&1; rc_noiss=$?
+set -e
+if [[ $rc_noid -ne 0 && $rc_noiss -ne 0 && ! -s "${TMP}/xcrun.argv" ]]; then
+  ok "NOTARY_KEY without NOTARY_KEY_ID or NOTARY_ISSUER fails before xcrun runs"
+else
+  no "incomplete key accepted: id=$rc_noid issuer=$rc_noiss"
+fi
+if grep -q 'notary-auth.sh' "${SCRIPT_DIR}/integrations/build-safari.sh" \
+   && grep -q '"${NOTARY_AUTH\[@\]}"' "${SCRIPT_DIR}/integrations/build-safari.sh" \
+   && grep -q 'NOTARIZE" || -n "$NOTARY_KEY"' "${SCRIPT_DIR}/integrations/build-safari.sh" \
+   && ! grep -q 'keychain-profile "$NOTARIZE"' "${SCRIPT_DIR}/integrations/build-safari.sh"; then
+  ok "build-safari.sh notarizes on either variable through NOTARY_AUTH"
+else
+  no "build-safari.sh notary wiring missing"
+fi
+
 # layout-check: the no-browser surface only (--help, no args, bad option)
 echo "[layout-check] usage and argument errors need no browser"
 LC="${SCRIPT_DIR}/scripts/layout-check"
