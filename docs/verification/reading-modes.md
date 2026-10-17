@@ -7,7 +7,7 @@ The single Skim toggle becomes one **Read** menu in the toolbar: Off, Skim, Skim
 | Skim | Unchanged: fades non-key words by colour | `assets/reading-chrome-head.html` section 7, key-word pass in the foot |
 | Skim (surprise) | Port of the skimgram scoring core: five levels per word, `sd-s-2` to `sd-s2`, by colour | `assets/skim-surprise.html` (engine), foot (walk and paint), head section 8 (colours) |
 | Bionic | Bolds the first 45% of each word (1 to 3 letters: 1 letter) in `b.sd-bi` | foot |
-| BeeLine | One span per word, colour by x position in its rendered line, lines alternate so each starts on the colour the last ended on | foot (layout), head (colour) |
+| BeeLine | One span per word, colour by x position in its rendered line, lines alternate so each starts on the colour the last ended on; each word paints a gradient slice since `beeline-smooth.md` | foot (layout), head (colour) |
 | RSVP | Overlay, one word at a time, recognition letter at 35% in red on a centre marker | foot (logic), head (overlay) |
 
 ## Green run
