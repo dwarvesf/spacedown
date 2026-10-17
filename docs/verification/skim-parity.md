@@ -76,7 +76,7 @@ Compared line by line and found equal, no change: tokenizer (CJK ranges, fullwid
 
 | Setting | skimgram | Port |
 |---|---|---|
-| Emphasis | Dim, Heat, Underline, any mix, default Dim and Heat | same, buttons with `aria-pressed`, `data-sd-skim` token list on `html` |
+| Emphasis | Dim, Heat, Underline, any mix, default Dim and Heat | same mix, default Dim only (deviation 3), buttons with `aria-pressed`, `data-sd-skim` token list on `html` |
 | Intensity | 0 to 100, step 5, default 50; moves the cut-offs, not the CSS | same |
 | Score | Auto, Surprisal, Contextual gain, default Auto | same |
 | Dim | opacity .62 and .34 for levels -1 and -2; weight 600 and 700 for levels 1 and 2 | same values |
@@ -94,10 +94,12 @@ The panel shows only while Skim is on. The seeded checks (`read-10c`) load a pag
 
 ## Deviations from upstream
 
-Each can change a result only on input that is neither plain English nor CJK.
+Deviations 1 and 2 can change a result only on input that is neither plain English nor CJK.
 
 1. **NFC fold.** Token keys go through `normalize("NFC")` before lowercasing (upstream lowercases as is). NFC leaves ASCII and already composed text unchanged, so English and CJK pages are scored identically. It merges `e` plus a combining accent with the composed letter, which matters for Vietnamese typed either way.
 2. **Page-only fallback.** A page that is not mostly CJK is scored with lambda 0 (no English prior, the page's own statistics only) in two cases: at least 10% of its words carry a Vietnamese-type mark once decomposed (grave, acute, circumflex, tilde, breve, hook, horn, dot below, stroke d), or fewer than 35% of its words are in the English list and at least 5% contain a non-ASCII letter (a curly apostrophe does not count). A page whose words are all ASCII is never page-only, so identifiers, paths and jargon cannot move it off the prior. Upstream has no such rule and always uses the prior.
+
+3. **Default emphasis is Dim only** (skimgram defaults to Dim and Heat). A rendering default, not scoring: Heat and Underline stay in the settings panel, and the goldens are unchanged (`skim-dim-default.md`).
 
 Not engine deviations, but a difference in what text is read: the DOM walk is spacedown's own. It scores the prose blocks (`p`, `li`, `td`, `blockquote`, `dd`, `figcaption`) and skips code, links, math, bold, headings, the first table cell, the frontmatter table and the chrome. Upstream reads every text node outside a fixed tag list. The parity script proves the engine and the flattening, not that choice.
 

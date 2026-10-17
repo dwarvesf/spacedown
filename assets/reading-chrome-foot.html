@@ -190,11 +190,16 @@
   // The saved mode is applied once the page is built (end of this script), so the DOM modes see final text.
 
   // ---- Skim settings: the emphasis styles, how much of the page is marked, and what the score measures ----
-  // The same three settings skimgram has, with its defaults. They live in localStorage like the mode.
+  // The same three settings skimgram has. They live in localStorage like the mode. The default emphasis is
+  // Dim only (skimgram ships Dim and Heat): on real pages Heat boxed too many words to read. Heat and
+  // Underline stay one click away. Settings saved before that change have no sd-skim-ver; for them a
+  // stored "dim,heat" is the old default, not a choice, so it is ignored. Any other saved mix is kept, and
+  // so is Dim and Heat picked after the change (saving writes the version).
   var SK_EMPH = ["dim", "heat", "underline"], SK_BASES = ["auto", "surprisal", "gain"];
-  var sk = { emph: ["dim", "heat"], intensity: 50, basis: "auto" };
+  var sk = { emph: ["dim"], intensity: 50, basis: "auto" };
   try {
     var savedEmph = localStorage.getItem("sd-skim-emph");
+    if (savedEmph === "dim,heat" && localStorage.getItem("sd-skim-ver") !== "2") savedEmph = null;
     if (savedEmph !== null) sk.emph = SK_EMPH.filter(function (m) { return savedEmph.split(",").indexOf(m) >= 0; });
     var savedIntensity = parseInt(localStorage.getItem("sd-skim-intensity"), 10);
     if (!isNaN(savedIntensity)) sk.intensity = Math.max(0, Math.min(100, savedIntensity));
@@ -203,6 +208,7 @@
   } catch (e) {}
   function saveSkim() {
     try {
+      localStorage.setItem("sd-skim-ver", "2");
       localStorage.setItem("sd-skim-emph", sk.emph.join(","));
       localStorage.setItem("sd-skim-intensity", String(sk.intensity));
       localStorage.setItem("sd-skim-basis", sk.basis);
