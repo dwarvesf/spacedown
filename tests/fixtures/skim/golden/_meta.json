@@ -1,0 +1,48 @@
+{
+ "upstream": "4ebb78a",
+ "tolerance": 1e-9,
+ "bases": [
+  "auto",
+  "surprisal",
+  "gain"
+ ],
+ "intensities": [
+  0,
+  25,
+  50,
+  100
+ ],
+ "minTokens": 80,
+ "lists": {
+  "enSha": "d55a7b6bcb27ecb858c74df08354a2a2a7f8910246cd6d66df998b38dbe5f399",
+  "cjkSha": "e1b59c51646a2c76d2f611e6570ba676e070da0527d6a91dba667bd9383322ce",
+  "enCount": 3000,
+  "cjkCount": 2000
+ },
+ "cap": {
+  "under-cap": {
+   "runs": 40,
+   "length": 17926,
+   "textSha": "71b9212c985209d474739e97bd913087c7c67915a86ac04c0746dde3048f78b8",
+   "startsSha": "5856efec960bb19c21540799333e880fd1d9b762b0a61d481681830e47eb3d0c"
+  },
+  "over-cap": {
+   "runs": 1149,
+   "length": 400310,
+   "textSha": "e5ce728127e7a5a96eef005f7684d92922d3491179d16a1e1f9a52db21b0fa17",
+   "startsSha": "393de71b85e001d95eb72907044af0622194ee32b88c92aa620ae6f10331c58e"
+  },
+  "cap-exact-400000": {
+   "runs": 400,
+   "length": 400000,
+   "textSha": "3fec009f70361a9ed67f57a7dca041418afccad4543679785f84f08d5f22f0fa",
+   "startsSha": "f1a8df5e12a22f472b2331e5d826b8951e7b90edef4a1280aca31af8d399e35d"
+  },
+  "cap-just-under": {
+   "runs": 401,
+   "length": 400008,
+   "textSha": "3270e4e04b7b36d5e4477083910dbd17ad4e40f392e1119575dd19d228704c5e",
+   "startsSha": "f4878d21cb74d2776560a5ad60d8d83821d001b186e9667fdeb21b1fe6ecef70"
+  }
+ }
+}

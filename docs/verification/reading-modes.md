@@ -1,5 +1,7 @@
 # Proof of Done, reading-modes
 
+> Superseded in part. The rules-based Skim and Skim (surprise) became one Skim (the scored one), the menu lost an item, and the language rule changed; see `skim-parity.md`. This page records the first release as it shipped.
+
 The single Skim toggle becomes one **Read** menu in the toolbar: Off, Skim, Skim (surprise), Bionic, BeeLine, RSVP. Exactly one mode is active. The `S` key turns the last-used mode on or off. The current mode is saved like the outline state, except RSVP: a reload must not open an overlay, so RSVP is remembered only as the last mode used. Every mode is screen only; print renders the normal page. The Quick Look render path does not load the reading chrome and is untouched.
 
 | Mode | What it does | Where it lives |

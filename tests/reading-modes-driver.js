@@ -55,14 +55,14 @@
   }
   function leftovers() {
     return {
-      surprise: count("[class^='sd-s-'], [class^='sd-s1'], [class^='sd-s2']"),
+      skim: count(".sd-sk"),
       bionic: count("b.sd-bi"),
       beeline: count(".sd-bl-w, .sd-bl-g, [style*='--bl-']"),
       rsvp: count(".sd-rsvp-overlay")
     };
   }
   function modeClasses() {
-    return ["skim", "surprise", "bionic", "beeline", "rsvp"].filter(function (m) { return doc.classList.contains("sd-" + m); });
+    return ["skim", "bionic", "beeline", "rsvp"].filter(function (m) { return doc.classList.contains("sd-" + m); });
   }
   function store(k) { try { return localStorage.getItem(k); } catch (e) { return "no-storage"; } }
   function rsvpWord() {
@@ -79,9 +79,13 @@
     R.sdSurprise = !!window.sdSurprise;
     R.labels = Array.prototype.map.call(document.querySelectorAll(".sd-read-item"), function (i) { return i.textContent; });
     R.trigger = { popup: t.getAttribute("aria-haspopup"), expanded: t.getAttribute("aria-expanded"), label: t.getAttribute("aria-label"),
-      controls: t.getAttribute("aria-controls"), menuHidden: document.getElementById("sd-read-menu").hidden };
+      controls: t.getAttribute("aria-controls"), menuHidden: document.getElementById("sd-read-pop").hidden };
+    R.noSkimButton = count("button.sd-skim") === 0;
+    // what the page did on its own at load: a seeded localStorage may have opened Skim already
+    R.boot = { mode: doc.getAttribute("data-sd-read-mode"), scored: doc.hasAttribute("data-sd-skim"), emph: doc.getAttribute("data-sd-skim"),
+      spans: count(".sd-sk"), label: t.getAttribute("aria-label"), stored: store("sd-read-mode"), last: store("sd-read-last") };
+    if (R.boot.mode) { pick("Off"); R.boot.left = leftovers(); }
     R.base = sig();
-    R.noSkimButton = count(".sd-skim") === 0;
 
     // keyboard: ArrowDown opens and focuses an item, Escape closes and returns focus
     t.focus();
@@ -90,35 +94,32 @@
     document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
     R.kbMoved = document.activeElement.getAttribute("role") === "menuitemradio" && document.activeElement.textContent !== "Off";
     document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    R.kbClose = t.getAttribute("aria-expanded") === "false" && document.activeElement === t && document.getElementById("sd-read-menu").hidden;
+    R.kbClose = t.getAttribute("aria-expanded") === "false" && document.activeElement === t && document.getElementById("sd-read-pop").hidden;
 
-    // skim (rules)
+    // skim: the one scored mode behind the first menu item
     pick("Skim");
-    var p0 = document.querySelector("p"), keySpan = document.querySelector("span.sd-key");
+    var lv = {};
+    ["-2", "-1", "1", "2"].forEach(function (l) { lv[l] = count(".sd-sk[data-sk='" + l + "']"); });
+    var scoredSpans = lv["-2"] + lv["-1"] + lv["1"] + lv["2"];
+    var text = Array.prototype.map.call(document.querySelectorAll("p, li, td, blockquote"), function (e) { return e.textContent; }).join("\n");
+    var res = window.sdSurprise ? window.sdSurprise.analyze(text, { minTokens: 80, intensity: 50 }) : null;
+    function levelStyle(l) { var e = document.querySelector(".sd-sk[data-sk='" + l + "']"); return e ? getComputedStyle(e) : null; }
+    var m2 = levelStyle("-2"), m1 = levelStyle("-1"), p1 = levelStyle("1"), p2 = levelStyle("2");
     R.skim = { classes: modeClasses(), attr: doc.getAttribute("data-sd-read-mode"), checked: document.querySelector(".sd-read-item[aria-checked='true']").textContent,
-      keyDiffers: !!keySpan && dist(color(p0), color(keySpan)) > 20, stored: store("sd-read-mode"), left: leftovers() };
+      scored: doc.hasAttribute("data-sd-skim"), emph: doc.getAttribute("data-sd-skim"), spans: scoredSpans, levels: lv, stored: store("sd-read-mode"),
+      lang: res && !res.skipped ? res.stats.lang : null, skipped: res && res.skipped ? res.reason : null,
+      style: { dimMild: m1 && m1.opacity, dimStrong: m2 && m2.opacity, plain: p1 && p1.opacity, weight1: p1 && p1.fontWeight, weight2: p2 && p2.fontWeight,
+        heatMild: p1 && p1.backgroundColor, heatStrong: p2 && p2.backgroundColor, underline: p2 && p2.textDecorationLine },
+      inSkipped: count("pre .sd-sk, code .sd-sk, a .sd-sk, strong .sd-sk, h1 .sd-sk, th .sd-sk, table.sd-frontmatter .sd-sk"),
+      label: t.getAttribute("aria-label"), left: leftovers() };
+    // a second pass on top must not stack: picking the mode again, or switching away and back, gives the same count
+    pick("Skim");
+    R.skim.idempotent = count(".sd-sk") === scoredSpans;
 
     // S toggles the last mode off and on
     key("s"); var afterOff = doc.getAttribute("data-sd-read-mode");
     key("S"); var afterOn = doc.getAttribute("data-sd-read-mode");
     R.sKey = { off: afterOff, on: afterOn };
-
-    // surprise
-    pick("Skim (surprise)");
-    var lv = {};
-    ["s-2", "s-1", "s1", "s2"].forEach(function (l) { lv[l] = count(".sd-" + l); });
-    var scoredSpans = lv["s-2"] + lv["s-1"] + lv.s1 + lv.s2;
-    var s2 = document.querySelector(".sd-s-2"), s1 = document.querySelector(".sd-s1");
-    var text = Array.prototype.map.call(document.querySelectorAll("p, li, td, blockquote"), function (e) { return e.textContent; }).join("\n");
-    var res = window.sdSurprise ? window.sdSurprise.analyze(text, { minTokens: 80, intensity: 50 }) : null;
-    R.surprise = { classes: modeClasses(), scored: doc.classList.contains("sd-scored"), spans: scoredSpans, levels: lv,
-      lang: res && !res.skipped ? res.stats.lang : null, skipped: res && res.skipped ? res.reason : null,
-      fadedDarker: !!(s2 && s1) && dist(color(s2), color(s1)) > 20,
-      inSkipped: count("pre [class^='sd-s'], code [class^='sd-s'], a [class^='sd-s'], strong [class^='sd-s'], h1 [class^='sd-s'], th [class^='sd-s'], table.sd-frontmatter [class^='sd-s']"),
-      label: t.getAttribute("aria-label"), left: leftovers() };
-    // a second pass on top must not stack: switching away and back gives the same count
-    pick("Skim (surprise)");
-    R.surprise.idempotent = count("[class^='sd-s-'], [class^='sd-s1'], [class^='sd-s2']") === scoredSpans;
 
     // bionic
     pick("Bionic");
@@ -223,14 +224,76 @@
     key("Escape");
 
     // back to Off: the markup of every mode is gone and the text is the original
-    pick("Skim (surprise)"); pick("Bionic"); pick("BeeLine"); pick("Skim");
+    pick("Skim"); pick("Bionic"); pick("BeeLine"); pick("Bionic");
     R.switched = { classes: modeClasses(), left: leftovers() };
     pick("Off");
     R.off = { classes: modeClasses(), attr: doc.hasAttribute("data-sd-read-mode"), restored: sig() === R.base, label: t.getAttribute("aria-label"), left: leftovers(), stored: store("sd-read-mode") };
     key("s");
     R.sAfterOff = doc.getAttribute("data-sd-read-mode");
     key("s");
+    pick("Off");
 
+    settings(finish);
+  }
+
+  // the Skim settings panel, driven like a reader would: open the menu, click, drag. The rescore after a
+  // slider move is debounced, so each step waits for it.
+  function settings(done) {
+    var pop = document.getElementById("sd-read-pop"), panel = document.querySelector(".sd-skim-panel");
+    var range = panel.querySelector("input[type='range']"), select = panel.querySelector("select");
+    function opt(name) { return panel.querySelector(".sd-sk-opt[aria-pressed]:nth-child(" + ({ Dim: 1, Heat: 2, Underline: 3 })[name] + ")"); }
+    function spans() { return count(".sd-sk"); }
+    function wait(fn) { setTimeout(fn, 350); }
+    var S = R.settings = {};
+    S.hiddenWhenOff = panel.hidden;
+    pick("Skim");
+    S.base = spans();
+    S.defaults = { emph: doc.getAttribute("data-sd-skim"), intensity: range.value, basis: select.value, pressed: ["Dim", "Heat", "Underline"].map(function (n) { return opt(n).getAttribute("aria-pressed"); }) };
+    trigger().click();
+    S.shownWhenSkim = !panel.hidden && !pop.hidden;
+    S.labels = ["Dim", "Heat", "Underline"].map(function (n) { return opt(n).textContent; });
+    S.basisOptions = Array.prototype.map.call(select.options, function (o) { return o.value; });
+
+    // emphasis is CSS only: no rescore, the spans stay the same nodes
+    var first = document.querySelector(".sd-sk");
+    opt("Heat").click();
+    S.dimOnly = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), sameNode: document.querySelector(".sd-sk") === first,
+      heat: (function () { var e = document.querySelector(".sd-sk[data-sk='2']"); return e ? getComputedStyle(e).backgroundColor : null; })() };
+    opt("Underline").click();
+    S.dimUnderline = { attr: doc.getAttribute("data-sd-skim"), underline: (function () { var e = document.querySelector(".sd-sk[data-sk='2']"); return e ? getComputedStyle(e).textDecorationLine : null; })() };
+    opt("Dim").click();
+    opt("Underline").click();
+    S.none = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), spans: spans() };
+    opt("Dim").click(); opt("Heat").click();
+    S.restored = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph") };
+
+    range.value = "100";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    wait(function () {
+      S.full = { spans: spans(), stored: store("sd-skim-intensity"), out: panel.querySelector("output").textContent };
+      range.value = "0";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+      wait(function () {
+        S.zero = { spans: spans(), attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-intensity") };
+        range.value = "50";
+        range.dispatchEvent(new Event("input", { bubbles: true }));
+        wait(function () {
+          S.back = { spans: spans(), same: spans() === S.base };
+          select.value = "surprisal";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          S.surprisal = { spans: spans(), stored: store("sd-skim-basis"), noStack: count(".sd-sk .sd-sk") === 0 };
+          select.value = "auto";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          S.auto = { spans: spans(), same: spans() === S.base };
+          pick("Off");
+          S.off = { restored: sig() === R.base, left: leftovers(), attr: doc.hasAttribute("data-sd-skim"), hiddenAgain: panel.hidden };
+          done();
+        });
+      });
+    });
+  }
+
+  function finish() {
     var pre = document.createElement("pre");
     pre.id = "sd-test-result";
     pre.textContent = JSON.stringify(R);

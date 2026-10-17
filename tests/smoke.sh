@@ -872,71 +872,71 @@ if grep -qF 'ICONS.read' "${TMP}/skim.html" \
    && grep -qF 'readTrigger.setAttribute("aria-expanded", "false");' "${TMP}/skim.html" \
    && grep -qF 'item.setAttribute("role", "menuitemradio");' "${TMP}/skim.html" \
    && grep -qF 'item.setAttribute("aria-checked"' "${TMP}/skim.html" \
-   && grep -qF 'MODE_LABELS = { skim: "Skim", surprise: "Skim (surprise)", bionic: "Bionic", beeline: "BeeLine", rsvp: "RSVP" }' "${TMP}/skim.html" \
+   && grep -qF 'MODE_LABELS = { skim: "Skim", bionic: "Bionic", beeline: "BeeLine", rsvp: "RSVP" }' "${TMP}/skim.html" \
    && grep -qF '.sd-toolbar .sd-read.sd-on' "${TMP}/skim.html" \
    && ! grep -qF 'toggleReadMode("skim")' "${TMP}/skim.html"; then
-  ok "Read button with a menu of Off, Skim, Skim (surprise), Bionic, BeeLine, RSVP; pressed look while a mode is on"
+  ok "Read button with a menu of Off, Skim, Bionic, BeeLine, RSVP; pressed look while a mode is on"
 else
   no "Read menu button missing or the old Skim toggle is still wired"
 fi
 
-echo "[skim-2] the CSS mode: faded color (not opacity), key words keep the ink, 150ms ease, motion-safe"
-skim_css="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html" | sed -n '/--sd-skim-ink-base/,$p')"
-if grep -qF 'html.sd-skim :where(p, li' <<<"$skim_css" \
-   && grep -qF 'var(--sd-skim-fade, var(--sd-skim-fade-base))' <<<"$skim_css" \
-   && grep -qF '.sd-key' <<<"$skim_css" \
-   && grep -qF 'var(--sd-skim-ink, var(--sd-skim-ink-base))' <<<"$skim_css" \
-   && grep -qF 'transition: color 150ms ease' <<<"$skim_css" \
-   && grep -qF '@media screen and (prefers-reduced-motion: no-preference)' <<<"$skim_css" \
-   && ! grep -q 'opacity' <<<"$skim_css"; then
-  ok "fade by color, ink on key words, transition gated on no-preference"
+echo "[skim-2] the Skim CSS has skimgram's values: dim opacity .62 and .34, heat red at .18 and .42, underline 1px and 2px"
+skim_css="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html")"
+if grep -qF 'html[data-sd-skim~="dim"] .sd-sk[data-sk="-1"] { opacity: .62; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="dim"] .sd-sk[data-sk="-2"] { opacity: .34; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="dim"] .sd-sk[data-sk="1"] { font-weight: 600; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="dim"] .sd-sk[data-sk="2"] { font-weight: 700; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="heat"] .sd-sk[data-sk="1"] { background: rgba(255, 71, 64, 0.18); border-radius: 2px; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="heat"] .sd-sk[data-sk="2"] { background: rgba(255, 71, 64, 0.42); border-radius: 2px; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="underline"] .sd-sk[data-sk="1"] { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }' <<<"$skim_css" \
+   && grep -qF 'html[data-sd-skim~="underline"] .sd-sk[data-sk="2"] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; font-weight: 600; }' <<<"$skim_css"; then
+  ok "eight rules, each with the value skimgram 4ebb78a ships"
 else
-  no "Skim CSS rules missing or fade done with opacity"
+  no "Skim CSS rules missing or changed from skimgram's values"
 fi
 
-echo "[skim-3] the faded color is a token in every theme, light and dark"
+echo "[skim-3] the Skim settings need no theme token: the fade tokens are gone, the RSVP ink stays in every theme"
 skim_tok_ok=1
 for theme in ia tm paper; do
-  [[ "$(grep -c -- '--sd-skim-fade:' "${SCRIPT_DIR}/assets/${theme}-theme.css")" -eq 2 ]] || skim_tok_ok=0
-  grep -q -- '--sd-skim-ink: var(--' "${SCRIPT_DIR}/assets/${theme}-theme.css" || skim_tok_ok=0
+  [[ "$(grep -c -- '--sd-skim-ink: var(--' "${SCRIPT_DIR}/assets/${theme}-theme.css")" -eq 1 ]] || skim_tok_ok=0
+  ! grep -q -- '--sd-skim-fade' "${SCRIPT_DIR}/assets/${theme}-theme.css" || skim_tok_ok=0
 done
-[[ "$(grep -c -- '--sd-skim-fade-base:' "${SCRIPT_DIR}/assets/reading-chrome-head.html")" -eq 2 ]] || skim_tok_ok=0
-if [[ $skim_tok_ok -eq 1 ]]; then ok "ia, tm, paper and the read/mono fallback define light and dark fade tokens"; else no "a theme lacks its skim tokens"; fi
+[[ "$(grep -c -- '--sd-skim-ink-base:' "${SCRIPT_DIR}/assets/reading-chrome-head.html")" -eq 1 ]] || skim_tok_ok=0
+! grep -q -- '--sd-skim-fade' "${SCRIPT_DIR}/assets/reading-chrome-head.html" || skim_tok_ok=0
+if [[ $skim_tok_ok -eq 1 ]]; then ok "ink token in ia, tm, paper and the read/mono fallback; no fade token anywhere"; else no "a theme lacks the ink token or still carries a fade token"; fi
 
 echo "[skim-4] the mode is a switch: data-sd-read-mode plus one sd-<mode> class, saved like the outline state"
-if grep -qF 'var READ_MODES = ["skim", "surprise", "bionic", "beeline", "rsvp"];' "${TMP}/skim.html" \
+if grep -qF 'var READ_MODES = ["skim", "bionic", "beeline", "rsvp"];' "${TMP}/skim.html" \
    && grep -qF 'doc.setAttribute("data-sd-read-mode", mode)' "${TMP}/skim.html" \
    && grep -qF 'doc.classList.toggle("sd-" + m, m === mode)' "${TMP}/skim.html" \
    && grep -qF 'localStorage.setItem(MODE_KEY, mode === "rsvp" ? "" : mode);' "${TMP}/skim.html" \
-   && grep -qF 'savedMode = localStorage.getItem(MODE_KEY) || "";' "${TMP}/skim.html" \
+   && grep -qF 'savedMode = savedName(localStorage.getItem(MODE_KEY) || "");' "${TMP}/skim.html" \
    && [[ "$(grep -c -F 'try {' <<<"$(grep -B1 -F 'localStorage.setItem(MODE_KEY' "${TMP}/skim.html")")" -ge 1 ]]; then
   ok "one mode at a time, persisted inside try/catch (RSVP is remembered as last mode, never reopened on load)"
 else
   no "read-mode switch or its persistence missing"
 fi
 
-echo "[skim-5] the load-time pass wraps figures, acronyms and proper nouns in span.sd-key and skips code, links, math, frontmatter"
-if grep -qF 'function markKeyWords()' "${TMP}/skim.html" \
-   && grep -qF 'el.className = "sd-key";' "${TMP}/skim.html" \
-   && grep -qF 'var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar' "${TMP}/skim.html" \
-   && grep -qF 'td:first-child' "${TMP}/skim.html" \
-   && grep -q '^  markKeyWords();$' "${TMP}/skim.html"; then
-  ok "key-word pass present and run at load"
+echo "[skim-5] there is one Skim: no rules-based key-word pass, no sd-key; a saved surprise still means Skim"
+if ! grep -qE 'markKeyWords|sd-key|sd-scored|sd-skim-anim|Skim \(surprise\)' "${TMP}/skim.html" \
+   && ! grep -rqE 'markKeyWords|\.sd-key|Skim \(surprise\)' "${SCRIPT_DIR}/assets" "${SCRIPT_DIR}/bin" "${SCRIPT_DIR}/README.md" \
+   && grep -qF 'function savedName(v) { return v === "surprise" ? "skim" : v; }' "${TMP}/skim.html"; then
+  ok "no key-word pass, no key class, no second Skim in the menu, the old saved name is mapped"
 else
-  no "key-word pass missing"
+  no "the rules-based Skim or a (surprise) label is still around, or the saved-name mapping is missing"
 fi
 
-echo "[skim-6] print renders the normal view: every skim rule sits inside @media screen"
+echo "[skim-6] print renders the normal view: every Skim rule sits inside @media screen"
 skim_nocomment="$(perl -0pe 's{/\*.*?\*/}{}gs' "${SCRIPT_DIR}/assets/reading-chrome-head.html")"
-skim_loose=$(awk '/^@media screen/{s=1} s==0 && /html\.sd-skim/{n++} /^}/{s=0} END{print n+0}' <<<"$skim_nocomment")
-skim_all=$(grep -c 'html\.sd-skim' <<<"$skim_nocomment" || true)
-if [[ "$skim_loose" -eq 0 && "$skim_all" -ge 3 ]]; then
-  ok "no skim rule outside a screen-only block (${skim_all} rules inside)"
+skim_loose=$(awk '/^@media screen/{s=1} s==0 && /html\.sd-skim|data-sd-skim|\.sd-sk\[/{n++} /^}/{s=0} END{print n+0}' <<<"$skim_nocomment")
+skim_all=$(grep -cE 'html\.sd-skim|data-sd-skim' <<<"$skim_nocomment" || true)
+if [[ "$skim_loose" -eq 0 && "$skim_all" -ge 9 ]]; then
+  ok "no Skim rule outside a screen-only block (${skim_all} rules inside)"
 else
-  no "a skim rule can reach print (${skim_loose} outside @media screen of ${skim_all})"
+  no "a Skim rule can reach print (${skim_loose} outside @media screen of ${skim_all})"
 fi
 
-# ---- Reading modes: Skim (surprise), Bionic, BeeLine, RSVP ----
+# ---- Reading modes: Skim, Bionic, BeeLine, RSVP ----
 mkdir -p "${TMP}/read"
 "$SPACEDOWN" "${SCRIPT_DIR}/tests/fixture/reading-en.md" --out "${TMP}/read/en.html" --no-open >/dev/null 2>&1 || true
 READ_HEAD="${SCRIPT_DIR}/assets/reading-chrome-head.html"
@@ -968,7 +968,7 @@ echo "[read-3] the scorer port: NFC keys, page-only model for non-English, short
 if grep -qF 'text.normalize("NFC")' "$READ_PART" \
    && grep -qF 'lang === "other" ? 0 : blendWeight(tokenCount)' "$READ_PART" \
    && grep -qF 'VI_RE' "$READ_PART" \
-   && grep -qF 'page is too short to score' "$READ_PART" \
+   && grep -qF 'page is too short to analyse' "$READ_PART" \
    && grep -qF 'page is statistically flat' "$READ_PART" \
    && grep -qF 'var MIN_SPREAD_BITS = 0.25;' "$READ_PART"; then
   ok "NFC fold, lambda 0 off the English prior, minTokens and spread guards present"
@@ -976,10 +976,10 @@ else
   no "scorer port is missing one of its guards"
 fi
 
-echo "[read-4] every mode rule sits inside @media screen; print only hides the RSVP overlay; no opacity"
+echo "[read-4] every mode rule sits inside @media screen; print only hides the RSVP overlay; no opacity after the Read menu rules"
 read_css="$(perl -0pe 's{/\*.*?\*/}{}gs' "$READ_HEAD")"
-read_loose=$(awk '/^@media screen/{s=1} /^@media print/{s=1} s==0 && /html\.sd-(surprise|bionic|beeline|rsvp)|\.sd-rsvp-|\.sd-bl-|\.sd-s-?[0-9]/{n++} /^}/{s=0} END{print n+0}' <<<"$read_css")
-read_all=$(grep -cE 'html\.sd-(surprise|bionic|beeline|rsvp)|\.sd-rsvp-|\.sd-bl-' <<<"$read_css" || true)
+read_loose=$(awk '/^@media screen/{s=1} /^@media print/{s=1} s==0 && /html\.sd-(skim|bionic|beeline|rsvp)|\.sd-rsvp-|\.sd-bl-|\.sd-sk\[/{n++} /^}/{s=0} END{print n+0}' <<<"$read_css")
+read_all=$(grep -cE 'html\.sd-(skim|bionic|beeline|rsvp)|\.sd-rsvp-|\.sd-bl-' <<<"$read_css" || true)
 read_print=$(awk '/^@media print/{p=1} p&&/sd-/{print}' <<<"$read_css" | grep -c 'sd-rsvp-overlay' || true)
 if [[ "$read_loose" -eq 0 && "$read_all" -ge 20 && "$read_print" -ge 1 ]] \
    && grep -qF 'b.sd-bi { font-weight: inherit; }' <<<"$read_css" \
@@ -1006,6 +1006,43 @@ else
   no "restore path missing"
 fi
 
+echo "[parity-1] the Skim engine matches skimgram 4ebb78a on every fixture: tokens, levels, raw and smoothed scores, page flattening, word lists"
+if ! command -v node >/dev/null 2>&1; then
+  echo "  skipped: node not found"
+else
+  parity_out="$(node "${SCRIPT_DIR}/scripts/skim-parity.mjs" 2>&1 || true)"
+  if grep -qF 'skim-parity: OK' <<<"$parity_out" \
+     && grep -qE '^0 mismatched tokens over [0-9]+ fixtures, 0 flatten differences, 0 word list differences, 0 token count differences$' <<<"$parity_out" \
+     && [[ "$(grep -cE '^(cjk|code-mixed|en-599|en-600|en-long|en-medium|en-short|flat|identifiers|numbers|tiny) ' <<<"$parity_out")" -eq 11 ]]; then
+    ok "eleven fixtures, 0 mismatched tokens, 0 flatten, word list and token count differences against the goldens"
+  else
+    no "the port differs from the skimgram goldens"
+    sed 's/^/    /' <<<"$parity_out" | head -30 >&2
+  fi
+
+  echo "[parity-2] the fixtures reach the boundaries: gain switch at 600, lambda plateaus, CJK, identifier-heavy English, the three skip reasons, the 400k cap"
+  if node -e '
+    const fs = require("fs"), dir = process.argv[1] + "/tests/fixtures/skim/golden/";
+    const g = (n) => JSON.parse(fs.readFileSync(dir + n + ".json", "utf8"));
+    const seq = (x) => Array.from(x.tokens.kinds).filter((c) => c !== "s").length;
+    const meta = JSON.parse(fs.readFileSync(dir + "_meta.json", "utf8"));
+    const ok = seq(g("en-long")) > 6000 && g("en-599").cases["auto/50"].basis === "surprisal" && seq(g("en-599")) === 599
+      && g("en-600").cases["auto/50"].basis === "gain" && seq(g("en-600")) === 600
+      && seq(g("en-short")) > 400 && seq(g("en-short")) < 600 && seq(g("en-medium")) > 600 && seq(g("en-medium")) < 6000
+      && g("tiny").cases["auto/50"].reason === "page is too short to analyse" && seq(g("tiny")) < 80
+      && g("numbers").cases["auto/50"].reason === "not enough scoreable tokens" && seq(g("numbers")) >= 80
+      && g("flat").cases["auto/50"].reason === "page is statistically flat"
+      && Array.from(g("cjk").tokens.kinds).filter((c) => c === "c").length > 500
+      && meta.cap["over-cap"].length > 400000 && meta.cap["cap-exact-400000"].runs === 400 && meta.cap["cap-just-under"].runs === 401
+      && meta.upstream === "4ebb78a";
+    process.exit(ok ? 0 : 1);
+  ' "${SCRIPT_DIR}"; then
+    ok "599 tokens scores by surprisal, 600 by gain; long, medium, short, CJK and identifier fixtures; too short, too few scoreable and flat pages skip; the cap trips at 400000 exactly"
+  else
+    no "a golden no longer covers a boundary it should"
+  fi
+fi
+
 # The behaviour checks need a Chromium-family browser with --headless=new. SPACEDOWN_TEST_BROWSER names one;
 # otherwise the usual places are tried. Without one the behaviour checks are skipped, not failed.
 READ_BROWSER="${SPACEDOWN_TEST_BROWSER:-}"
@@ -1019,13 +1056,21 @@ fi
 
 # drive_page <fixture> : render it, inline tests/reading-modes-driver.js, open it headless, keep the
 # driver's JSON in ${TMP}/read/<fixture>.json ({"error": ...} when the page never answered).
+# An optional tag and seed script: the seed runs first thing in <body>, so it can fill localStorage
+# before the chrome reads it. The result lands in ${TMP}/read/<fixture><tag>.json.
 drive_page() {
-  local name="$1" html="${TMP}/read/$1.html" drive="${TMP}/read/$1.drive.html" prof="${TMP}/read/prof-$1" pid i
-  "$SPACEDOWN" "${SCRIPT_DIR}/tests/fixture/${name}.md" --out "$html" --no-open >/dev/null 2>&1 || true
-  python3 - "$html" "${SCRIPT_DIR}/tests/reading-modes-driver.js" "$drive" <<'PY'
+  local fixture="$1" tag="${2:-}" seed="${3:-}" name="$1${2:-}"
+  local html="${TMP}/read/${name}.html" drive="${TMP}/read/${name}.drive.html" prof="${TMP}/read/prof-${name}" pid i
+  "$SPACEDOWN" "${SCRIPT_DIR}/tests/fixture/${fixture}.md" --out "$html" --no-open >/dev/null 2>&1 || true
+  python3 - "$html" "${SCRIPT_DIR}/tests/reading-modes-driver.js" "$drive" "$seed" <<'PY'
 import sys
 page = open(sys.argv[1], encoding="utf-8").read()
 driver = open(sys.argv[2], encoding="utf-8").read()
+seed = sys.argv[4]
+if seed:
+    at = page.index("<body", page.index("</head>"))
+    at = page.index(">", at) + 1
+    page = page[:at] + "<script>try { " + seed + " } catch (e) {}</script>" + page[at:]
 cut = page.rindex("</body>")
 open(sys.argv[3], "w", encoding="utf-8").write(page[:cut] + "<script>" + driver + "</script>" + page[cut:])
 PY
@@ -1059,39 +1104,62 @@ else
   drive_page reading-en
   drive_page reading-vi
   drive_page reading-tiny
+  drive_page reading-en -surprise 'localStorage.setItem("sd-read-mode", "surprise"); localStorage.setItem("sd-read-last", "surprise");'
+  drive_page reading-en -rules 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-read-last", "skim");'
+  drive_page reading-en -settings 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-emph", "underline"); localStorage.setItem("sd-skim-intensity", "100"); localStorage.setItem("sd-skim-basis", "surprisal");'
   rj reading-en 'True' || echo "  note: the driver did not answer on the English fixture: $(head -c 300 "${TMP}/read/reading-en.json")" >&2
 
-  echo "[read-7] one Read menu replaces the Skim button: six items, menu-button ARIA, keyboard open, move, close"
-  if rj reading-en 'r["labels"] == ["Off","Skim","Skim (surprise)","Bionic","BeeLine","RSVP"] and r["noSkimButton"] and r["trigger"]["popup"] == "menu" and r["trigger"]["expanded"] == "false" and r["trigger"]["controls"] == "sd-read-menu" and r["trigger"]["menuHidden"] and r["kbOpen"] and r["kbMoved"] and r["kbClose"]'; then
-    ok "Off, Skim, Skim (surprise), Bionic, BeeLine, RSVP; ArrowDown opens, arrows move, Esc closes and refocuses"
+  echo "[read-7] one Read menu replaces the Skim button: five items, menu-button ARIA, keyboard open, move, close"
+  if rj reading-en 'r["labels"] == ["Off","Skim","Bionic","BeeLine","RSVP"] and r["noSkimButton"] and r["trigger"]["popup"] == "menu" and r["trigger"]["expanded"] == "false" and r["trigger"]["controls"] == "sd-read-menu" and r["trigger"]["menuHidden"] and r["kbOpen"] and r["kbMoved"] and r["kbClose"]'; then
+    ok "Off, Skim, Bionic, BeeLine, RSVP; ArrowDown opens, arrows move, Esc closes and refocuses"
   else
     no "Read menu structure or keyboard behaviour wrong"
   fi
 
-  echo "[read-8] Skim (rules) from the menu: sd-skim only, key words stay bright, saved, S turns the last mode off and on"
-  if rj reading-en 'r["skim"]["classes"] == ["skim"] and r["skim"]["attr"] == "skim" and r["skim"]["checked"] == "Skim" and r["skim"]["keyDiffers"] and r["skim"]["stored"] == "skim" and r["sKey"]["off"] is None and r["sKey"]["on"] == "skim"'; then
-    ok "unchanged behaviour behind the menu, persisted, S toggles"
+  echo "[read-8] the S key turns the last mode off and on, and Skim is the default"
+  if rj reading-en 'r["boot"]["mode"] is None and r["sKey"]["off"] is None and r["sKey"]["on"] == "skim" and r["sAfterOff"] == "bionic"'; then
+    ok "S off, S on brings Skim back; after cycling to Bionic and Off, S brings Bionic back"
   else
-    no "Skim (rules) or the S key changed behaviour"
+    no "the S key or the default last mode changed behaviour"
   fi
 
-  echo "[read-9] Skim (surprise) on English: all five levels land on prose only, brighter and fainter words differ, no stacking"
-  if rj reading-en 'r["surprise"]["classes"] == ["surprise"] and r["surprise"]["scored"] and r["surprise"]["lang"] == "en" and min(r["surprise"]["levels"].values()) > 5 and r["surprise"]["inSkipped"] == 0 and r["surprise"]["fadedDarker"] and r["surprise"]["idempotent"] and r["surprise"]["left"]["bionic"] == 0 and r["surprise"]["left"]["beeline"] == 0'; then
-    ok "classes sd-s-2 .. sd-s2 on prose; none in code, links, bold, headings, th; English prior kept"
+  echo "[read-9] Skim on English: all four levels land on prose only, no stacking, skimgram's dim, heat and weight values on screen"
+  if rj reading-en 'r["skim"]["classes"] == ["skim"] and r["skim"]["scored"] and r["skim"]["emph"] == "dim heat" and r["skim"]["checked"] == "Skim" and r["skim"]["stored"] == "skim" and r["skim"]["lang"] == "en" and min(r["skim"]["levels"].values()) > 5 and r["skim"]["inSkipped"] == 0 and r["skim"]["idempotent"] and r["skim"]["left"]["bionic"] == 0 and r["skim"]["left"]["beeline"] == 0' \
+     && rj reading-en 'r["skim"]["style"]["dimStrong"] == "0.34" and r["skim"]["style"]["dimMild"] == "0.62" and r["skim"]["style"]["plain"] == "1" and r["skim"]["style"]["weight1"] == "600" and r["skim"]["style"]["weight2"] == "700" and r["skim"]["style"]["heatMild"] == "rgba(255, 71, 64, 0.18)" and r["skim"]["style"]["heatStrong"] == "rgba(255, 71, 64, 0.42)"'; then
+    ok "span.sd-sk at data-sk -2 .. 2 on prose; none in code, links, bold, headings, th; opacity .34 and .62, weights 600 and 700, red at .18 and .42"
   else
-    no "surprise mode did not score the English fixture as expected"
+    no "Skim did not score the English fixture as expected"
   fi
 
-  echo "[read-10] Skim (surprise) on Vietnamese scores on the page alone; a tiny page is left unscored and says so"
-  if rj reading-vi 'r["surprise"]["scored"] and r["surprise"]["lang"] == "other" and r["surprise"]["spans"] > 20 and r["surprise"]["inSkipped"] == 0' \
-     && rj reading-tiny 'not r["surprise"]["scored"] and r["surprise"]["spans"] == 0 and r["surprise"]["skipped"] and "too short" in r["surprise"]["label"] and r["off"]["restored"] and r["off"]["label"] == "Reading mode: Off"'; then
+  echo "[read-10] Skim on Vietnamese scores on the page alone; a tiny page is left unscored and says so"
+  if rj reading-vi 'r["skim"]["scored"] and r["skim"]["lang"] == "other" and r["skim"]["spans"] > 20 and r["skim"]["inSkipped"] == 0' \
+     && rj reading-tiny 'not r["skim"]["scored"] and r["skim"]["spans"] == 0 and r["skim"]["skipped"] and "too short" in r["skim"]["label"] and r["off"]["restored"] and r["off"]["label"] == "Reading mode: Off"'; then
     ok "Vietnamese: page-only model, scored; tiny page: no spans, tooltip says too short, text untouched"
   else
     no "non-English or tiny page handled wrongly"
   fi
 
+  echo "[read-10b] Skim settings: Emphasis (Dim, Heat, Underline), Intensity, Score; persisted; Off restores the page"
+  if rj reading-en 'r["settings"]["hiddenWhenOff"] and r["settings"]["shownWhenSkim"] and r["settings"]["labels"] == ["Dim","Heat","Underline"] and r["settings"]["basisOptions"] == ["auto","surprisal","gain"] and r["settings"]["defaults"] == {"emph": "dim heat", "intensity": "50", "basis": "auto", "pressed": ["true","true","false"]}' \
+     && rj reading-en 'r["settings"]["dimOnly"]["attr"] == "dim" and r["settings"]["dimOnly"]["stored"] == "dim" and r["settings"]["dimOnly"]["sameNode"] and r["settings"]["dimOnly"]["heat"] == "rgba(0, 0, 0, 0)" and r["settings"]["dimUnderline"]["attr"] == "dim underline" and r["settings"]["dimUnderline"]["underline"] == "underline" and r["settings"]["none"]["attr"] == "" and r["settings"]["none"]["stored"] == "" and r["settings"]["none"]["spans"] == r["settings"]["base"] and r["settings"]["restored"]["attr"] == "dim heat"' \
+     && rj reading-en 'r["settings"]["full"]["spans"] > r["settings"]["base"] and r["settings"]["full"]["stored"] == "100" and r["settings"]["full"]["out"] == "100" and r["settings"]["zero"]["spans"] == 0 and r["settings"]["zero"]["attr"] is not None and r["settings"]["back"]["same"] and r["settings"]["surprisal"]["spans"] > 0 and r["settings"]["surprisal"]["stored"] == "surprisal" and r["settings"]["surprisal"]["noStack"] and r["settings"]["auto"]["same"]' \
+     && rj reading-en 'r["settings"]["off"]["restored"] and all(v == 0 for v in r["settings"]["off"]["left"].values()) and not r["settings"]["off"]["attr"] and r["settings"]["off"]["hiddenAgain"]'; then
+    ok "panel only while Skim is on; emphasis combines and persists with no rescore; intensity 100 marks more, 0 marks nothing; basis rescores without stacking; Off restores"
+  else
+    no "Skim settings panel or its persistence wrong"
+  fi
+
+  echo "[read-10c] saved state: an old surprise or skim value opens Skim, and saved settings are applied at load"
+  if rj reading-en-surprise 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["emph"] == "dim heat" and r["boot"]["spans"] > 100 and r["boot"]["last"] == "surprise" and all(v == 0 for v in r["boot"]["left"].values())' \
+     && rj reading-en-rules 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["spans"] > 100 and all(v == 0 for v in r["boot"]["left"].values())' \
+     && rj reading-en-settings 'r["boot"]["mode"] == "skim" and r["boot"]["emph"] == "underline" and r["boot"]["spans"] == r["settings"]["base"] and r["settings"]["defaults"]["intensity"] == "100" and r["settings"]["defaults"]["basis"] == "surprisal" and r["settings"]["defaults"]["pressed"] == ["false","false","true"]'; then
+    ok "surprise and skim both open Skim at load; emphasis, intensity and score basis come back from storage"
+  else
+    no "saved reading state not migrated or settings not restored"
+  fi
+
   echo "[read-11] Bionic bolds the start of each word (45%, at least 1, short words 1), Unicode aware, prose only"
-  if rj reading-en 'r["bionic"]["classes"] == ["bionic"] and r["bionic"]["count"] > 100 and "|extrao|" in "|" + r["bionic"]["sample"] + "|" and "|docu|" in "|" + r["bionic"]["sample"] + "|" and r["bionic"]["inSkipped"] == 0 and r["bionic"]["weight"] == "700" and r["bionic"]["sOffRestores"] and r["bionic"]["stored"] == "bionic" and r["bionic"]["left"]["surprise"] == 0' \
+  if rj reading-en 'r["bionic"]["classes"] == ["bionic"] and r["bionic"]["count"] > 100 and "|extrao|" in "|" + r["bionic"]["sample"] + "|" and "|docu|" in "|" + r["bionic"]["sample"] + "|" and r["bionic"]["inSkipped"] == 0 and r["bionic"]["weight"] == "700" and r["bionic"]["sOffRestores"] and r["bionic"]["stored"] == "bionic" and r["bionic"]["left"]["skim"] == 0' \
      && rj reading-vi 'r["bionic"]["count"] > 100 and "|nh|" in "|" + r["bionic"]["sample"] + "|" and "|ẩ|" in "|" + r["bionic"]["sample"] + "|"'; then
     ok "b.sd-bi at 700 weight; extrao|rdinary, docu|ments, 1 letter of a short word; Vietnamese nh|anh and a whole combined vowel"
   else
@@ -1121,7 +1189,7 @@ else
   fi
 
   echo "[read-14] switching through every mode never stacks markup; Off restores the original text exactly; S brings the last mode back"
-  if rj reading-en 'r["switched"]["classes"] == ["skim"] and all(v == 0 for v in r["switched"]["left"].values()) and r["off"]["classes"] == [] and not r["off"]["attr"] and r["off"]["restored"] and all(v == 0 for v in r["off"]["left"].values()) and r["off"]["stored"] == "" and r["sAfterOff"] == "skim"' \
+  if rj reading-en 'r["switched"]["classes"] == ["bionic"] and r["switched"]["left"]["skim"] == 0 and r["switched"]["left"]["beeline"] == 0 and r["switched"]["left"]["rsvp"] == 0 and r["switched"]["left"]["bionic"] > 0 and r["off"]["classes"] == [] and not r["off"]["attr"] and r["off"]["restored"] and all(v == 0 for v in r["off"]["left"].values()) and r["off"]["stored"] == ""' \
      && rj reading-vi 'r["off"]["restored"] and all(v == 0 for v in r["off"]["left"].values())'; then
     ok "one class at a time, zero leftover spans, text and node count identical to the load state"
   else

@@ -19,7 +19,7 @@ Usage: layout-check [--mode ia|tm|paper] [--widths 390,768,1470,1728] [--shots <
   --mode    font mode passed to spacedown (default ia)
   --widths  comma-separated window widths (default 390,768,1470,1728)
   --shots   screenshot directory (default: a fresh mktemp dir, printed)
-  --skim    add sd-skim to the page; also print the bright-word share
+  --skim    turn Skim on through the Read menu; also print the share of words Skim marks
   --dark    force the dark palette (promotes the prefers-color-scheme: dark blocks to all)
 
 Prints one line per width plus the screenshot path. Exit 1 when any width overflows
@@ -63,14 +63,17 @@ echo "shots: $SHOTS"
 "$REPO/bin/spacedown" --font-mode "$MODE" --no-open --out "$WORK/page.html" "$FILE" >/dev/null 2>&1 \
   || { echo "layout-check: spacedown failed on $FILE" >&2; exit 1; }
 
-# Measured copy: optional dark promotion, optional sd-skim, then the measuring script.
-# The script runs before the first animation frame, so sd-skim lands without the fade transition.
+# Measured copy: optional dark promotion, optional Skim, then the measuring script.
+# Skim is picked in the Read menu, as a reader would, so the page is scored before it is measured.
 cat >| "$WORK/measure.js" <<'EOF'
 <script>
 (function () {
   var EDGE_SEL = "body > p, body > table, body > hr, table.sd-frontmatter";
   var SKIM = __SKIM__;
-  if (SKIM) document.documentElement.classList.add("sd-skim");
+  if (SKIM) {
+    document.querySelector(".sd-read").click();
+    Array.prototype.forEach.call(document.querySelectorAll(".sd-read-item"), function (i) { if (i.textContent === "Skim") i.click(); });
+  }
   function measure() {
     var root = document.documentElement;
     var els = Array.prototype.slice.call(document.querySelectorAll(EDGE_SEL));
@@ -98,20 +101,22 @@ cat >| "$WORK/measure.js" <<'EOF'
       e: edges.join("/")
     };
     if (SKIM) {
+      var marked = document.querySelectorAll(".sd-sk[data-sk='1'], .sd-sk[data-sk='2'], .sd-sk[data-sk='-1'], .sd-sk[data-sk='-2']");
       var SKIP = "pre, script, style, noscript, textarea, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, button, svg";
-      var BRIGHT = ".sd-key, strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child";
       var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      var total = 0, bright = 0, n;
+      var total = 0, n;
       while ((n = walker.nextNode())) {
         var p = n.parentElement;
         if (!p || p.closest(SKIP)) continue;
-        var words = n.nodeValue.split(/\s+/).filter(Boolean).length;
-        if (!words) continue;
-        total += words;
-        if (p.closest(BRIGHT)) bright += words;
+        total += n.nodeValue.split(/\s+/).filter(Boolean).length;
       }
-      out.bw = total; out.bb = bright;
-      out.bs = total ? (100 * bright / total).toFixed(1) : "0.0";
+      var bright = 0, faded = 0;
+      Array.prototype.forEach.call(marked, function (m) {
+        var words = m.textContent.split(/\s+/).filter(Boolean).length;
+        if (+m.getAttribute("data-sk") > 0) bright += words; else faded += words;
+      });
+      out.bw = total; out.bb = bright; out.bf = faded;
+      out.bs = total ? (100 * (bright + faded) / total).toFixed(1) : "0.0";
     }
     var parts = [];
     Object.keys(out).forEach(function (k) { parts.push(k + "=" + out[k]); });
@@ -200,7 +205,7 @@ for w in "${WLIST[@]}"; do
   [ "$ov" = "yes" ] && overflow_any=1
   echo "W=$w viewport=$(field vw "$data") scroll=$(field sw "$data") overflow=$ov content=$(field l "$data")-$(field r "$data") gapLeft=$(field gl "$data") gapRight=$(field gr "$data") edges=$(field e "$data")"
   if [ "$SKIM" -eq 1 ]; then
-    echo "  bright-words: $(field bb "$data") of $(field bw "$data") ($(field bs "$data")%)"
+    echo "  skim-marked-words: $(field bb "$data") surprising and $(field bf "$data") predictable of $(field bw "$data") ($(field bs "$data")%)"
   fi
   shot="$SHOTS/layout-$w$SUFFIX.png"
   if run_browser "$shot" png "$w" "file://$WORK/measure.html"; then
