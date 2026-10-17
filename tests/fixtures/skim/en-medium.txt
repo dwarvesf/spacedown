@@ -2,7 +2,7 @@ The Caterpillar and Alice looked at each other for some time in silence: at last
 
 “Who are _you?_” said the Caterpillar.
 
-This was not an encouraging opening for a conversation. Alice replied, rather shyly, “I—I hardly know, sir, just at present—at least I know who I _was_ when I got up this morning, but I think I must have been changed several times since then.”
+This was not an encouraging opening for a conversation. Alice replied, rather shyly, “I -- I hardly know, sir, just at present -- at least I know who I _was_ when I got up this morning, but I think I must have been changed several times since then.”
 
 “What do you mean by that?” said the Caterpillar sternly. “Explain yourself!”
 
@@ -14,7 +14,7 @@ This was not an encouraging opening for a conversation. Alice replied, rather sh
 
 “It isn’t,” said the Caterpillar.
 
-“Well, perhaps you haven’t found it so yet,” said Alice; “but when you have to turn into a chrysalis—you will some day, you know—and then after that into a butterfly, I should think you’ll feel it a little queer, won’t you?”
+“Well, perhaps you haven’t found it so yet,” said Alice; “but when you have to turn into a chrysalis -- you will some day, you know -- and then after that into a butterfly, I should think you’ll feel it a little queer, won’t you?”
 
 “Not a bit,” said the Caterpillar.
 
@@ -40,7 +40,7 @@ This sounded promising, certainly: Alice turned and came back again.
 
 Alice thought she might as well wait, as she had nothing else to do, and perhaps after all it might tell her something worth hearing. For some minutes it puffed away without speaking, but at last it unfolded its arms, took the hookah out of its mouth again, and said, “So you think you’re changed, do you?”
 
-“I’m afraid I am, sir,” said Alice; “I can’t remember things as I used—and I don’t keep the same size for ten minutes together!”
+“I’m afraid I am, sir,” said Alice; “I can’t remember things as I used -- and I don’t keep the same size for ten minutes together!”
 
 “Can’t remember _what_ things?” said the Caterpillar.
 
@@ -48,12 +48,12 @@ Alice thought she might as well wait, as she had nothing else to do, and perhaps
 
 “Repeat, ‘_You are old, Father William_,’” said the Caterpillar.
 
-Alice folded her hands, and began:—
+Alice folded her hands, and began: --
 
-“You are old, Father William,” the young man said, “And your hair has become very white; And yet you incessantly stand on your head— Do you think, at your age, it is right?”
+“You are old, Father William,” the young man said, “And your hair has become very white; And yet you incessantly stand on your head -- Do you think, at your age, it is right?”
 
 “In my youth,” Father William replied to his son, “I feared it might injure the brain; But, now that I’m perfectly sure I have none, Why, I do it again and again.”
 
-“You are old,” said the youth, “as I mentioned before, And have grown most uncommonly fat; Yet you turned a back-somersault in at the door— Pray, what is the reason of that?”
+“You are old,” said the youth, “as I mentioned before, And have grown most uncommonly fat; Yet you turned a back-somersault in at the door -- Pray, what is the reason of that?”
 
-“In my youth,” said the sage, as he shook his grey locks
+“In my youth,” said the
