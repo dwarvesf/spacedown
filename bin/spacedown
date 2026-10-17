@@ -397,6 +397,14 @@ if [[ ! -t 1 ]]; then
 fi
 
 # ---- pandoc flags ----
+# KaTeX flag: pandoc 3.11 added --math-method and deprecated --katex (it prints a warning on
+# every render). --syntax-highlighting needs pandoc 3.8, so 3.8 to 3.10 must keep --katex.
+# Detect support from --help; the output is identical either way.
+katex_flag=( --katex )
+pandoc_help="$(pandoc --help 2>/dev/null || true)"
+if [[ "$pandoc_help" == *"--math-method"* ]]; then
+  katex_flag=( --math-method=katex )
+fi
 # -f markdown-smart: pandoc markdown reader (same as .md auto-detect, keeps tex_math_dollars
 # so $...$ math still works) but with the `smart` extension OFF, so straight quotes and
 # hyphens stay literal, matching VS Code's markdown-it (typographer off) instead of pandoc's
@@ -416,7 +424,7 @@ fi
 # pandoc otherwise folds it into the paragraph as literal "- [ ]" text.
 # +autolink_bare_uris: a bare https://example.com in running text becomes a link, as in
 # GitHub and Obsidian (pandoc markdown only links <angle-bracket> or [text](url) forms).
-pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks+lists_without_preceding_blankline+autolink_bare_uris --katex --syntax-highlighting tango )
+pandoc_flags=( --from=markdown-smart-implicit_figures+wikilinks_title_after_pipe+hard_line_breaks+lists_without_preceding_blankline+autolink_bare_uris "${katex_flag[@]}" --syntax-highlighting tango )
 [[ "$STANDALONE" == "1" ]] && pandoc_flags+=( --standalone )
 # Embed local images as data: URIs (assets/embed-images.py). The page often gets read on a
 # machine that cannot see the source directory (served from one host, opened on another),

@@ -91,6 +91,15 @@ else
   no "missing inline or display math"
 fi
 
+# 10b. a render prints no pandoc deprecation warning on stderr (pandoc 3.11 deprecated --katex)
+echo "[10b] render stderr has no Deprecated warning"
+"$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/deprecation.html" --no-open >/dev/null 2>"${TMP}/deprecation.err"
+if grep -q 'Deprecated' "${TMP}/deprecation.err"; then
+  no "pandoc deprecation warning: $(grep 'Deprecated' "${TMP}/deprecation.err" | head -1)"
+else
+  ok "no Deprecated warning on stderr"
+fi
+
 # 11. VSCodium / VS Code preview stylesheet injected into the page head
 echo "[11] vscode preview style injected"
 if grep -q 'VSCodium / VS Code' "${TMP}/fixture.html"; then ok "vscode style head present"; else no "vscode style head missing"; fi
