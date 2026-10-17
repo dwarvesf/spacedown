@@ -1,5 +1,7 @@
 # Proof of Done, skim-mode
 
+> Retired. The rules-based Skim described here was removed; the Read menu now has one Skim, the scored one (`skim-parity.md`). This page stays as the record of the first version.
+
 A "Skim" toolbar toggle in the reading chrome. In skim mode the key words keep full ink and every other word fades to a soft grey, so a reader can skim. Rules only, no model. Key words: bold text, headings, table headers and the first cell of each row (CSS only), plus figures, acronyms and capitalized names found by a load-time pass that wraps them in `span.sd-key`. The mode is one `data-sd-read-mode` value with a matching `html.sd-skim` class, saved in localStorage, so a later exclusive mode can slot in beside it. The Quick Look render path does not load the reading chrome and is untouched.
 
 ## Green run
