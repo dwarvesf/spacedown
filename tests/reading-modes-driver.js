@@ -256,15 +256,18 @@
 
     // emphasis is CSS only: no rescore, the spans stay the same nodes
     var first = document.querySelector(".sd-sk");
+    function heatBg() { var e = document.querySelector(".sd-sk[data-sk='2']"); return e ? getComputedStyle(e).backgroundColor : null; }
+    S.defaultHeat = heatBg();
     opt("Heat").click();
-    S.dimOnly = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), sameNode: document.querySelector(".sd-sk") === first,
-      heat: (function () { var e = document.querySelector(".sd-sk[data-sk='2']"); return e ? getComputedStyle(e).backgroundColor : null; })() };
+    S.heatOn = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), sameNode: document.querySelector(".sd-sk") === first, heat: heatBg() };
+    opt("Heat").click();
+    S.dimOnly = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), sameNode: document.querySelector(".sd-sk") === first, heat: heatBg() };
     opt("Underline").click();
     S.dimUnderline = { attr: doc.getAttribute("data-sd-skim"), underline: (function () { var e = document.querySelector(".sd-sk[data-sk='2']"); return e ? getComputedStyle(e).textDecorationLine : null; })() };
     opt("Dim").click();
     opt("Underline").click();
     S.none = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph"), spans: spans() };
-    opt("Dim").click(); opt("Heat").click();
+    opt("Dim").click();
     S.restored = { attr: doc.getAttribute("data-sd-skim"), stored: store("sd-skim-emph") };
 
     range.value = "100";

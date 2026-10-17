@@ -1107,6 +1107,8 @@ else
   drive_page reading-en -surprise 'localStorage.setItem("sd-read-mode", "surprise"); localStorage.setItem("sd-read-last", "surprise");'
   drive_page reading-en -rules 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-read-last", "skim");'
   drive_page reading-en -settings 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-emph", "underline"); localStorage.setItem("sd-skim-intensity", "100"); localStorage.setItem("sd-skim-basis", "surprisal");'
+  drive_page reading-en -olddefault 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-emph", "dim,heat"); localStorage.setItem("sd-skim-intensity", "70");'
+  drive_page reading-en -pickedheat 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-ver", "2"); localStorage.setItem("sd-skim-emph", "dim,heat");'
   rj reading-en 'True' || echo "  note: the driver did not answer on the English fixture: $(head -c 300 "${TMP}/read/reading-en.json")" >&2
 
   echo "[read-7] one Read menu replaces the Skim button: five items, menu-button ARIA, keyboard open, move, close"
@@ -1124,8 +1126,8 @@ else
   fi
 
   echo "[read-9] Skim on English: all four levels land on prose only, no stacking, skimgram's dim, heat and weight values on screen"
-  if rj reading-en 'r["skim"]["classes"] == ["skim"] and r["skim"]["scored"] and r["skim"]["emph"] == "dim heat" and r["skim"]["checked"] == "Skim" and r["skim"]["stored"] == "skim" and r["skim"]["lang"] == "en" and min(r["skim"]["levels"].values()) > 5 and r["skim"]["inSkipped"] == 0 and r["skim"]["idempotent"] and r["skim"]["left"]["bionic"] == 0 and r["skim"]["left"]["beeline"] == 0' \
-     && rj reading-en 'r["skim"]["style"]["dimStrong"] == "0.34" and r["skim"]["style"]["dimMild"] == "0.62" and r["skim"]["style"]["plain"] == "1" and r["skim"]["style"]["weight1"] == "600" and r["skim"]["style"]["weight2"] == "700" and r["skim"]["style"]["heatMild"] == "rgba(255, 71, 64, 0.18)" and r["skim"]["style"]["heatStrong"] == "rgba(255, 71, 64, 0.42)"'; then
+  if rj reading-en 'r["skim"]["classes"] == ["skim"] and r["skim"]["scored"] and r["skim"]["emph"] == "dim" and r["skim"]["checked"] == "Skim" and r["skim"]["stored"] == "skim" and r["skim"]["lang"] == "en" and min(r["skim"]["levels"].values()) > 5 and r["skim"]["inSkipped"] == 0 and r["skim"]["idempotent"] and r["skim"]["left"]["bionic"] == 0 and r["skim"]["left"]["beeline"] == 0' \
+     && rj reading-en 'r["skim"]["style"]["dimStrong"] == "0.34" and r["skim"]["style"]["dimMild"] == "0.62" and r["skim"]["style"]["plain"] == "1" and r["skim"]["style"]["weight1"] == "600" and r["skim"]["style"]["weight2"] == "700" and r["skim"]["style"]["heatMild"] == "rgba(0, 0, 0, 0)" and r["skim"]["style"]["heatStrong"] == "rgba(0, 0, 0, 0)"'; then
     ok "span.sd-sk at data-sk -2 .. 2 on prose; none in code, links, bold, headings, th; opacity .34 and .62, weights 600 and 700, red at .18 and .42"
   else
     no "Skim did not score the English fixture as expected"
@@ -1140,8 +1142,8 @@ else
   fi
 
   echo "[read-10b] Skim settings: Emphasis (Dim, Heat, Underline), Intensity, Score; persisted; Off restores the page"
-  if rj reading-en 'r["settings"]["hiddenWhenOff"] and r["settings"]["shownWhenSkim"] and r["settings"]["labels"] == ["Dim","Heat","Underline"] and r["settings"]["basisOptions"] == ["auto","surprisal","gain"] and r["settings"]["defaults"] == {"emph": "dim heat", "intensity": "50", "basis": "auto", "pressed": ["true","true","false"]}' \
-     && rj reading-en 'r["settings"]["dimOnly"]["attr"] == "dim" and r["settings"]["dimOnly"]["stored"] == "dim" and r["settings"]["dimOnly"]["sameNode"] and r["settings"]["dimOnly"]["heat"] == "rgba(0, 0, 0, 0)" and r["settings"]["dimUnderline"]["attr"] == "dim underline" and r["settings"]["dimUnderline"]["underline"] == "underline" and r["settings"]["none"]["attr"] == "" and r["settings"]["none"]["stored"] == "" and r["settings"]["none"]["spans"] == r["settings"]["base"] and r["settings"]["restored"]["attr"] == "dim heat"' \
+  if rj reading-en 'r["settings"]["hiddenWhenOff"] and r["settings"]["shownWhenSkim"] and r["settings"]["labels"] == ["Dim","Heat","Underline"] and r["settings"]["basisOptions"] == ["auto","surprisal","gain"] and r["settings"]["defaults"] == {"emph": "dim", "intensity": "50", "basis": "auto", "pressed": ["true","false","false"]}' \
+     && rj reading-en 'r["settings"]["dimOnly"]["attr"] == "dim" and r["settings"]["dimOnly"]["stored"] == "dim" and r["settings"]["dimOnly"]["sameNode"] and r["settings"]["dimOnly"]["heat"] == "rgba(0, 0, 0, 0)" and r["settings"]["dimUnderline"]["attr"] == "dim underline" and r["settings"]["dimUnderline"]["underline"] == "underline" and r["settings"]["none"]["attr"] == "" and r["settings"]["none"]["stored"] == "" and r["settings"]["none"]["spans"] == r["settings"]["base"] and r["settings"]["restored"]["attr"] == "dim"' \
      && rj reading-en 'r["settings"]["full"]["spans"] > r["settings"]["base"] and r["settings"]["full"]["stored"] == "100" and r["settings"]["full"]["out"] == "100" and r["settings"]["zero"]["spans"] == 0 and r["settings"]["zero"]["attr"] is not None and r["settings"]["back"]["same"] and r["settings"]["surprisal"]["spans"] > 0 and r["settings"]["surprisal"]["stored"] == "surprisal" and r["settings"]["surprisal"]["noStack"] and r["settings"]["auto"]["same"]' \
      && rj reading-en 'r["settings"]["off"]["restored"] and all(v == 0 for v in r["settings"]["off"]["left"].values()) and not r["settings"]["off"]["attr"] and r["settings"]["off"]["hiddenAgain"]'; then
     ok "panel only while Skim is on; emphasis combines and persists with no rescore; intensity 100 marks more, 0 marks nothing; basis rescores without stacking; Off restores"
@@ -1149,8 +1151,18 @@ else
     no "Skim settings panel or its persistence wrong"
   fi
 
+  echo "[read-10d] Skim defaults to Dim only; Heat still applies when selected; an old saved Dim and Heat resolves to Dim only"
+  if rj reading-en 'r["settings"]["defaults"]["emph"] == "dim" and r["settings"]["defaults"]["pressed"] == ["true","false","false"] and r["settings"]["defaultHeat"] == "rgba(0, 0, 0, 0)" and r["settings"]["heatOn"]["attr"] == "dim heat" and r["settings"]["heatOn"]["stored"] == "dim,heat" and r["settings"]["heatOn"]["sameNode"] and r["settings"]["heatOn"]["heat"] == "rgba(255, 71, 64, 0.42)"' \
+     && rj reading-en-olddefault 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["emph"] == "dim" and r["settings"]["defaults"]["pressed"] == ["true","false","false"] and r["settings"]["defaults"]["intensity"] == "70" and r["settings"]["defaultHeat"] == "rgba(0, 0, 0, 0)"' \
+     && rj reading-en-pickedheat 'r["boot"]["mode"] == "skim" and r["boot"]["emph"] == "dim heat" and r["settings"]["defaults"]["pressed"] == ["true","true","false"] and r["settings"]["defaultHeat"] == "rgba(255, 71, 64, 0.42)"' \
+     && rj reading-en-settings 'r["boot"]["emph"] == "underline"'; then
+    ok "default is dim; clicking Heat paints it; saved dim,heat without a version opens as dim (intensity kept); dim,heat saved after the change, and other mixes, are kept"
+  else
+    no "Skim default emphasis or its migration wrong"
+  fi
+
   echo "[read-10c] saved state: an old surprise or skim value opens Skim, and saved settings are applied at load"
-  if rj reading-en-surprise 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["emph"] == "dim heat" and r["boot"]["spans"] > 100 and r["boot"]["last"] == "surprise" and all(v == 0 for v in r["boot"]["left"].values())' \
+  if rj reading-en-surprise 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["emph"] == "dim" and r["boot"]["spans"] > 100 and r["boot"]["last"] == "surprise" and all(v == 0 for v in r["boot"]["left"].values())' \
      && rj reading-en-rules 'r["boot"]["mode"] == "skim" and r["boot"]["scored"] and r["boot"]["spans"] > 100 and all(v == 0 for v in r["boot"]["left"].values())' \
      && rj reading-en-settings 'r["boot"]["mode"] == "skim" and r["boot"]["emph"] == "underline" and r["boot"]["spans"] == r["settings"]["base"] and r["settings"]["defaults"]["intensity"] == "100" and r["settings"]["defaults"]["basis"] == "surprisal" and r["settings"]["defaults"]["pressed"] == ["false","false","true"]'; then
     ok "surprise and skim both open Skim at load; emphasis, intensity and score basis come back from storage"
