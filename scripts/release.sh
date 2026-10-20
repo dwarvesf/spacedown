@@ -66,6 +66,18 @@ die() { echo "release: $*" >&2; exit 1; }
 # the writer takes SIGPIPE, which reads as a failed check on a passing result.
 has() { printf '%s' "$1" | grep -qF -- "$2"; }
 
+# The browser extensions and the CLI carry their own version strings; a release
+# that skips them ships stale labels, so refuse until every one matches.
+stale=()
+for manifest in "$ROOT/integrations/extension/manifest.json" \
+                "$ROOT/integrations/safari/SpacedownDrop/SpacedownDrop Extension/Resources/manifest.json"; do
+  v="$(awk -F'"' '/"version"/ {print $4; exit}' "$manifest")"
+  [[ "$v" == "$VERSION" ]] || stale+=( "${manifest#"$ROOT/"} ($v)" )
+done
+v="$(awk -F'"' '/^VERSION=/ {print $2; exit}' "$ROOT/bin/spacedown")"
+[[ "$v" == "$VERSION" ]] || stale+=( "bin/spacedown ($v)" )
+[[ ${#stale[@]} -eq 0 ]] || die "version $VERSION not set in: ${stale[*]}"
+
 # --- Mac App Store ---------------------------------------------------------------
 if [[ $MAS -eq 1 ]]; then
   MAS_SIGN_ID="${MAS_SIGN_ID:-Apple Distribution: Dwarves Foundation Company Limited ($TEAM_ID)}"
