@@ -30,9 +30,9 @@ html="$("$SPACEDOWN" "$FILE" | tail -n1)"
 [[ -n "$html" && -f "$html" ]] || { echo "spacedown-open: render produced no HTML for $FILE" >&2; exit 1; }
 
 # Open in the first available Chromium browser (spacedown's CSS targets
-# Chromium; Safari/WebKit mis-renders the JetBrains Mono variable font). Edge
+# Chromium; Safari/WebKit mis-renders the JetBrains Mono variable font). Helium
 # first. Override with SPACEDOWN_BROWSER="App Name".
-for app in "${SPACEDOWN_BROWSER:-}" "Microsoft Edge" "Arc" "Google Chrome" "Brave Browser"; do
+for app in "${SPACEDOWN_BROWSER:-}" "Helium" "Microsoft Edge" "Arc" "Google Chrome" "Brave Browser"; do
   [[ -n "$app" && -d "/Applications/${app}.app" ]] || continue
   if open -a "$app" "$html" 2>/dev/null; then
     echo "$html"

@@ -43,6 +43,7 @@ BROWSERS=(
   "Google Chrome|Google/Chrome"
   "Brave Browser|BraveSoftware/Brave-Browser"
   "Arc|Arc/User Data"
+  "Helium|net.imput.helium"
 )
 
 log() { echo "install: $*"; }

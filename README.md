@@ -128,7 +128,7 @@ The iA Writer fonts are free under the SIL Open Font License 1.1. The repo vendo
 | `SPACEDOWN_FONT_MODE` | Default font mode when `--font-mode` is absent. Default: `ia`. |
 | `SPACEDOWN_THEME_CSS` | A plain CSS file that replaces the CSS of the active `ia`, `tm` or `paper` mode. `read` and `mono` ignore it. |
 | `SPACEDOWN_SETTINGS` | A `settings.json` to read preview fonts from. Default: VSCodium's, then VS Code's. |
-| `SPACEDOWN_BROWSER` | App name to open pages in, for example `"Google Chrome"`. Default: the first installed of Arc, Chrome, Edge and Brave, then the system default. |
+| `SPACEDOWN_BROWSER` | App name to open pages in, for example `"Google Chrome"`. Default: the first installed of Helium, Arc, Chrome, Edge and Brave, then the system default. |
 
 spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `markdown.preview.lineHeight` and `editor.fontFamily` from the settings file. With no settings file, stock VS Code defaults apply.
 
