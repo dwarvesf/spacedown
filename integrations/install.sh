@@ -183,7 +183,7 @@ fi
 cat <<EOF
 
 install: done. Next step for the browser drag-drop (one-time, manual):
-  1. Open  edge://extensions  (or chrome://extensions)
+  1. Open  chrome://extensions  (Helium, Chrome, Arc, Brave; edge://extensions in Edge)
   2. Toggle "Developer mode" on
   3. "Load unpacked" -> select:
        ${HERE}/extension

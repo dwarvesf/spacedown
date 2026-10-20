@@ -7,11 +7,11 @@ Two ways to open a `.md` rendered by `spacedown` without typing the command.
 | **Finder app** (`Spacedown Opener.app`) | double-click / "Open With" / drag a `.md` onto the app icon | renders via `spacedown`, opens the HTML in a browser tab |
 | **Browser extension** (`Spacedown`) | drag a `.md` onto the dropzone tab | reads the file, hands it to a native-messaging host that runs `spacedown`, opens the HTML |
 
-Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which renders then opens a Chromium browser (Edge first). The wrapper exists because `spacedown` only self-opens the browser from a TTY; these callers are not TTYs.
+Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which renders then opens a Chromium browser (Helium first, then Edge, Arc, Chrome, Brave). The wrapper exists because `spacedown` only self-opens the browser from a TTY; these callers are not TTYs.
 
 ```
  Finder double-click ─┐
-                      ├─► spacedown-open ─► spacedown (pandoc+KaTeX) ─► open -a "Microsoft Edge" out.html
+                      ├─► spacedown-open ─► spacedown (pandoc+KaTeX) ─► open -a Helium out.html
  browser drag-drop ───┘     ▲
    │                        │
    └─ extension dropzone ─► native-host (spacedown-host) ──┘
@@ -32,7 +32,7 @@ Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which 
 
 The extension must be loaded by hand once:
 
-1. Open `edge://extensions` (or `chrome://extensions`).
+1. Open `chrome://extensions` (Helium, Chrome, Arc, Brave) or `edge://extensions` (Edge).
 2. Toggle **Developer mode** on.
 3. **Load unpacked** -> select `integrations/extension/`.
 4. Confirm the extension ID is `mhifeggicglofancjnjmkgihedkddnpn` (fixed by the `key` in `extension/manifest.json`; the native host's `allowed_origins` is pinned to it).
@@ -97,14 +97,14 @@ duti -s com.visualstudio.code.oss net.daringfireball.markdown all   # back to VS
 - **Stable extension ID.** `extension/manifest.json` ships a fixed public `key`, so the unpacked extension always gets ID `mhifeggicglofancjnjmkgihedkddnpn`. That lets the native-host manifest pin `allowed_origins` ahead of time, so the whole thing is reproducible from this repo (no "copy the ID Edge assigned you" step).
 - **Text, not path.** A file dropped into a browser exposes only its basename, never the real filesystem path (browser security). So the extension sends the file *content*; the host writes a temp copy and renders that. Fine for markdown (well under the 1MB native-messaging message ceiling).
 - **PATH.** GUI/stdio contexts (LaunchServices, native messaging) get a minimal PATH without Homebrew or `~/.local/bin`. Both `spacedown-open` and the host re-export a full PATH so `spacedown` and `pandoc` resolve.
-- **Native host is on-demand.** No daemon. Edge spawns `spacedown-host` per message and it exits after replying.
+- **Native host is on-demand.** No daemon. The browser spawns `spacedown-host` per message and it exits after replying.
 
 ## Rebuild from zero
 
 Everything here is derivable from the repo:
 
 1. `cd integrations && ./install.sh`
-2. Load `extension/` unpacked in Edge (steps above).
+2. Load `extension/` unpacked in the browser (steps above).
 
 The compiled `Spacedown Opener.app` is a build artifact (gitignored); `install.sh` regenerates it. The native-host manifests live outside the repo (per-browser support dirs) and are regenerated too.
 
