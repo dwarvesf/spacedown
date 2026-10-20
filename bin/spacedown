@@ -692,7 +692,7 @@ OPEN_TARGET="${SERVE_URL:-$OUT}"
 if [[ "$NO_OPEN" == "0" ]]; then
   if command -v open >/dev/null 2>&1; then
     opened=0
-    for app in "${SPACEDOWN_BROWSER:-}" "Arc" "Google Chrome" "Microsoft Edge" "Brave Browser"; do
+    for app in "${SPACEDOWN_BROWSER:-}" "Helium" "Arc" "Google Chrome" "Microsoft Edge" "Brave Browser"; do
       [[ -n "$app" && -d "/Applications/${app}.app" ]] || continue
       if open -a "$app" "$OPEN_TARGET" 2>/dev/null; then log "opened in ${app}"; opened=1; break; fi
     done
