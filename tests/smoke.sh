@@ -723,6 +723,13 @@ printf '**Step one**\n- [ ] first task\n- [x] second task\n' > "${TMP}/list.md"
 if grep -q '<li' "${TMP}/list.html" && [[ $(grep -c 'type="checkbox"' "${TMP}/list.html") -ge 2 ]] \
    && ! grep -q -- '- \[ \]' "${TMP}/list.html"; then ok "list without a preceding blank line"; else no "list folded into the paragraph as literal text"; fi
 
+echo "[table] a table right under a line of text is a table; a fenced one stays code"
+printf '**Performance**\n| Date | Amount |\n|------|--------|\n| 2021-01-21 | 100 |\n\n```\nlead\n| x | y |\n|---|---|\n```\n' > "${TMP}/tbl.md"
+"$SPACEDOWN" "${TMP}/tbl.md" --out "${TMP}/tbl.html" --no-open >/dev/null 2>&1 || true
+if grep -q '<th>Date</th>' "${TMP}/tbl.html" && grep -q '<td>2021-01-21</td>' "${TMP}/tbl.html" \
+   && ! grep -q '<th>x</th>' "${TMP}/tbl.html" \
+   && ! grep -q '| Date |' "${TMP}/tbl.html" && grep -q '|---|---|' "${TMP}/tbl.html"; then ok "table without a preceding blank line"; else no "table folded into the paragraph as literal pipes"; fi
+
 # 41. The vendored iA fonts exist with their license, and the Quick Look skin build embeds
 #     exactly the four as data URIs (the sandboxed panel cannot load installed fonts).
 echo "[41] vendored iA fonts + license"
