@@ -634,13 +634,26 @@ render_callouts() {
 }
 export -f render_callouts
 
+# Tables: a pipe table right under a line of text gets a blank line before it
+# (assets/tables-blankline.py), as GitHub and Obsidian read it. Without python3 it is cat.
+SD_TABLES_SCRIPT="${SCRIPT_DIR}/../assets/tables-blankline.py"
+export SD_TABLES_SCRIPT
+render_tables() {
+  if command -v python3 >/dev/null 2>&1 && [[ -f "$SD_TABLES_SCRIPT" ]]; then
+    python3 "$SD_TABLES_SCRIPT"
+  else
+    cat
+  fi
+}
+export -f render_tables
+
 # ---- the render function (used by both single + watch paths) ----
 do_render() {
   local size_in size_out
   size_in="$(wc -c < "$FILE" | tr -d ' ')"
   log "rendering ${FILE} (${size_in} bytes) via pandoc..."
   # Feed via render_frontmatter (stdin) so a metadata block can't crash pandoc.
-  if ! render_frontmatter "$FILE" | render_callouts | pandoc "${pandoc_flags[@]}" -o "$OUT"; then
+  if ! render_frontmatter "$FILE" | render_callouts | render_tables | pandoc "${pandoc_flags[@]}" -o "$OUT"; then
     return 2
   fi
   size_out="$(wc -c < "$OUT" | tr -d ' ')"
@@ -714,7 +727,7 @@ if [[ "$WATCH" == "1" ]]; then
   # Re-render loop. -n = non-interactive (don't try to clear screen / read stdin).
   while true; do
     echo "$FILE" | entr -n -p bash -c "
-      render_frontmatter \"$FILE\" | render_callouts | pandoc ${pandoc_flags[*]@Q} -o \"$OUT\" \
+      render_frontmatter \"$FILE\" | render_callouts | render_tables | pandoc ${pandoc_flags[*]@Q} -o \"$OUT\" \
         && echo \"spacedown: wrote ${OUT}\" >&2 \
         || echo \"spacedown: pandoc failed (exit \$?)\" >&2
     " || true
