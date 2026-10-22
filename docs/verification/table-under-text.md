@@ -44,3 +44,21 @@ Real file, `family-office/assets/private-investments.md`: the body has 3 `<th>Da
   ok: docx table without a preceding blank line
 smoke: all 123 passed
 ```
+
+## Blank rows
+
+An empty cell collapsed to its padding, so a fill-in row read as a thin strip. Empty cells now hold a non-breaking space (`td:empty::after`), and a header-only table gets one blank row from the pre-pass.
+
+| Command | Exit | Verdict |
+|---|---|---|
+| `bash tests/smoke.sh` | 0 | PASS |
+| `bash tests/smoke.sh \| grep -q 'ok: blank fill-in row'` (pre-pass and CSS from origin/main) | 1 | RED, as expected |
+| same, after restore | 0 | GREEN |
+
+```
+[table-empty] a header-only table gets one blank row; empty cells keep a line of height
+  ok: blank fill-in row
+smoke: all 124 passed
+```
+
+![Write-offs table with a full-height blank row](table-under-text/empty-row-after.png)

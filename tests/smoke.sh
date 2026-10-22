@@ -730,6 +730,12 @@ if grep -q '<th>Date</th>' "${TMP}/tbl.html" && grep -q '<td>2021-01-21</td>' "$
    && ! grep -q '<th>x</th>' "${TMP}/tbl.html" \
    && ! grep -q '| Date |' "${TMP}/tbl.html" && grep -q '|---|---|' "${TMP}/tbl.html"; then ok "table without a preceding blank line"; else no "table folded into the paragraph as literal pipes"; fi
 
+echo "[table-empty] a header-only table gets one blank row; empty cells keep a line of height"
+printf '| Company | Reason |\n|---------|--------|\n' > "${TMP}/tbe.md"
+"$SPACEDOWN" "${TMP}/tbe.md" --out "${TMP}/tbe.html" --no-open >/dev/null 2>&1 || true
+if grep -q '<th>Company</th>' "${TMP}/tbe.html" && [[ $(sed -n '/<tbody>/,/<\/tbody>/p' "${TMP}/tbe.html" | grep -c '<td') -eq 2 ]] \
+   && grep -q 'td:empty::after' "${TMP}/tbe.html"; then ok "blank fill-in row"; else no "header-only table has no row, or empty cells collapse"; fi
+
 # 41. The vendored iA fonts exist with their license, and the Quick Look skin build embeds
 #     exactly the four as data URIs (the sandboxed panel cannot load installed fonts).
 echo "[41] vendored iA fonts + license"
