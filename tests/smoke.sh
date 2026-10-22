@@ -784,6 +784,16 @@ ln -s "$SPACEDOWN" "${TMP}/linked-sd"
 "${TMP}/linked-sd" docx "${TMP}/d.md" -o "${TMP}/linked.docx" >/dev/null 2>&1 || true
 if docx_styles "${TMP}/linked.docx" | grep -q 'IBM Plex Sans'; then ok "symlink"; else no "symlink lost the reference doc"; fi
 
+echo "[docx-table] a table right under a line of text is a Word table"
+printf '**Performance**\n| Date | Amount |\n|------|--------|\n| 2021-01-21 | 100 |\n' > "${TMP}/dt.md"
+docx "${TMP}/dt.md" -o "${TMP}/dt.docx" >/dev/null 2>&1 || true
+if unzip -p "${TMP}/dt.docx" word/document.xml 2>/dev/null | grep -q '<w:tbl>' \
+   && ! unzip -p "${TMP}/dt.docx" word/document.xml 2>/dev/null | grep -q '| Date |'; then
+  ok "docx table without a preceding blank line"
+else
+  no "docx table folded into the paragraph as literal pipes"
+fi
+
 # ---- docx subcommand dispatch (separate block: keep additions here) ----
 echo "[docx-1] spacedown docx --help prints usage on stdout and exits 0"
 set +e; hout="$("$SPACEDOWN" docx --help 2>/dev/null)"; rc=$?; set -e
