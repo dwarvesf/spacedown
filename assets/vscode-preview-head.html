@@ -486,6 +486,11 @@ td {
 	padding: 5px 10px;
 }
 
+/* An empty cell keeps a full line of height, so a blank fill-in row reads as a row. */
+td:empty::after {
+	content: "\00a0";
+}
+
 table > tbody > tr + tr > td {
 	border-top: 1px solid;
 }
