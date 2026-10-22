@@ -28,3 +28,19 @@ Real file, `family-office/assets/private-investments.md`: the body has 3 `<th>Da
 ## Reproduce
 
 `bash tests/smoke.sh`, then look for the `[table]` block.
+
+## docx path
+
+`spacedown docx` read the source straight into pandoc and showed the same bug. It now runs the same pre-pass.
+
+| Command | Exit | Verdict |
+|---|---|---|
+| `bash tests/smoke.sh` | 0 | PASS |
+| `bash tests/smoke.sh \| grep -q 'ok: docx table without a preceding blank line'` (old `bin/spacedown` from origin/main) | 1 | RED, as expected |
+| same, after `git checkout HEAD -- bin/spacedown` | 0 | GREEN |
+
+```
+[docx-table] a table right under a line of text is a Word table
+  ok: docx table without a preceding blank line
+smoke: all 123 passed
+```

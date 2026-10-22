@@ -227,7 +227,15 @@ docx_main() {
   [[ -f "$DOCX_REF" ]] || die 2 "docx: reference doc missing: $DOCX_REF (run python3 -I scripts/build-docx-reference.py)"
   command -v pandoc >/dev/null || die 2 "docx: pandoc not found (brew install pandoc)"
   [[ -n "$out" ]] || out="${src%.*}.docx"
-  pandoc "$src" -f markdown-implicit_figures -t docx --reference-doc "$DOCX_REF" -o "$out"
+  # Same table pre-pass as the HTML path (assets/tables-blankline.py). It reads stdin, so
+  # images resolve against the source directory and the working directory, as before.
+  local tables="${SCRIPT_DIR}/../assets/tables-blankline.py"
+  if command -v python3 >/dev/null 2>&1 && [[ -f "$tables" ]]; then
+    python3 "$tables" < "$src" | pandoc -f markdown-implicit_figures -t docx --reference-doc "$DOCX_REF" \
+      --resource-path "$(dirname "$src"):." -o "$out"
+  else
+    pandoc "$src" -f markdown-implicit_figures -t docx --reference-doc "$DOCX_REF" -o "$out"
+  fi
   echo "$out"
 }
 
