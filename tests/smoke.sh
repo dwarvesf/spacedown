@@ -1360,6 +1360,51 @@ else
   no "layout-check usage: help=$lc_help none=$lc_none bad=$lc_bad"
 fi
 
+# --shot: argument errors need no browser; the render needs Edge, Chrome or Chromium
+echo "[--shot] argument errors"
+printf '# Shot\n\nShort text.\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "${TMP}/shot-narrow.md"
+set +e
+"$SPACEDOWN" "${TMP}/shot-narrow.md" --shot "${TMP}/x.png" --watch >/dev/null 2>&1; shot_watch=$?
+"$SPACEDOWN" "$TMP" --shot "${TMP}/x.png" >/dev/null 2>&1; shot_dir=$?
+"$SPACEDOWN" "${TMP}/shot-narrow.md" --shot-width abc >/dev/null 2>&1; shot_w=$?
+set -e
+if [[ $shot_watch -eq 64 && $shot_dir -eq 64 && $shot_w -eq 64 ]]; then
+  ok "--shot with --watch, a directory or a bad width exits 64"
+else
+  no "--shot argument errors: watch=$shot_watch dir=$shot_dir width=$shot_w"
+fi
+
+echo "[--shot] screenshot and wide-table warning"
+set +e
+shot_out=$("$SPACEDOWN" "${TMP}/shot-narrow.md" --out "${TMP}/shot-narrow.html" --shot "${TMP}/shot-narrow.png" 2>&1); shot_rc=$?
+set -e
+if [[ $shot_rc -eq 4 && "$shot_out" == *"none found"* ]]; then
+  echo "  skip: no Edge, Chrome or Chromium installed"
+else
+  if [[ $shot_rc -eq 0 && -s "${TMP}/shot-narrow.png" && "$shot_out" == *"${TMP}/shot-narrow.png" && "$shot_out" != *"WARN wide table"* ]]; then
+    ok "--shot writes a non-empty PNG, prints its path, no warning on a narrow table"
+  else
+    no "--shot narrow: rc=$shot_rc out=$shot_out"
+  fi
+  {
+    printf '# Wide\n\n| '
+    for i in $(seq 1 30); do printf 'column-header-number-%s | ' "$i"; done
+    printf '\n|'
+    for i in $(seq 1 30); do printf -- '---|'; done
+    printf '\n| '
+    for i in $(seq 1 30); do printf 'some-long-cell-value-%s | ' "$i"; done
+    printf '\n'
+  } > "${TMP}/shot-wide.md"
+  set +e
+  shot_out=$("$SPACEDOWN" "${TMP}/shot-wide.md" --out "${TMP}/shot-wide.html" --shot "${TMP}/shot-wide.png" 2>&1); shot_rc=$?
+  set -e
+  if [[ $shot_rc -eq 0 && -s "${TMP}/shot-wide.png" && "$shot_out" == *"WARN wide table"* ]]; then
+    ok "a very wide table prints a WARN wide table line"
+  else
+    no "--shot wide: rc=$shot_rc out=$shot_out"
+  fi
+fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2

@@ -2,7 +2,8 @@
 # spacedown: render markdown (with LaTeX math via KaTeX) to a self-contained
 # HTML file and optionally open it in the default browser.
 #
-# Exit codes: 0 ok | 1 source bad | 2 pandoc fail | 3 entr missing | 64 usage | 130 SIGINT
+# Exit codes: 0 ok | 1 source bad | 2 pandoc fail | 3 entr missing | 4 --shot failed
+# | 64 usage | 130 SIGINT
 #
 # Subcommand: `spacedown docx <file.md> [-o out.docx]` writes a .docx in the iA look
 # instead of HTML (exit codes there: 0 ok | 2 pandoc or reference doc missing | 64 usage
@@ -61,6 +62,7 @@ Usage:
   spacedown docx <file> [-o out.docx]
   spacedown <file> [--out PATH] [--no-open] [--watch] [--title STR]
                     [--font-mode ia|tm|paper|read|mono] [--standalone | --no-standalone]
+                    [--shot PNG [--shot-width N] [--shot-height N]]
                     [--help] [--version]
   spacedown <dir>  [--out PATH] [--no-open]
 
@@ -79,6 +81,13 @@ Flags:
   --no-open         Skip browser. Implied when stdout is not a TTY.
   --watch           Re-render on save (requires entr). Ctrl-C to exit.
   --title STR       Title metadata. Default: basename without extension.
+  --shot PNG        After rendering, screenshot the output HTML in a private headless
+                    Edge, Chrome or Chromium (fresh profile, your browser is never
+                    touched) and write the PNG. Implies --no-open. Prints the PNG path
+                    as a second stdout line, and one "WARN wide table" line on stderr
+                    per table wider than its container. Not with --watch or a <dir>.
+  --shot-width N    Screenshot window width in px. Default: 1300.
+  --shot-height N   Screenshot window height in px. Default: 1100.
   --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
                     free iA Writer Quattro and Mono fonts (system fonts when
                     those are not installed). tm: serif reading look ported
@@ -104,10 +113,11 @@ Exit codes:
   1  source file not found / not readable / empty
   2  pandoc missing or failed
   3  --watch requested but entr missing
+  4  --shot: no Chromium-based browser found, or no screenshot written
   64 usage error
   130 SIGINT (Ctrl-C from --watch)
 
-stdout: absolute output path (success only).
+stdout: absolute output path (success only); with --shot, the PNG path on a second line.
 stderr: diagnostics + errors.
 EOF
 }
@@ -252,6 +262,9 @@ NO_OPEN=0
 WATCH=0
 TITLE=""
 STANDALONE=1
+SHOT=""
+SHOT_W=1300
+SHOT_H=1100
 # Body font mode: "ia" (default), "tm" and "paper" = reading themes; "mono" = full editor
 # fidelity (mirrored mono everywhere); "read" = proportional serif. Override default via
 # $SPACEDOWN_FONT_MODE.
@@ -272,6 +285,12 @@ while [[ $# -gt 0 ]]; do
     --out=*) OUT="${1#--out=}"; shift ;;
     --no-open) NO_OPEN=1; shift ;;
     --watch) WATCH=1; shift ;;
+    --shot) [[ -n "${2:-}" ]] || die 64 "--shot requires a path"; SHOT="$2"; shift 2 ;;
+    --shot=*) SHOT="${1#--shot=}"; shift ;;
+    --shot-width) [[ "${2:-}" =~ ^[0-9]+$ ]] || die 64 "--shot-width requires an integer"; SHOT_W="$2"; shift 2 ;;
+    --shot-width=*) v="${1#--shot-width=}"; [[ "$v" =~ ^[0-9]+$ ]] || die 64 "--shot-width requires an integer"; SHOT_W="$v"; shift ;;
+    --shot-height) [[ "${2:-}" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$2"; shift 2 ;;
+    --shot-height=*) v="${1#--shot-height=}"; [[ "$v" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$v"; shift ;;
     --title) [[ -n "${2:-}" ]] || die 64 "--title requires a string"; TITLE="$2"; shift 2 ;;
     --title=*) TITLE="${1#--title=}"; shift ;;
     --font-mode) [[ "${2:-}" =~ $FONT_MODE_RE ]] || die 64 "$FONT_MODE_MSG"; FONT_MODE="$2"; shift 2 ;;
@@ -291,6 +310,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$FILE" ]] || die 64 "missing required <file> arg (see --help)"
+if [[ -n "$SHOT" ]]; then
+  [[ "$WATCH" == "0" ]] || die 64 "--shot cannot be combined with --watch"
+  [[ ! -d "$FILE" ]] || die 64 "--shot needs a single file, not a directory"
+  NO_OPEN=1
+fi
 # A SPACEDOWN_FONT_MODE typo is caught here too, not silently rendered as no theme.
 [[ "$FONT_MODE" =~ $FONT_MODE_RE ]] || die 64 "SPACEDOWN_FONT_MODE: $FONT_MODE_MSG"
 # The theme file of the active mode (read and mono have none).
@@ -668,6 +692,98 @@ do_render() {
   log "wrote ${OUT} (${size_out} bytes)"
 }
 
+# ---- screenshot (--shot) ----
+# Find the first Chromium-based browser: Edge, Chrome, Chromium (macOS app paths, then PATH).
+find_shot_browser() {
+  local c
+  for c in \
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "/Applications/Chromium.app/Contents/MacOS/Chromium"; do
+    [[ -x "$c" ]] && { echo "$c"; return 0; }
+  done
+  for c in microsoft-edge google-chrome chromium chromium-browser; do
+    command -v "$c" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+# Run the browser headless in a fresh profile and wait for its output file; new headless
+# may never exit after --screenshot or --dump-dom, so poll up to 30s, then kill it.
+# usage: run_shot_browser <bin> <png|dom> <outfile> <url>
+run_shot_browser() {
+  local bin="$1" kind="$2" outfile="$3" url="$4" profile pid i ready=0
+  profile="$(mktemp -d "${TMPDIR:-/tmp}/spacedown-shot.XXXXXX")"
+  local args=( --headless=new "--user-data-dir=${profile}" --disable-gpu --hide-scrollbars
+               "--window-size=${SHOT_W},${SHOT_H}" --virtual-time-budget=5000 )
+  if [[ "$kind" == "dom" ]]; then
+    "$bin" "${args[@]}" --dump-dom "$url" >| "$outfile" 2>/dev/null &
+  else
+    "$bin" "${args[@]}" "--screenshot=${outfile}" "$url" >/dev/null 2>&1 &
+  fi
+  pid=$!
+  for i in $(seq 1 60); do
+    if [[ "$kind" == "dom" ]]; then
+      grep -q '</html>' "$outfile" 2>/dev/null && { ready=1; break; }
+    else
+      [[ -s "$outfile" ]] && { sleep 0.5; ready=1; break; }
+    fi
+    kill -0 "$pid" 2>/dev/null || { [[ -s "$outfile" ]] && ready=1; break; }
+    sleep 0.5
+  done
+  kill "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+  rm -rf "$profile"
+  [[ "$ready" == "1" ]]
+}
+
+do_shot() {
+  local bin work png_dir probe dom marks
+  bin="$(find_shot_browser)" || die 4 "--shot needs Microsoft Edge, Google Chrome or Chromium; none found"
+  png_dir="$(cd "$(dirname "$SHOT")" 2>/dev/null && pwd || true)"
+  if [[ -z "$png_dir" ]]; then
+    mkdir -p "$(dirname "$SHOT")"
+    png_dir="$(cd "$(dirname "$SHOT")" && pwd)"
+  fi
+  SHOT="${png_dir}/$(basename "$SHOT")"
+  work="$(mktemp -d "${TMPDIR:-/tmp}/spacedown-shot.XXXXXX")"
+
+  rm -f "$SHOT"
+  run_shot_browser "$bin" png "$SHOT" "file://${OUT}" || { rm -f "$SHOT"; die 4 "--shot: no screenshot written by $(basename "$bin")"; }
+
+  # Wide-table check: a measuring copy of the page (the real output stays untouched) records
+  # every table wider than its container in a body attribute, read back with --dump-dom.
+  probe="${work}/probe.html"
+  { cat "$OUT"; cat <<'PROBE'
+<script>
+window.addEventListener("load", function () {
+  var marks = [];
+  Array.prototype.forEach.call(document.querySelectorAll("table"), function (t, i) {
+    var box = t.parentElement;
+    var w = Math.max(t.scrollWidth, Math.round(t.getBoundingClientRect().width));
+    var c = box.clientWidth;
+    if (c > 0 && (w > c + 1 || t.scrollWidth > t.clientWidth + 1)) marks.push((i + 1) + ":" + w + "/" + c);
+  });
+  document.body.setAttribute("data-sd-wide", marks.join(" "));
+});
+</script>
+PROBE
+  } >| "$probe"
+  dom="${work}/dom.html"
+  if run_shot_browser "$bin" dom "$dom" "file://${probe}"; then
+    marks="$(grep -o 'data-sd-wide="[^"]*"' "$dom" | head -1 | sed 's/^data-sd-wide="//; s/"$//')"
+    local m dims
+    for m in $marks; do
+      dims="${m#*:}"
+      log "WARN wide table #${m%%:*}: ${dims%%/*} px wide in a ${dims##*/} px container (scrolls sideways at ${SHOT_W}px)"
+    done
+  else
+    log "wide-table check skipped (no DOM from the browser within 30s)"
+  fi
+  rm -rf "$work"
+  echo "$SHOT"
+}
+
 # ---- single render ----
 if ! do_render; then
   die 2 "pandoc failed (see stderr above)"
@@ -675,6 +791,8 @@ fi
 
 # Emit absolute path on stdout (the contract).
 echo "$OUT"
+
+[[ -z "$SHOT" ]] || do_shot
 
 # ---- live-reload server (watch mode) ----
 # Serve $OUT at / and its mtime at /__sd_version on localhost:<ephemeral>. The injected poll
