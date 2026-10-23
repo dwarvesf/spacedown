@@ -82,8 +82,8 @@ Flags:
   --watch           Re-render on save (requires entr). Ctrl-C to exit.
   --title STR       Title metadata. Default: basename without extension.
   --shot PNG        After rendering, screenshot the output HTML in a private headless
-                    Edge, Chrome or Chromium (fresh profile, your browser is never
-                    touched) and write the PNG. Implies --no-open. Prints the PNG path
+                    Helium, else Chrome or Chromium (fresh profile, your browser is never
+                    touched; env BROWSER overrides the binary, as in scripts/layout-check) and write the PNG. Implies --no-open. Prints the PNG path
                     as a second stdout line, and one "WARN wide table" line on stderr
                     per table wider than its container. Not with --watch or a <dir>.
   --shot-width N    Screenshot window width in px. Default: 1300.
@@ -693,16 +693,19 @@ do_render() {
 }
 
 # ---- screenshot (--shot) ----
-# Find the first Chromium-based browser: Edge, Chrome, Chromium (macOS app paths, then PATH).
+# Find the screenshot browser the way scripts/layout-check does: $BROWSER if set, else the
+# Helium binary, then Chrome and Chromium (macOS app paths, then PATH). Never Edge: it grabs
+# the screen on the owner's Mac. Every launch gets a fresh profile (see run_shot_browser).
 find_shot_browser() {
   local c
   for c in \
-    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
+    "${BROWSER:-}" \
+    "/Applications/Helium.app/Contents/MacOS/Helium" \
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
     "/Applications/Chromium.app/Contents/MacOS/Chromium"; do
-    [[ -x "$c" ]] && { echo "$c"; return 0; }
+    [[ -n "$c" && -x "$c" ]] && { echo "$c"; return 0; }
   done
-  for c in microsoft-edge google-chrome chromium chromium-browser; do
+  for c in google-chrome chromium chromium-browser; do
     command -v "$c" 2>/dev/null && return 0
   done
   return 1
@@ -739,7 +742,7 @@ run_shot_browser() {
 
 do_shot() {
   local bin work png_dir probe dom marks
-  bin="$(find_shot_browser)" || die 4 "--shot needs Microsoft Edge, Google Chrome or Chromium; none found"
+  bin="$(find_shot_browser)" || die 4 "--shot needs Helium, Google Chrome or Chromium; none found"
   png_dir="$(cd "$(dirname "$SHOT")" 2>/dev/null && pwd || true)"
   if [[ -z "$png_dir" ]]; then
     mkdir -p "$(dirname "$SHOT")"

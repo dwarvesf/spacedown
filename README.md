@@ -101,7 +101,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 | `<file>` or `<dir>` | A Markdown file, or a folder to render as an index (top level only). |
 | `--out PATH` | Output HTML path. Parent folders are created. |
 | `--no-open` | Do not open a browser. Implied when stdout is not a terminal. |
-| `--shot PNG` | Screenshot the output HTML in a private headless Edge, Chrome or Chromium and write the PNG. Implies `--no-open`. See below. |
+| `--shot PNG` | Screenshot the output HTML in a private headless Helium (else Chrome or Chromium) and write the PNG. Implies `--no-open`. See below. |
 | `--shot-width N`, `--shot-height N` | Screenshot window size in px. Defaults: 1300 by 1100. |
 | `--watch` | Re-render on save (needs `entr`). With `python3`, the open page refreshes itself. Ctrl-C stops. |
 | `--title STR` | Browser tab title. Default: the file name without its extension. |
@@ -115,7 +115,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 spacedown notes.md --out /tmp/notes.html --shot /tmp/notes.png
 ```
 
-Renders as usual, then screenshots the page headless. The browser is the first of Microsoft Edge, Google Chrome and Chromium that exists (macOS app paths, then `PATH`). Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line, because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder.
+Renders as usual, then screenshots the page headless. The browser is found the way `scripts/layout-check` finds it: `BROWSER` if set, else Helium, then Google Chrome and Chromium (macOS app paths, then `PATH`). Edge is never used. Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line, because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder.
 
 ### Font modes
 

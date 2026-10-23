@@ -1360,7 +1360,7 @@ else
   no "layout-check usage: help=$lc_help none=$lc_none bad=$lc_bad"
 fi
 
-# --shot: argument errors need no browser; the render needs Edge, Chrome or Chromium
+# --shot: argument errors need no browser; the render needs Helium, Chrome or Chromium
 echo "[--shot] argument errors"
 printf '# Shot\n\nShort text.\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "${TMP}/shot-narrow.md"
 set +e
@@ -1379,7 +1379,7 @@ set +e
 shot_out=$("$SPACEDOWN" "${TMP}/shot-narrow.md" --out "${TMP}/shot-narrow.html" --shot "${TMP}/shot-narrow.png" 2>&1); shot_rc=$?
 set -e
 if [[ $shot_rc -eq 4 && "$shot_out" == *"none found"* ]]; then
-  echo "  skip: no Edge, Chrome or Chromium installed"
+  echo "  skip: no Helium, Chrome or Chromium installed"
 else
   if [[ $shot_rc -eq 0 && -s "${TMP}/shot-narrow.png" && "$shot_out" == *"${TMP}/shot-narrow.png" && "$shot_out" != *"WARN wide table"* ]]; then
     ok "--shot writes a non-empty PNG, prints its path, no warning on a narrow table"
