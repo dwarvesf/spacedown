@@ -432,10 +432,13 @@ fi
 # KaTeX flag: pandoc 3.11 added --math-method and deprecated --katex (it prints a warning on
 # every render). --syntax-highlighting needs pandoc 3.8, so 3.8 to 3.10 must keep --katex.
 # Detect support from --help; the output is identical either way.
-katex_flag=( --katex )
+# Pinned KaTeX base URL (pandoc appends katex.min.js / katex.min.css), so renders stop
+# floating on katex@latest. Exact version, never a range; bump on purpose.
+KATEX_BASE_URL="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/"
+katex_flag=( "--katex=$KATEX_BASE_URL" )
 pandoc_help="$(pandoc --help 2>/dev/null || true)"
 if [[ "$pandoc_help" == *"--math-method"* ]]; then
-  katex_flag=( --math-method=katex )
+  katex_flag=( "--math-method=katex:$KATEX_BASE_URL" )
 fi
 # -f markdown-smart: pandoc markdown reader (same as .md auto-detect, keeps tex_math_dollars
 # so $...$ math still works) but with the `smart` extension OFF, so straight quotes and
