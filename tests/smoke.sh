@@ -1405,6 +1405,17 @@ else
   fi
 fi
 
+echo "[katex] the page loads one pinned KaTeX version, never katex@latest"
+printf 'Math: $x^2$\n' > "${TMP}/katex-pin.md"
+"$SPACEDOWN" "${TMP}/katex-pin.md" --out "${TMP}/katex-pin.html" --no-open >/dev/null 2>&1
+if grep -q 'katex@latest' "${TMP}/katex-pin.html"; then
+  no "katex pin: page loads katex@latest"
+elif grep -Eq 'katex@[0-9]+\.[0-9]+\.[0-9]+/dist/katex\.min\.js' "${TMP}/katex-pin.html"; then
+  ok "katex loads from an exact pinned version"
+else
+  no "katex pin: no exact katex@X.Y.Z script in the page"
+fi
+
 echo
 if [[ $fail -gt 0 ]]; then
   echo "smoke: $pass passed, $fail FAILED" >&2
