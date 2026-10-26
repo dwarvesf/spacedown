@@ -682,13 +682,26 @@ render_tables() {
 }
 export -f render_tables
 
+# Details: a list marker opening a <summary> is escaped so pandoc keeps the summary on
+# one line (assets/details-summary.py). Without python3 it is cat.
+SD_DETAILS_SCRIPT="${SCRIPT_DIR}/../assets/details-summary.py"
+export SD_DETAILS_SCRIPT
+render_details() {
+  if command -v python3 >/dev/null 2>&1 && [[ -f "$SD_DETAILS_SCRIPT" ]]; then
+    python3 "$SD_DETAILS_SCRIPT"
+  else
+    cat
+  fi
+}
+export -f render_details
+
 # ---- the render function (used by both single + watch paths) ----
 do_render() {
   local size_in size_out
   size_in="$(wc -c < "$FILE" | tr -d ' ')"
   log "rendering ${FILE} (${size_in} bytes) via pandoc..."
   # Feed via render_frontmatter (stdin) so a metadata block can't crash pandoc.
-  if ! render_frontmatter "$FILE" | render_callouts | render_tables | pandoc "${pandoc_flags[@]}" -o "$OUT"; then
+  if ! render_frontmatter "$FILE" | render_callouts | render_tables | render_details | pandoc "${pandoc_flags[@]}" -o "$OUT"; then
     return 2
   fi
   size_out="$(wc -c < "$OUT" | tr -d ' ')"

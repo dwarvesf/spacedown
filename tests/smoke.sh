@@ -639,6 +639,17 @@ else
   no "SVG width handling wrong (rc=$rc)"
 fi
 
+echo "[details] a summary that opens with a list marker stays one line, not a list"
+mkdir -p "${TMP}/det"
+printf '<details><summary>1. Why twice?</summary>\n\nAnswer.\n</details>\n' > "${TMP}/det/d.md"
+set +e; "$SPACEDOWN" "${TMP}/det/d.md" --out "${TMP}/det/d.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] && tr '\n' ' ' < "${TMP}/det/d.html" | grep -q '<summary> *1\. Why twice? *</summary>' \
+   && ! tr '\n' ' ' < "${TMP}/det/d.html" | grep -q '<summary> *<ol'; then
+  ok "summary kept inline with its number"
+else
+  no "summary split into a list (rc=$rc)"
+fi
+
 echo "[ia-table] tables: soft hairlines between rows, body-weight cells, rules on the cells"
 IA_THEME="${SCRIPT_DIR}/assets/ia-theme.css"
 if grep -q 'table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-table-rule); }' "$IA_THEME" \
