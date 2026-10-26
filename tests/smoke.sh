@@ -1466,6 +1466,20 @@ else
   else
     no "--shot wide: rc=$shot_rc out=$shot_out"
   fi
+  printf '# K\n\nGood $x^2$ and an unknown macro $\\C$.\n' > "${TMP}/shot-katex.md"
+  set +e
+  shot_out=$("$SPACEDOWN" "${TMP}/shot-katex.md" --out "${TMP}/shot-katex.html" --shot "${TMP}/shot-katex.png" 2>&1); shot_rc=$?
+  set -e
+  if [[ $shot_rc -eq 0 && "$shot_out" == *"WARN katex: 1 formula part"*'\C'* ]]; then
+    ok "an unknown KaTeX macro prints a WARN katex line naming it"
+  else
+    no "--shot katex: rc=$shot_rc out=$shot_out"
+  fi
+  if [[ "$(grep -c 'WARN katex' <<<"$("$SPACEDOWN" "${TMP}/shot-narrow.md" --out "${TMP}/shot-narrow2.html" --shot "${TMP}/shot-narrow2.png" 2>&1)")" == "0" ]]; then
+    ok "clean math prints no WARN katex line"
+  else
+    no "clean page printed a WARN katex line"
+  fi
 fi
 
 echo "[katex] the page loads one pinned KaTeX version, never katex@latest"
