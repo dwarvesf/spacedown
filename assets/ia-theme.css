@@ -248,11 +248,12 @@ table.sd-wide {
 table.sd-wide th:not(.sd-tight),
 table.sd-wide td:not(.sd-tight) { min-width: 22ch; } /* floor if the pass ever misses one */
 
-/* Images fit the reading column. A lone SVG has no pixel size of its own, so it takes the
-   column width; the viewBox keeps its proportions. */
+/* Images fit the reading column. A lone SVG with no pixel size of its own takes the
+   column width; the viewBox keeps its proportions. An SVG that declares a width keeps it
+   (embed-images.py copies it onto the img), so a figure is never blown up past its design. */
 img { max-width: 100%; height: auto; }
-p > img:only-child[src^="data:image/svg+xml"],
-p > img:only-child[src$=".svg"] { width: 100%; }
+p > img:only-child[src^="data:image/svg+xml"]:not([width]),
+p > img:only-child[src$=".svg"]:not([width]) { width: 100%; }
 
 /* Figure captions. The house convention is an image alone in its paragraph followed by
    the caption paragraph, the same shape the panel reads (pandoc runs with

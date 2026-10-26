@@ -36,8 +36,11 @@ MIME = {
 REMOTE_RE = re.compile(r"^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//)")
 HTML_IMG_SRC_RE = re.compile(r"""(<img\b[^>]*?\bsrc\s*=\s*)(["'])(.*?)\2""", re.I | re.S)
 
+SVG_WIDTH_RE = re.compile(rb"<svg\b[^>]*?\swidth\s*=\s*[\"']([0-9.]+)(?:px)?[\"']", re.I | re.S)
+
 src_dir = os.environ.get("SPACEDOWN_SRC_DIR", "")
 cache = {}
+svg_width = {}
 warned = set()
 
 
@@ -72,7 +75,12 @@ def embed(target):
                 log("image over 5 MB, not embedded: %s (%.1f MB)" % (path, size / 1048576.0))
             return None
         with open(path, "rb") as fh:
-            payload = base64.b64encode(fh.read()).decode("ascii")
+            data = fh.read()
+        payload = base64.b64encode(data).decode("ascii")
+        if ext == ".svg":
+            m = SVG_WIDTH_RE.search(data[:4096])
+            if m:
+                svg_width[target] = m.group(1).decode("ascii")
     except OSError:
         return None
     cache[target] = "data:%s;base64,%s" % (mime, payload)
@@ -89,9 +97,14 @@ def walk(node):
     kind = node.get("t")
     content = node.get("c")
     if kind == "Image" and isinstance(content, list) and len(content) == 3:
-        uri = embed(content[2][0])
+        target = content[2][0]
+        uri = embed(target)
         if uri:
             content[2][0] = uri
+            # An SVG that declares its own width keeps it, so the page does not blow it up.
+            keyvals = content[0][2]
+            if target in svg_width and not any(k == "width" for k, _ in keyvals):
+                keyvals.append(["width", svg_width[target]])
     elif kind in ("RawInline", "RawBlock") and isinstance(content, list) and len(content) == 2:
         if str(content[0]).lower() == "html" and "<img" in content[1].lower():
             def swap(m):
