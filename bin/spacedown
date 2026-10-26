@@ -471,6 +471,12 @@ if [[ "${SPACEDOWN_EMBED_IMAGES:-1}" != "0" ]] && [[ -f "$EMBED_IMAGES" ]] && co
   export SPACEDOWN_SRC_DIR
   pandoc_flags+=( --filter "$EMBED_IMAGES" )
 fi
+# A ```tsv or ```csv fence renders as a wrapping table (assets/tsv-tables.py), not a code
+# block whose rows run off the page. Without python3 the fence stays a code block.
+SD_TSV_FILTER="${SCRIPT_DIR}/../assets/tsv-tables.py"
+if [[ -f "$SD_TSV_FILTER" ]] && command -v python3 >/dev/null 2>&1; then
+  pandoc_flags+=( --preserve-tabs --filter "$SD_TSV_FILTER" )
+fi
 # Use pagetitle (browser-tab <title>) not title: a `title` metadata makes pandoc
 # emit a centered document-title header block, which VS Code's preview never shows.
 pandoc_flags+=( --metadata "pagetitle:${TITLE}" )

@@ -650,6 +650,24 @@ else
   no "summary split into a list (rc=$rc)"
 fi
 
+echo "[tsv] tsv and csv fences render as tables"
+mkdir -p "${TMP}/tsv"
+printf '# t\n\n```tsv\nFront one\tBack one\nFront two\tBack two\n```\n\n```csv\nk,v\na,1\n```\n' > "${TMP}/tsv/t.md"
+set +e; "$SPACEDOWN" "${TMP}/tsv/t.md" --out "${TMP}/tsv/t.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] && grep -q '<td>Front one</td><td>Back one</td>' "${TMP}/tsv/t.html" \
+   && grep -q '<td>k</td><td>v</td>' "${TMP}/tsv/t.html" \
+   && ! grep -q 'class="tsv' "${TMP}/tsv/t.html"; then
+  ok "tsv and csv fences became tables"
+else
+  no "tsv fence not rendered as a table (rc=$rc)"
+fi
+
+echo "[details-css] every theme spaces self-check questions and indents an open answer"
+for th in ia-theme tm-theme paper-theme; do
+  grep -q 'details > :not(summary) {' "${SCRIPT_DIR}/assets/${th}.css" || { no "${th} lacks the details rules"; continue; }
+  ok "${th} has the details rules"
+done
+
 echo "[ia-table] tables: soft hairlines between rows, body-weight cells, rules on the cells"
 IA_THEME="${SCRIPT_DIR}/assets/ia-theme.css"
 if grep -q 'table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-table-rule); }' "$IA_THEME" \
