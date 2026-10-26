@@ -624,6 +624,21 @@ else
   no "synthetic fixture render incomplete (rc=$rc)"
 fi
 
+echo "[svg-width] a lone SVG that declares a width keeps it; one without a width still fills the column"
+mkdir -p "${TMP}/svgw"
+printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 300" width="616" height="300"><rect width="616" height="300" fill="#ccc"/></svg>' > "${TMP}/svgw/sized.svg"
+printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300"><rect width="600" height="300" fill="#ccc"/></svg>' > "${TMP}/svgw/bare.svg"
+printf '# w\n\n![a](sized.svg)\n\n![b](bare.svg)\n' > "${TMP}/svgw/w.md"
+set +e; "$SPACEDOWN" "${TMP}/svgw/w.md" --out "${TMP}/svgw/w.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 ]] \
+   && tr '\n' ' ' < "${TMP}/svgw/w.html" | grep -q 'svg+xml;base64,[^"]*" width="616" alt="a"' \
+   && ! tr '\n' ' ' < "${TMP}/svgw/w.html" | grep -q 'width="[0-9.]*" alt="b"' \
+   && grep -q 'only-child\[src\^="data:image/svg+xml"\]:not(\[width\])' "${SCRIPT_DIR}/assets/ia-theme.css"; then
+  ok "declared SVG width carried onto the img, bare SVG left to fill the column"
+else
+  no "SVG width handling wrong (rc=$rc)"
+fi
+
 echo "[ia-table] tables: soft hairlines between rows, body-weight cells, rules on the cells"
 IA_THEME="${SCRIPT_DIR}/assets/ia-theme.css"
 if grep -q 'table:not(.sd-frontmatter) > tbody > tr + tr > td { border-top: 1px solid var(--ia-table-rule); }' "$IA_THEME" \
