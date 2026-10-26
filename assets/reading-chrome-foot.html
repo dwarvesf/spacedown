@@ -218,7 +218,9 @@
   // ---- what the reading modes skip ----
   // HARD and SKIP are shared by the prose modes (proseNodes below).
   var HARD = "script, style, noscript, textarea";
-  var SKIP = "code, pre, a, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
+  // .math as well as .katex: a saved mode can start before KaTeX typesets, and wrapping the raw
+  // TeX inside a .math span breaks pandoc's KaTeX loop for every formula after it.
+  var SKIP = "code, pre, a, .math, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, " +
     "strong, b, h1, h2, h3, h4, h5, h6, th, td:first-child, button, svg";
 
   // ---- the prose modes: Skim, Bionic, BeeLine, RSVP ----
@@ -229,7 +231,7 @@
   // nodes back: turning a mode off, or switching to another, leaves the original DOM.
   var PROSE = "p, li, td, blockquote, dd, figcaption";
   var READ_BLOCK = PROSE + ", h1, h2, h3, h4, h5, h6, summary";
-  var READ_SKIP = "code, pre, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, button, svg";
+  var READ_SKIP = "code, pre, .math, .katex, table.sd-frontmatter, nav, .sd-toolbar, .sd-toc-toggle, button, svg";
   var undo = [];
   function proseNodes(blocks, skip) {
     var out = [], walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
