@@ -790,6 +790,14 @@ window.addEventListener("load", function () {
     if (c > 0 && (w > c + 1 || t.scrollWidth > t.clientWidth + 1)) marks.push((i + 1) + ":" + w + "/" + c);
   });
   document.body.setAttribute("data-sd-wide", marks.join(" "));
+  // KaTeX draws a parse error (.katex-error) and an unknown macro (red mathcolor) in red.
+  var red = document.querySelectorAll('.katex mstyle[mathcolor="#cc0000"], .katex-error');
+  var seen = [];
+  Array.prototype.forEach.call(red, function (e) {
+    var t = (e.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    if (t && seen.indexOf(t) < 0 && seen.length < 5) seen.push(t);
+  });
+  document.body.setAttribute("data-sd-katex", red.length + "\t" + seen.join(" | ").replace(/"/g, "'"));
 });
 </script>
 PROBE
@@ -802,8 +810,13 @@ PROBE
       dims="${m#*:}"
       log "WARN wide table #${m%%:*}: ${dims%%/*} px wide in a ${dims##*/} px container (scrolls sideways at ${SHOT_W}px)"
     done
+    local kx
+    kx="$(grep -o 'data-sd-katex="[^"]*"' "$dom" | head -1 | sed 's/^data-sd-katex="//; s/"$//')"
+    if [[ -n "$kx" && "${kx%%$'\t'*}" != "0" ]]; then
+      log "WARN katex: ${kx%%$'\t'*} formula part(s) render in red (an unknown macro or a parse error): ${kx#*$'\t'}"
+    fi
   else
-    log "wide-table check skipped (no DOM from the browser within 30s)"
+    log "wide-table and katex checks skipped (no DOM from the browser within 30s)"
   fi
   rm -rf "$work"
   echo "$SHOT"
