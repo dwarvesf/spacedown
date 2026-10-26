@@ -197,6 +197,23 @@ p:has(> img:only-child) + p { font-size: 0.85em; line-height: 1.5; color: var(--
 mark { background-color: var(--paper-mark); color: inherit; }
 
 /* Dark: only the tokens flip. Syntax colors stay the base stylesheet's own dark set. */
+/* Self-check blocks: one <details> per question. Even rhythm between questions, the
+   answer indented under its question with a hairline, so an open answer never runs into
+   the next question. */
+details { margin: 0.55em 0 0; }
+details > summary { cursor: pointer; }
+details[open] > summary { margin-bottom: 0.35em; }
+details > :not(summary) { margin-top: 0.35em; margin-left: 1.15em; padding-left: 0.85em; border-left: 1px solid rgba(127, 127, 127, 0.35); }
+details[open] { margin-bottom: 0.9em; }
+
+/* A ```tsv or ```csv fence (assets/tsv-tables.py): a wrapping two-or-more column table,
+   the first column as the key. */
+.sd-scroll { overflow-x: auto; }
+.sd-scroll > table.sd-data { margin-top: 0; }
+pre { tab-size: 4; }
+table.sd-data td { white-space: normal; vertical-align: top; }
+table.sd-data td:first-child { font-weight: 600; width: 32%; }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --paper-bg: #19191b;
