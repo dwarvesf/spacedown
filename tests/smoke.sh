@@ -1141,6 +1141,9 @@ else
   drive_page reading-en -settings 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-emph", "underline"); localStorage.setItem("sd-skim-intensity", "100"); localStorage.setItem("sd-skim-basis", "surprisal");'
   drive_page reading-en -olddefault 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-emph", "dim,heat"); localStorage.setItem("sd-skim-intensity", "70");'
   drive_page reading-en -pickedheat 'localStorage.setItem("sd-read-mode", "skim"); localStorage.setItem("sd-skim-ver", "2"); localStorage.setItem("sd-skim-emph", "dim,heat");'
+  for mode in beeline skim bionic; do
+    drive_page reading-math "-$mode" "localStorage.setItem(\"sd-read-mode\", \"$mode\"); localStorage.setItem(\"sd-read-last\", \"$mode\");"
+  done
   rj reading-en 'True' || echo "  note: the driver did not answer on the English fixture: $(head -c 300 "${TMP}/read/reading-en.json")" >&2
 
   echo "[read-7] one Read menu replaces the Skim button: five items, menu-button ARIA, keyboard open, move, close"
@@ -1149,6 +1152,22 @@ else
   else
     no "Read menu structure or keyboard behaviour wrong"
   fi
+
+  echo "[read-math] a saved reading mode never touches math: every formula still typesets"
+  for mode in beeline skim bionic; do
+    if python3 - "${TMP}/read/reading-math-${mode}.dom" <<'PY'
+import re, sys
+dom = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+spans = re.findall(r'<span class="math (?:inline|display)">(.{0,40})', dom)
+typeset = [s for s in spans if s.startswith('<span class="katex')]
+sys.exit(0 if spans and len(typeset) == len(spans) else 1)
+PY
+    then
+      ok "$mode saved: all formulas typeset"
+    else
+      no "$mode saved: some formulas stayed raw TeX"
+    fi
+  done
 
   echo "[read-8] the S key turns the last mode off and on, and Skim is the default"
   if rj reading-en 'r["boot"]["mode"] is None and r["sKey"]["off"] is None and r["sKey"]["on"] == "skim" and r["sAfterOff"] == "bionic"'; then
