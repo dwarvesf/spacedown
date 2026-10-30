@@ -85,7 +85,7 @@ Flags:
                     Helium, else Chrome or Chromium (fresh profile, your browser is never
                     touched; env BROWSER overrides the binary, as in scripts/layout-check) and write the PNG. Implies --no-open. Prints the PNG path
                     as a second stdout line, and one "WARN wide table" line on stderr
-                    per table wider than its container. Not with --watch or a <dir>.
+                    per table wider than its container, naming the widest body cell (row, column, text). Not with --watch or a <dir>.
   --shot-width N    Screenshot window width in px. Default: 1300.
   --shot-height N   Screenshot window height in px. Default: 1100.
   --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
@@ -782,14 +782,31 @@ do_shot() {
   { cat "$OUT"; cat <<'PROBE'
 <script>
 window.addEventListener("load", function () {
-  var marks = [];
+  var marks = [], culprits = [];
   Array.prototype.forEach.call(document.querySelectorAll("table"), function (t, i) {
     var box = t.parentElement;
     var w = Math.max(t.scrollWidth, Math.round(t.getBoundingClientRect().width));
     var c = box.clientWidth;
-    if (c > 0 && (w > c + 1 || t.scrollWidth > t.clientWidth + 1)) marks.push((i + 1) + ":" + w + "/" + c);
+    if (c > 0 && (w > c + 1 || t.scrollWidth > t.clientWidth + 1)) {
+      marks.push((i + 1) + ":" + w + "/" + c);
+      // Culprit: the body cell whose one-line text is widest relative to its own cell width.
+      var best = null, bestRatio = -1, ruler = document.createElement("span");
+      ruler.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap";
+      document.body.appendChild(ruler);
+      Array.prototype.forEach.call(t.querySelectorAll("tbody tr"), function (tr, r) {
+        Array.prototype.forEach.call(tr.cells, function (td, k) {
+          ruler.style.font = getComputedStyle(td).font;
+          ruler.textContent = td.textContent;
+          var ratio = ruler.offsetWidth / Math.max(td.clientWidth, 1);
+          if (ratio > bestRatio) { best = { r: r + 1, k: k + 1, td: td }; bestRatio = ratio; }
+        });
+      });
+      document.body.removeChild(ruler);
+      if (best) culprits.push((i + 1) + ":" + best.r + ":" + best.k + ":" + (best.td.textContent || "").replace(/[\s&<>"]+/g, " ").trim().slice(0, 40));
+    }
   });
   document.body.setAttribute("data-sd-wide", marks.join(" "));
+  document.body.setAttribute("data-sd-widecell", culprits.join("\t"));
   // KaTeX draws a parse error (.katex-error) and an unknown macro (red mathcolor) in red.
   var red = document.querySelectorAll('.katex mstyle[mathcolor="#cc0000"], .katex-error');
   var seen = [];
@@ -805,10 +822,17 @@ PROBE
   dom="${work}/dom.html"
   if run_shot_browser "$bin" dom "$dom" "file://${probe}"; then
     marks="$(grep -o 'data-sd-wide="[^"]*"' "$dom" | head -1 | sed 's/^data-sd-wide="//; s/"$//')"
-    local m dims
+    local m dims cells cell detail
+    cells="$(grep -o 'data-sd-widecell="[^"]*"' "$dom" | head -1 | sed 's/^data-sd-widecell="//; s/"$//')"
     for m in $marks; do
       dims="${m#*:}"
-      log "WARN wide table #${m%%:*}: ${dims%%/*} px wide in a ${dims##*/} px container (scrolls sideways at ${SHOT_W}px)"
+      detail=""
+      while IFS= read -r cell; do
+        [[ "${cell%%:*}" == "${m%%:*}" ]] || continue
+        cell="${cell#*:}"
+        detail="; widest cell row ${cell%%:*} col $(cut -d: -f2 <<<"$cell"): \"${cell#*:*:}\""
+      done < <(tr '\t' '\n' <<<"$cells")
+      log "WARN wide table #${m%%:*}: ${dims%%/*} px wide in a ${dims##*/} px container (scrolls sideways at ${SHOT_W}px)${detail}"
     done
     local kx
     kx="$(grep -o 'data-sd-katex="[^"]*"' "$dom" | head -1 | sed 's/^data-sd-katex="//; s/"$//')"

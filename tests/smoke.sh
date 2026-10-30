@@ -1466,6 +1466,30 @@ else
   else
     no "--shot wide: rc=$shot_rc out=$shot_out"
   fi
+  cat > "${TMP}/shot-cell.md" <<'MD'
+# Bảng đo
+
+| Mục | Giá trị | Nhãn |
+|---|---|---|
+| KV của Qwen mỗi token, f16 | 20,480 B | tính từ config |
+| KV của Qwen ở 13.9k, 128k, 262k | 0.285, 2.684, 5.369 GB | tính |
+| KV của Qwen ở 128k, q8_0 | 1.426 GB | tính, chưa rõ kiểu của runner |
+| Qwen nếu cả 40 layer là attention | 81,920 B mỗi token, 10.74 GB ở 128k | tính |
+| Trạng thái cố định của layer tuyến tính | 0.064 GB | tính, giả định kiểu dữ liệu |
+| KV của Llama-3.1-70B | 327,680 B mỗi token, 42.95 GB ở 128k | tính từ config công bố |
+| Đo tiền tố ở 10.3k | 14,905 ms lạnh, 3,392 ms ấm, dùng lại 8,191 | đo |
+| Decode token/giây ở 1.07k, 8.8k, 36.6k | 79.83, 75.92, 56.58 | đo, mỗi điểm một lần |
+| Prefill token/giây ở cùng các cỡ | 797.5, 720.8, 534.4 | đo |
+| Cấu hình server | `OLLAMA_NUM_PARALLEL` 1, kiểu KV chưa đặt | đo |
+MD
+  set +e
+  shot_out=$("$SPACEDOWN" "${TMP}/shot-cell.md" --out "${TMP}/shot-cell.html" --shot "${TMP}/shot-cell.png" 2>&1); shot_rc=$?
+  set -e
+  if [[ $shot_rc -eq 0 && "$shot_out" == *'WARN wide table #1: '*'widest cell row 7 col 2: "14,905 ms lạnh'* ]]; then
+    ok "the wide-table WARN names the widest cell by row, column and text"
+  else
+    no "--shot wide cell: rc=$shot_rc out=$shot_out"
+  fi
   printf '# K\n\nGood $x^2$ and an unknown macro $\\C$.\n' > "${TMP}/shot-katex.md"
   set +e
   shot_out=$("$SPACEDOWN" "${TMP}/shot-katex.md" --out "${TMP}/shot-katex.html" --shot "${TMP}/shot-katex.png" 2>&1); shot_rc=$?
