@@ -25,7 +25,8 @@ Verdict: PASS
 Command: git checkout origin/main -- bin/spacedown && bash tests/smoke.sh   (probe change reverted, then restored with git checkout HEAD -- bin/spacedown)
 Exit: 1
 Output:
-NEGATIVE_OUTPUT
+  FAIL: --shot wide cell: rc=0 out=spacedown: rendering .../shot-cell.md (926 bytes) via pandoc... (no "widest cell" detail)
+smoke: 139 passed, 1 FAILED
 Verdict: FAIL as expected without the probe change; PASS again after restore (smoke: all 140 passed)
 ```
 
