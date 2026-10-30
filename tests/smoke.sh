@@ -1485,8 +1485,8 @@ MD
   set +e
   shot_out=$("$SPACEDOWN" "${TMP}/shot-cell.md" --out "${TMP}/shot-cell.html" --shot "${TMP}/shot-cell.png" 2>&1); shot_rc=$?
   set -e
-  if [[ $shot_rc -eq 0 && "$shot_out" == *'WARN wide table #1: '*'widest cell row 7 col 2: "14,905 ms lạnh'* ]]; then
-    ok "the wide-table WARN names the widest cell by row, column and text"
+  if [[ $shot_rc -eq 0 && "$shot_out" == *'WARN wide table #1: '*'widest unbreakable cell row 10 col 2: "OLLAMA_NUM_PARALLEL 1'*'(inline code)'* ]]; then
+    ok "the wide-table WARN names the cell with the widest unbreakable run (row 10 col 2, inline code)"
   else
     no "--shot wide cell: rc=$shot_rc out=$shot_out"
   fi

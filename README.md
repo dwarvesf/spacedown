@@ -115,7 +115,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 spacedown notes.md --out /tmp/notes.html --shot /tmp/notes.png
 ```
 
-Renders as usual, then screenshots the page headless. The browser is found the way `scripts/layout-check` finds it: `BROWSER` if set, else Helium, then Google Chrome and Chromium (macOS app paths, then `PATH`). Edge is never used. Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line that also names the widest body cell (row, column and its first 40 characters), because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder.
+Renders as usual, then screenshots the page headless. The browser is found the way `scripts/layout-check` finds it: `BROWSER` if set, else Helium, then Google Chrome and Chromium (macOS app paths, then `PATH`). Edge is never used. Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line that also names the body cell whose longest unbreakable run sets the width (row, column and its first 40 characters, flagged when it is inline code), because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder.
 
 ### Font modes
 

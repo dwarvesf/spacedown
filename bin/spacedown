@@ -85,7 +85,7 @@ Flags:
                     Helium, else Chrome or Chromium (fresh profile, your browser is never
                     touched; env BROWSER overrides the binary, as in scripts/layout-check) and write the PNG. Implies --no-open. Prints the PNG path
                     as a second stdout line, and one "WARN wide table" line on stderr
-                    per table wider than its container, naming the widest body cell (row, column, text). Not with --watch or a <dir>.
+                    per table wider than its container, naming the body cell with the widest unbreakable content (row, column, text). Not with --watch or a <dir>.
   --shot-width N    Screenshot window width in px. Default: 1300.
   --shot-height N   Screenshot window height in px. Default: 1100.
   --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
@@ -789,20 +789,28 @@ window.addEventListener("load", function () {
     var c = box.clientWidth;
     if (c > 0 && (w > c + 1 || t.scrollWidth > t.clientWidth + 1)) {
       marks.push((i + 1) + ":" + w + "/" + c);
-      // Culprit: the body cell whose one-line text is widest relative to its own cell width.
-      var best = null, bestRatio = -1, ruler = document.createElement("span");
-      ruler.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap";
+      // Culprit: the body cell with the widest min-content (its longest unbreakable run, e.g. an
+      // inline code span or a URL), because that sets the column floor. Measured on an off-screen
+      // one-cell table, so cell-scoped rules such as "td code { white-space: nowrap }" apply.
+      var best = null, bestMin = -1, ruler = document.createElement("table");
+      ruler.style.cssText = "position:absolute;visibility:hidden;width:min-content";
       document.body.appendChild(ruler);
       Array.prototype.forEach.call(t.querySelectorAll("tbody tr"), function (tr, r) {
         Array.prototype.forEach.call(tr.cells, function (td, k) {
-          ruler.style.font = getComputedStyle(td).font;
-          ruler.textContent = td.textContent;
-          var ratio = ruler.offsetWidth / Math.max(td.clientWidth, 1);
-          if (ratio > bestRatio) { best = { r: r + 1, k: k + 1, td: td }; bestRatio = ratio; }
+          var probe = td.cloneNode(true);
+          probe.style.minWidth = "0"; // measure the content, not the layout floor
+          ruler.innerHTML = "<tbody><tr></tr></tbody>";
+          ruler.rows[0].appendChild(probe);
+          var mc = ruler.getBoundingClientRect().width;
+          if (mc > bestMin) {
+            var code = probe.querySelector("code");
+            best = { r: r + 1, k: k + 1, td: td, code: !!code && code.getBoundingClientRect().width >= probe.getBoundingClientRect().width - 20 };
+            bestMin = mc;
+          }
         });
       });
       document.body.removeChild(ruler);
-      if (best) culprits.push((i + 1) + ":" + best.r + ":" + best.k + ":" + (best.td.textContent || "").replace(/[\s&<>"]+/g, " ").trim().slice(0, 40));
+      if (best) culprits.push((i + 1) + ":" + best.r + ":" + best.k + ":" + (best.code ? "code" : "text") + ":" + (best.td.textContent || "").replace(/[\s&<>"]+/g, " ").trim().slice(0, 40));
     }
   });
   document.body.setAttribute("data-sd-wide", marks.join(" "));
@@ -830,7 +838,10 @@ PROBE
       while IFS= read -r cell; do
         [[ "${cell%%:*}" == "${m%%:*}" ]] || continue
         cell="${cell#*:}"
-        detail="; widest cell row ${cell%%:*} col $(cut -d: -f2 <<<"$cell"): \"${cell#*:*:}\""
+        local row col kind text
+        IFS=: read -r row col kind text <<<"$cell"
+        detail="; widest unbreakable cell row ${row} col ${col}: \"${text}\""
+        [[ "$kind" == "code" ]] && detail+=" (inline code)"
       done < <(tr '\t' '\n' <<<"$cells")
       log "WARN wide table #${m%%:*}: ${dims%%/*} px wide in a ${dims##*/} px container (scrolls sideways at ${SHOT_W}px)${detail}"
     done
