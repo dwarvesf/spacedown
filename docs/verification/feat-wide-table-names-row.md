@@ -25,10 +25,11 @@ Verdict: PASS
 Command: git checkout origin/main -- bin/spacedown && bash tests/smoke.sh   (probe change reverted, then restored with git checkout HEAD -- bin/spacedown)
 Exit: 1
 Output:
-  FAIL: --shot wide cell: rc=0 out=spacedown: rendering .../shot-cell.md (926 bytes) via pandoc... (no "widest cell" detail)
+  FAIL: --shot wide cell: rc=0 out=spacedown: rendering .../shot-cell.md (926 bytes) via pandoc... (no "widest unbreakable cell" detail)
 smoke: 139 passed, 1 FAILED
 Verdict: FAIL as expected without the probe change; PASS again after restore (smoke: all 140 passed)
 ```
+The earlier single-line-width heuristic also fails this assertion: it named row 7 col 2, not row 10 col 2.
 
 ## Not proven
 - The culprit is the cell with the widest min-content, measured on an off-screen one-cell table with the layout floor (`min-width: 22ch`) zeroed. Ties on a plain wrapped cell fall to the first such cell.
