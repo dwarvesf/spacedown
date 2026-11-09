@@ -11,8 +11,17 @@
 # the browser-preference logic in ONE place.
 #
 # Usage:   spacedown-open <markdown-file>
+#          spacedown-open --host <ssh-alias> <markdown-file>
 # stdout:  absolute path to the rendered HTML (last line), same as spacedown.
+#          With --host it is the path ON THE REMOTE host (/tmp/review/<name>.html).
 # Exit:    passes through spacedown's exit code on render failure.
+#
+# --host: show the doc on another machine. Renders locally with --standalone
+# (one self-contained file), copies it to /tmp/review/ on the host over
+# ssh/scp, then opens it there with the same browser order as below (each
+# candidate is checked at /Applications/<App>.app ON THE HOST). Never writes
+# to ~/Downloads on the remote. Remote commands go through `bash -s` on stdin
+# so a non-POSIX login shell on the host (fish) never parses them.
 set -euo pipefail
 
 # GUI-launched contexts (Finder, native messaging host) get a minimal PATH that
@@ -22,8 +31,46 @@ export PATH="/opt/homebrew/bin:${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 SPACEDOWN="${SPACEDOWN_BIN:-spacedown}"
 
-[[ $# -ge 1 ]] || { echo "spacedown-open: usage: spacedown-open <markdown-file>" >&2; exit 64; }
+HOST=""
+case "${1:-}" in
+  --host)   [[ $# -ge 2 ]] || { echo "spacedown-open: --host needs an ssh alias" >&2; exit 64; }
+            HOST="$2"; shift 2 ;;
+  --host=*) HOST="${1#--host=}"; shift ;;
+esac
+
+[[ $# -ge 1 ]] || { echo "spacedown-open: usage: spacedown-open [--host <ssh-alias>] <markdown-file>" >&2; exit 64; }
 FILE="$1"
+
+# Candidate browsers, in preference order. Shared by the local and remote open.
+BROWSERS=("${SPACEDOWN_BROWSER:-}" "Helium" "Microsoft Edge" "Arc" "Google Chrome" "Brave Browser")
+
+if [[ -n "$HOST" ]]; then
+  # Render standalone and do not open locally.
+  html="$("$SPACEDOWN" "$FILE" --no-open --standalone | tail -n1)"
+  [[ -n "$html" && -f "$html" ]] || { echo "spacedown-open: render produced no HTML for $FILE" >&2; exit 1; }
+
+  remote_dir="/tmp/review"
+  remote_path="${remote_dir}/$(basename "$html")"
+
+  # Single-quote a value for the remote bash script.
+  sq() { local q="'" v; v="${1//$q/$q\\$q$q}"; printf "'%s'" "$v"; }
+
+  ssh "$HOST" "mkdir -p ${remote_dir}" </dev/null
+  scp -q "$html" "${HOST}:${remote_dir}/"
+
+  remote_script="path=$(sq "$remote_path")"$'\n''for app in'
+  for app in "${BROWSERS[@]}"; do
+    [[ -n "$app" ]] && remote_script+=" $(sq "$app")"
+  done
+  remote_script+='; do
+  [ -d "/Applications/${app}.app" ] || continue
+  open -a "$app" "$path" 2>/dev/null && exit 0
+done
+open "$path" 2>/dev/null || true'
+  printf '%s\n' "$remote_script" | ssh "$HOST" bash -s
+  echo "$remote_path"
+  exit 0
+fi
 
 # Render. spacedown prints the HTML path on its last stdout line; capture it.
 html="$("$SPACEDOWN" "$FILE" | tail -n1)"
@@ -32,7 +79,7 @@ html="$("$SPACEDOWN" "$FILE" | tail -n1)"
 # Open in the first available Chromium browser (spacedown's CSS targets
 # Chromium; Safari/WebKit mis-renders the JetBrains Mono variable font). Helium
 # first. Override with SPACEDOWN_BROWSER="App Name".
-for app in "${SPACEDOWN_BROWSER:-}" "Helium" "Microsoft Edge" "Arc" "Google Chrome" "Brave Browser"; do
+for app in "${BROWSERS[@]}"; do
   [[ -n "$app" && -d "/Applications/${app}.app" ]] || continue
   if open -a "$app" "$html" 2>/dev/null; then
     echo "$html"
