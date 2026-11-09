@@ -51,6 +51,22 @@ previous one.
 Only parts 1-3 and 5 are hand-authored; if a future VS Code release renames a variable or a class,
 update those parts to match.
 
+## KaTeX (CLI pages)
+
+`assets/katex/` holds KaTeX 0.19.0 (MIT): `katex.min.js`, `katex.min.css`, the 20 `fonts/*.woff2` files and
+the upstream `LICENSE`. After pandoc runs, `assets/inline-katex.py` swaps the CDN `<script>` and `<link>` tags
+pandoc writes for these files, with each font as a woff2 data URI (woff and ttf fallbacks dropped), so a page
+with math renders with no network. A page with no math gets nothing.
+
+To bump: change the version in `KATEX_BASE_URL` in `bin/spacedown`, then refresh the folder from the npm tarball.
+`tests/smoke.sh` fails if the pin and the vendored `version:"X.Y.Z"` disagree.
+
+```bash
+npm pack katex@X.Y.Z   # in an empty scratch dir; untar, copy package/dist/katex.min.{js,css}, dist/fonts/*.woff2, LICENSE
+```
+
+The Quick Look copy under `integrations/safari/quick-look/Resources/` is a separate, older KaTeX and is not touched.
+
 ## highlight.js (Quick Look only)
 
 `integrations/safari/quick-look/Resources/highlight.min.js` plus `hljs-theme.css` give the Quick Look
