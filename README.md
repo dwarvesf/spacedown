@@ -103,6 +103,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 | `--no-open` | Do not open a browser. Implied when stdout is not a terminal. |
 | `--shot PNG` | Screenshot the output HTML in a private headless Helium (else Chrome or Chromium) and write the PNG. Implies `--no-open`. See below. |
 | `--shot-width N`, `--shot-height N` | Screenshot window size in px. Defaults: 1300 by 1100. |
+| `--offline` | With `--shot` only. The screenshot browser resolves no hostnames, so the PNG shows what a reader with no network sees. Exits 64 without `--shot`. |
 | `--watch` | Re-render on save (needs `entr`). With `python3`, the open page refreshes itself. Ctrl-C stops. |
 | `--title STR` | Browser tab title. Default: the file name without its extension. |
 | `--font-mode MODE` | `ia` (default), `tm`, `paper`, `read` or `mono`. See below. |
@@ -115,7 +116,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 spacedown notes.md --out /tmp/notes.html --shot /tmp/notes.png
 ```
 
-Renders as usual, then screenshots the page headless. The browser is found the way `scripts/layout-check` finds it: `BROWSER` if set, else Helium, then Google Chrome and Chromium (macOS app paths, then `PATH`). Edge is never used. Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line that also names the body cell whose longest unbreakable run sets the width (row, column and its first 40 characters, flagged when it is inline code), because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder.
+Renders as usual, then screenshots the page headless. The browser is found the way `scripts/layout-check` finds it: `BROWSER` if set, else Helium, then Google Chrome and Chromium (macOS app paths, then `PATH`). Edge is never used. Each run uses a fresh temporary profile, so your own browser and its profile are never touched. stdout carries two lines: the HTML path, then the PNG path. For every table wider than its container, stderr gets a `WARN wide table` line that also names the body cell whose longest unbreakable run sets the width (row, column and its first 40 characters, flagged when it is inline code), because a table that scrolls sideways is the layout defect this flag exists to catch. With no browser installed it exits 4 with one line. It does not combine with `--watch` or a folder. Add `--offline` to block the network for the screenshot browser (it runs with `--host-resolver-rules="MAP * ~NOTFOUND"`): remote images and web fonts then fail to load, as for a reader with no connection. Local files and inlined KaTeX are unaffected.
 
 ### Font modes
 
