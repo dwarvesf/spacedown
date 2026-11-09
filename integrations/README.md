@@ -9,6 +9,8 @@ Two ways to open a `.md` rendered by `spacedown` without typing the command.
 
 Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which renders then opens a Chromium browser (Helium first, then Edge, Arc, Chrome, Brave). The wrapper exists because `spacedown` only self-opens the browser from a TTY; these callers are not TTYs.
 
+`spacedown-open --host <ssh-alias> <file.md>` shows the doc on another machine: it renders `--standalone` (one self-contained file), copies it to `/tmp/review/` on the host over `ssh`/`scp`, and opens it there with the same browser order (each app checked at `/Applications/<App>.app` on the host). The last stdout line is the remote path. Needs key-based ssh to the alias; remote commands run through `bash -s`, so a fish login shell on the host is fine. Without `--host`, behavior is unchanged.
+
 ```
  Finder double-click ─┐
                       ├─► spacedown-open ─► spacedown (pandoc+KaTeX) ─► open -a Helium out.html
@@ -112,7 +114,7 @@ The compiled `Spacedown Opener.app` is a build artifact (gitignored); `install.s
 
 | File | Role |
 |---|---|
-| `spacedown-open` | shared wrapper: render + open browser |
+| `spacedown-open` | shared wrapper: render + open browser (`--host` opens on a remote machine) |
 | `finder-app/SpacedownOpener.applescript` | source for the open-handler app (path injected at compile) |
 | `extension/manifest.json` | MV3 manifest with the fixed `key` |
 | `extension/sw.js` | opens the dropzone as a full tab on icon click |
