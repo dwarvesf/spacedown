@@ -1506,15 +1506,81 @@ MD
   fi
 fi
 
-echo "[katex] the page loads one pinned KaTeX version, never katex@latest"
-printf 'Math: $x^2$\n' > "${TMP}/katex-pin.md"
-"$SPACEDOWN" "${TMP}/katex-pin.md" --out "${TMP}/katex-pin.html" --no-open >/dev/null 2>&1
-if grep -q 'katex@latest' "${TMP}/katex-pin.html"; then
-  no "katex pin: page loads katex@latest"
-elif grep -Eq 'katex@[0-9]+\.[0-9]+\.[0-9]+/dist/katex\.min\.js' "${TMP}/katex-pin.html"; then
-  ok "katex loads from an exact pinned version"
+echo "[katex] one pinned KaTeX version, never katex@latest, and the vendored copy is that version"
+pin_ver="$(grep -Eo 'katex@[0-9]+\.[0-9]+\.[0-9]+' "${SCRIPT_DIR}/bin/spacedown" | head -1 | sed 's/^katex@//')"
+if grep -v '^[[:space:]]*#' "${SCRIPT_DIR}/bin/spacedown" | grep -q 'katex@latest'; then
+  no "katex pin: katex@latest appears in bin/spacedown code"
+elif [[ -n "$pin_ver" ]] && grep -q "version:\"${pin_ver}\"" "${SCRIPT_DIR}/assets/katex/katex.min.js"; then
+  ok "bin/spacedown pins katex@${pin_ver} and assets/katex is that version"
 else
-  no "katex pin: no exact katex@X.Y.Z script in the page"
+  no "katex pin: bin/spacedown pin (${pin_ver:-none}) does not match the vendored katex.min.js"
+fi
+
+echo "[katex-offline] a page with math inlines KaTeX: no CDN, no network needed"
+cp "${SCRIPT_DIR}/tests/fixture/math-offline.md" "${TMP}/math-offline.md"
+"$SPACEDOWN" "${TMP}/math-offline.md" --out "${TMP}/math-offline.html" --no-open >/dev/null 2>&1
+if ! grep -q 'cdn.jsdelivr.net' "${TMP}/math-offline.html" \
+   && grep -q 'data:font/woff2;base64,' "${TMP}/math-offline.html" \
+   && grep -q 'katex.render' "${TMP}/math-offline.html" \
+   && ! grep -q 'url(fonts/' "${TMP}/math-offline.html"; then
+  ok "no CDN reference, fonts as woff2 data URIs, KaTeX script inline"
+else
+  no "katex-offline: the page still points at the CDN or leaves font urls unresolved"
+fi
+printf 'No math here.\n' > "${TMP}/nomath.md"
+"$SPACEDOWN" "${TMP}/nomath.md" --out "${TMP}/nomath.html" --no-open >/dev/null 2>&1
+if ! grep -q 'data:font/woff2;base64,' "${TMP}/nomath.html" && ! grep -q 'katex.render' "${TMP}/nomath.html"; then
+  ok "a page without math carries no KaTeX bytes"
+else
+  no "katex-offline: a page without math was given KaTeX"
+fi
+
+echo "[eq-labels] a labeled display equation is numbered in order and linkable"
+if grep -q 'id="eq-energy"' "${TMP}/math-offline.html" && grep -q 'id="eq-sum"' "${TMP}/math-offline.html" \
+   && grep -q '\\tag{1}</span>' "${TMP}/math-offline.html" && grep -q '\\tag{2}</span>' "${TMP}/math-offline.html" \
+   && ! grep -q '\\tag{3}</span>' "${TMP}/math-offline.html" \
+   && ! grep -q '</span> {#eq-' "${TMP}/math-offline.html" \
+   && grep -q 'href="#eq-energy"' "${TMP}/math-offline.html"; then
+  ok "ids eq-energy and eq-sum, tags 1 and 2, no literal {#eq-...} after a formula, link kept"
+else
+  no "eq-labels: ids, tags or leftover label text wrong"
+fi
+if grep -q 'not = math \$\$ {#eq-in-code}' "${TMP}/math-offline.html" && ! grep -q 'id="eq-in-code"' "${TMP}/math-offline.html"; then
+  ok "a labeled formula inside a code fence is left alone"
+else
+  no "eq-labels: a code fence was rewritten"
+fi
+printf '$$ a=b $$\n\n$$ c = d \\tag{*} $$ {#eq-own}\n' > "${TMP}/eq-plain.md"
+"$SPACEDOWN" "${TMP}/eq-plain.md" --out "${TMP}/eq-plain.html" --no-open >/dev/null 2>&1
+if [[ "$(grep -o '\\tag{[0-9*]*}</span>' "${TMP}/eq-plain.html" | wc -l | tr -d ' ')" == "1" ]] && grep -q 'id="eq-own"' "${TMP}/eq-plain.html" && grep -q '\\tag{\*}</span>' "${TMP}/eq-plain.html"; then
+  ok "unlabeled \$\$ stays untagged; a formula with its own \\tag keeps it and gets the anchor"
+else
+  no "eq-labels: unlabeled or self-tagged formula mishandled"
+fi
+
+echo "[katex-offline] headless browser with the network blocked typesets every formula and shows the numbers"
+if [[ -z "$READ_BROWSER" ]]; then
+  echo "  skip: no headless Chromium-family browser found"
+else
+  offline_prof="$(mktemp -d "${TMP}/offline-prof.XXXXXX")"
+  "$READ_BROWSER" --headless=new "--user-data-dir=${offline_prof}" --disable-gpu --virtual-time-budget=5000 \
+    --host-resolver-rules="MAP * ~NOTFOUND" --dump-dom "file://${TMP}/math-offline.html" >| "${TMP}/math-offline.dom" 2>/dev/null &
+  offline_pid=$!
+  for _ in $(seq 1 60); do grep -q '</html>' "${TMP}/math-offline.dom" 2>/dev/null && break; sleep 0.5; done
+  kill "$offline_pid" 2>/dev/null || true; wait "$offline_pid" 2>/dev/null || true
+  if python3 -I - "${TMP}/math-offline.dom" <<'PY'
+import re, sys
+dom = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+spans = re.findall(r'<span class="math (?:inline|display)">(.{0,40})', dom)
+typeset = [s for s in spans if s.startswith('<span class="katex')]
+tags = re.findall(r'<span class="katex-tag">', dom)
+sys.exit(0 if len(spans) == 6 and len(typeset) == 6 and len(tags) == 2 else 1)
+PY
+  then
+    ok "6 of 6 formulas typeset with the network blocked, 2 equation numbers drawn"
+  else
+    no "katex-offline: formulas stayed raw TeX or the equation numbers are missing with the network blocked"
+  fi
 fi
 
 echo

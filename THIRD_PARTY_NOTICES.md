@@ -8,6 +8,7 @@ Spacedown and the spacedown CLI bundle or reference the third-party works below.
 |---|---|---|---|---|
 | marked | 12.0.2 | `integrations/safari/quick-look/Resources/marked.min.js` | MIT, Copyright (c) 2011-2024 Christopher Jeffrey and the MarkedJS contributors | https://github.com/markedjs/marked |
 | KaTeX | 0.16.11 | `integrations/safari/quick-look/Resources/katex.min.js`, `katex.min.css` | MIT, Copyright (c) 2013-2020 Khan Academy and other contributors | https://github.com/KaTeX/KaTeX |
+| KaTeX, inlined into CLI-rendered pages with math (the script, the stylesheet, and the woff2 fonts as data URIs) | 0.19.0 | `assets/katex/katex.min.js`, `katex.min.css`, `fonts/*.woff2`, license text in `assets/katex/LICENSE` | MIT, Copyright (c) 2013-2020 Khan Academy and other contributors | https://github.com/KaTeX/KaTeX |
 | highlight.js, with its `github` and `github-dark` themes | 11.11.1 | `integrations/safari/quick-look/Resources/highlight.min.js`, `hljs-theme.css` | BSD-3-Clause, Copyright (c) 2006 Ivan Sagalaev and contributors | https://github.com/highlightjs/highlight.js |
 | VS Code markdown preview stylesheet (`markdown.css`) | see `assets/REFRESH.md` | part (4) of `assets/vscode-preview-head.html`, copied into the Quick Look bundle at build time | MIT, Copyright (c) Microsoft Corporation | https://github.com/microsoft/vscode |
 | skimgram scoring core (tokenizer, n-gram model, scorer, rank normalizer), ported to plain JS; the extension and its DOM code are not included | 0.1.1, commit 4ebb78a | `assets/skim-surprise.html`, the engine behind the Skim reading mode | MIT, Copyright (c) 2026 AwesomeDog | https://github.com/awesomedog/skimgram |
@@ -26,7 +27,6 @@ Spacedown and the spacedown CLI bundle or reference the third-party works below.
 | Component | Role | License | Upstream |
 |---|---|---|---|
 | pandoc | Markdown to HTML conversion in the CLI | GPL-2.0-or-later | https://github.com/jgm/pandoc |
-| KaTeX (CDN copy) | Math in CLI output pages, loaded by pandoc from a CDN | MIT | https://github.com/KaTeX/KaTeX |
 | entr | Optional file watching for `--watch` | ISC | https://github.com/eradman/entr |
 
 The spacedown CLI runs pandoc and entr as separate programs and includes none of their code.
