@@ -63,7 +63,7 @@ Usage:
   spacedown docx <file> [-o out.docx]
   spacedown <file> [--out PATH] [--no-open] [--watch] [--title STR]
                     [--font-mode ia|tm|paper|read|mono] [--standalone | --no-standalone]
-                    [--shot PNG [--shot-width N] [--shot-height N]]
+                    [--shot PNG [--shot-width N] [--shot-height N] [--offline]]
                     [--help] [--version]
   spacedown <dir>  [--out PATH] [--no-open]
 
@@ -89,6 +89,8 @@ Flags:
                     per table wider than its container, naming the body cell with the widest unbreakable content (row, column, text). Not with --watch or a <dir>.
   --shot-width N    Screenshot window width in px. Default: 1300.
   --shot-height N   Screenshot window height in px. Default: 1100.
+  --offline         With --shot only: the browser resolves no hostnames, so the PNG shows
+                    what a reader with no network sees (remote images and fonts missing).
   --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
                     free iA Writer Quattro and Mono fonts (system fonts when
                     those are not installed). tm: serif reading look ported
@@ -266,6 +268,7 @@ STANDALONE=1
 SHOT=""
 SHOT_W=1300
 SHOT_H=1100
+OFFLINE=0
 # Body font mode: "ia" (default), "tm" and "paper" = reading themes; "mono" = full editor
 # fidelity (mirrored mono everywhere); "read" = proportional serif. Override default via
 # $SPACEDOWN_FONT_MODE.
@@ -292,6 +295,7 @@ while [[ $# -gt 0 ]]; do
     --shot-width=*) v="${1#--shot-width=}"; [[ "$v" =~ ^[0-9]+$ ]] || die 64 "--shot-width requires an integer"; SHOT_W="$v"; shift ;;
     --shot-height) [[ "${2:-}" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$2"; shift 2 ;;
     --shot-height=*) v="${1#--shot-height=}"; [[ "$v" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$v"; shift ;;
+    --offline) OFFLINE=1; shift ;;
     --title) [[ -n "${2:-}" ]] || die 64 "--title requires a string"; TITLE="$2"; shift 2 ;;
     --title=*) TITLE="${1#--title=}"; shift ;;
     --font-mode) [[ "${2:-}" =~ $FONT_MODE_RE ]] || die 64 "$FONT_MODE_MSG"; FONT_MODE="$2"; shift 2 ;;
@@ -311,6 +315,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$FILE" ]] || die 64 "missing required <file> arg (see --help)"
+[[ "$OFFLINE" == "0" || -n "$SHOT" ]] || die 64 "--offline only works with --shot (it blocks the network for the screenshot browser)"
 if [[ -n "$SHOT" ]]; then
   [[ "$WATCH" == "0" ]] || die 64 "--shot cannot be combined with --watch"
   [[ ! -d "$FILE" ]] || die 64 "--shot needs a single file, not a directory"
@@ -767,6 +772,7 @@ run_shot_browser() {
   profile="$(mktemp -d "${TMPDIR:-/tmp}/spacedown-shot.XXXXXX")"
   local args=( --headless=new "--user-data-dir=${profile}" --disable-gpu --hide-scrollbars
                "--window-size=${SHOT_W},${SHOT_H}" --virtual-time-budget=5000 )
+  [[ "$OFFLINE" == "0" ]] || args+=( "--host-resolver-rules=MAP * ~NOTFOUND" )
   if [[ "$kind" == "dom" ]]; then
     "$bin" "${args[@]}" --dump-dom "$url" >| "$outfile" 2>/dev/null &
   else

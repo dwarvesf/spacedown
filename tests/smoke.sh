@@ -1425,16 +1425,23 @@ fi
 
 # --shot: argument errors need no browser; the render needs Helium, Chrome or Chromium
 echo "[--shot] argument errors"
+cp "${SCRIPT_DIR}/tests/fixture/math-offline.md" "${TMP}/math-offline-src.md"
 printf '# Shot\n\nShort text.\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "${TMP}/shot-narrow.md"
 set +e
 "$SPACEDOWN" "${TMP}/shot-narrow.md" --shot "${TMP}/x.png" --watch >/dev/null 2>&1; shot_watch=$?
 "$SPACEDOWN" "$TMP" --shot "${TMP}/x.png" >/dev/null 2>&1; shot_dir=$?
 "$SPACEDOWN" "${TMP}/shot-narrow.md" --shot-width abc >/dev/null 2>&1; shot_w=$?
+shot_off_msg=$("$SPACEDOWN" "${TMP}/shot-narrow.md" --out "${TMP}/shot-off-arg.html" --offline 2>&1 >/dev/null); shot_off=$?
 set -e
 if [[ $shot_watch -eq 64 && $shot_dir -eq 64 && $shot_w -eq 64 ]]; then
   ok "--shot with --watch, a directory or a bad width exits 64"
 else
   no "--shot argument errors: watch=$shot_watch dir=$shot_dir width=$shot_w"
+fi
+if [[ $shot_off -eq 64 && "$shot_off_msg" == *"--offline only works with --shot"* && ! -e "${TMP}/shot-off-arg.html" ]]; then
+  ok "--offline without --shot exits 64 with a clear message and renders nothing"
+else
+  no "--offline without --shot: rc=$shot_off msg=$shot_off_msg"
 fi
 
 echo "[--shot] screenshot and wide-table warning"
@@ -1503,6 +1510,51 @@ MD
     ok "clean math prints no WARN katex line"
   else
     no "clean page printed a WARN katex line"
+  fi
+
+  echo "[--shot --offline] the screenshot browser resolves no hostnames"
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "  skip: python3 needed for the local image server"
+  else
+    # A local server stands in for the network: "localhost" is a hostname, so the resolver block hides it too.
+    shot_srv_port="${TMP}/shot-srv.port"
+    python3 -I - "$shot_srv_port" >/dev/null 2>&1 <<'PY' &
+import http.server, struct, sys, zlib
+def chunk(t, d):
+    return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+rows = b"".join(b"\x00" + b"\xff\x00\x00" * 200 for _ in range(100))
+png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 200, 100, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b"")
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.send_header("Content-Type", "image/png"); self.send_header("Content-Length", str(len(png))); self.end_headers(); self.wfile.write(png)
+    def log_message(self, *a): pass
+srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+open(sys.argv[1], "w").write(str(srv.server_port))
+srv.serve_forever()
+PY
+    shot_srv_pid=$!
+    for _ in $(seq 1 20); do [[ -s "$shot_srv_port" ]] && break; sleep 0.25; done
+    printf '# Remote\n\n![remote](http://localhost:%s/red.png)\n' "$(cat "$shot_srv_port" 2>/dev/null)" > "${TMP}/shot-remote.md"
+    set +e
+    "$SPACEDOWN" "${TMP}/shot-remote.md" --out "${TMP}/shot-remote.html" --shot "${TMP}/shot-remote-on.png" >/dev/null 2>&1; shot_on=$?
+    shot_off_out=$("$SPACEDOWN" "${TMP}/shot-remote.md" --out "${TMP}/shot-remote.html" --shot "${TMP}/shot-remote-off.png" --offline 2>&1); shot_offrc=$?
+    set -e
+    kill "$shot_srv_pid" 2>/dev/null || true; wait "$shot_srv_pid" 2>/dev/null || true
+    if [[ $shot_on -eq 0 && $shot_offrc -eq 0 && -s "${TMP}/shot-remote-on.png" && -s "${TMP}/shot-remote-off.png" \
+          && "$shot_off_out" == *"${TMP}/shot-remote-off.png" ]] \
+       && ! cmp -s "${TMP}/shot-remote-on.png" "${TMP}/shot-remote-off.png"; then
+      ok "--shot --offline writes a PNG that differs from the online one (the remote image is gone)"
+    else
+      no "--shot --offline: online rc=$shot_on offline rc=$shot_offrc, PNGs identical or missing"
+    fi
+    set +e
+    shot_math_out=$("$SPACEDOWN" "${TMP}/math-offline-src.md" --out "${TMP}/shot-math.html" --shot "${TMP}/shot-math.png" --offline 2>&1); shot_math=$?
+    set -e
+    if [[ $shot_math -eq 0 && -s "${TMP}/shot-math.png" && "$shot_math_out" != *"WARN katex"* ]]; then
+      ok "--shot --offline on the math fixture: PNG written, no katex warning (KaTeX is inlined)"
+    else
+      no "--shot --offline math: rc=$shot_math out=$shot_math_out"
+    fi
   fi
 fi
 
