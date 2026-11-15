@@ -29,10 +29,12 @@ Bundled CLI (`scripts/bundle-cli`): 1,424,082 bytes before, 529,587 after (the r
 Run after this file was committed. `run_renderer` in `bin/spacedown` made to call `pandoc --version` first, `bash tests/smoke.sh --only cli,katex`:
 
 ```
-NEGATIVE_CONTROL_OUTPUT
+  FAIL: core render: rc=0 shim-called=[pandoc called: --version] err=...
+  FAIL: folder render: rc=0
+smoke: 42 passed, 2 FAILED
 ```
 
-The edit was reverted and the same sections ran green again.
+The edit was reverted (`git diff` empty) and the same sections ran green again: `smoke: all 44 passed`.
 
 ## Not proven
 
