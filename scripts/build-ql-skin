@@ -2,7 +2,7 @@
 # build-ql-skin: the Quick Look reading skin with the iA Writer fonts embedded.
 # The sandboxed Quick Look webview cannot load fonts installed on the Mac, so this
 # prepends the @font-face rules from scripts/ia-fontface-css (the four vendored
-# iA Writer Quattro V and Mono V files as base64 data URIs), then the readable skin
+# iA Writer Quattro V and Mono V files as base64 woff2 data URIs), then the readable skin
 # source (integrations/safari/quick-look/Resources/ql-reading.css).
 #   scripts/build-ql-skin [out.css]      default out: a temp file; prints the path
 # build-safari.sh runs this step by itself. Env: IA_FONT_DIR overrides the font dir.
