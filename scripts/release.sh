@@ -15,6 +15,8 @@
 #   REPO=dwarvesf/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
+#   APP_BUDGET_BYTES / DMG_BUDGET_BYTES   override the size budget in scripts/size-budget, which
+#                           fails the release when the app or the dmg grows past it
 #   KEEP_OLD_RELEASES=0     1 = keep older GitHub releases; by default a published release
 #                           replaces them (they and their tags are deleted), so the Releases
 #                           page lists only the latest version
@@ -110,6 +112,7 @@ if [[ $MAS -eq 1 ]]; then
   rsync -a --delete "$BUILT" "$MDIST/"
   APP="$MDIST/$APP_NAME"
   APPEX="$APP/Contents/PlugIns/SpacedownQL.appex"
+  "$ROOT/scripts/size-budget" "$APP" || die "the store app is over its size budget (scripts/size-budget)"
 
   echo "== version $VERSION ($BUILD_NUMBER), profiles, entitlements"
   for plist in "$APP/Contents/Info.plist" "$APPEX/Contents/Info.plist"; do
@@ -185,6 +188,8 @@ rsync -a --delete "$BUILT" "$DIST/"
 APP="$DIST/$APP_NAME"
 has "$(codesign -dvv "$APP" 2>&1)" "Authority=Developer ID Application" \
   || die "app is not signed with a Developer ID Application identity"
+# Fail on growth before the notary round trip, not after it.
+"$ROOT/scripts/size-budget" "$APP" || die "the app is over its size budget (scripts/size-budget)"
 
 # --- notarize + staple ----------------------------------------------------------
 echo "== notarize"
@@ -215,6 +220,7 @@ ditto "$APP" "$DSTAGE/$APP_NAME"
 ln -s /Applications "$DSTAGE/Applications"
 hdiutil create -volname Spacedown -srcfolder "$DSTAGE" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
 codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
+"$ROOT/scripts/size-budget" "$APP" "$DMG" || die "the app or the dmg is over its size budget (scripts/size-budget)"
 DRESULT="$(xcrun notarytool submit "$DMG" "${NOTARY_AUTH[@]}" --wait 2>&1 || true)"
 has "$DRESULT" "status: Accepted" || { echo "$DRESULT" >&2; die "dmg notarization not accepted"; }
 xcrun stapler staple "$DMG" >/dev/null

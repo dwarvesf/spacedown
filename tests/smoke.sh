@@ -1559,22 +1559,23 @@ CLI_DIR="${FAKE_APP}/Contents/Resources/cli"
 # The bundled CLI renders with the app's own Quick Look extension, so the staged app carries one.
 mkdir -p "${FAKE_APP}/Contents/PlugIns/SpacedownQL.appex/Contents"
 rsync -a "${SCRIPT_DIR}/integrations/safari/quick-look/Resources" "${FAKE_APP}/Contents/PlugIns/SpacedownQL.appex/Contents/"
+# build-safari.sh embeds the KaTeX fonts in the extension's stylesheet; the app carries them once.
+"${SCRIPT_DIR}/scripts/build-ql-katex" "${FAKE_APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/katex.min.css" >/dev/null
 
 echo "[bundle-1] bundle-cli lays out the CLI and every runtime file under Contents/Resources/cli"
 need_ok=1
 for f in bin/spacedown scripts/sd-settings assets/sd-cli-render.js assets/cli-base.css \
          assets/ia-theme.css assets/tm-theme.css assets/paper-theme.css \
          assets/vscode-preview-head.html assets/reading-chrome-head.html assets/reading-chrome-foot.html assets/skim-surprise.html \
-         assets/livereload-foot.html assets/livereload-server.py assets/docx/ia-reference.docx \
-         assets/katex/fonts/KaTeX_Main-Regular.woff2; do
+         assets/livereload-foot.html assets/livereload-server.py assets/docx/ia-reference.docx; do
   [[ -f "${CLI_DIR}/${f}" ]] || { need_ok=0; echo "    missing: ${f}" >&2; }
 done
-# Left out on purpose: the render engine (the app's extension has it), the iA TTFs, maintainer notes.
-for f in assets/katex/katex.min.js assets/katex/katex.min.css assets/fonts/ia/iAWriterQuattroV.ttf assets/REFRESH.md; do
+# Left out on purpose: the render engine and KaTeX fonts (the app's extension has them), the iA TTFs, maintainer notes.
+for f in assets/katex/katex.min.js assets/katex/katex.min.css assets/katex/fonts/KaTeX_Main-Regular.woff2 assets/fonts/ia/iAWriterQuattroV.ttf assets/REFRESH.md; do
   [[ ! -e "${CLI_DIR}/${f}" ]] || { need_ok=0; echo "    should be absent: ${f}" >&2; }
 done
 if [[ $need_ok -eq 1 && -x "${CLI_DIR}/bin/spacedown" && -x "${CLI_DIR}/scripts/sd-settings" ]]; then
-  ok "layout complete, scripts executable, no second KaTeX or TTF copy, maintainer notes left out"
+  ok "layout complete, scripts executable, no second KaTeX (script, stylesheet or fonts) or TTF copy, maintainer notes left out"
 else
   no "bundled layout incomplete"
 fi
@@ -1864,7 +1865,7 @@ echo "[eq-labels] a labeled display equation is numbered in order and linkable"
 if grep -q 'id="eq-energy"' "${TMP}/math-offline.html" && grep -q 'id="eq-sum"' "${TMP}/math-offline.html" \
    && grep -q '\\tag{1}</annotation>' "${TMP}/math-offline.html" && grep -q '\\tag{2}</annotation>' "${TMP}/math-offline.html" \
    && ! grep -q '\\tag{3}</annotation>' "${TMP}/math-offline.html" \
-   && [[ "$(grep -o 'class="tag"' "${TMP}/math-offline.html" | wc -l | tr -d ' ')" == "2" ]] \
+   && [[ "$(grep -o 'class="katex-tag"' "${TMP}/math-offline.html" | wc -l | tr -d ' ')" == "2" ]] \
    && ! grep -q '</span> {#eq-' "${TMP}/math-offline.html" \
    && grep -q 'href="#eq-energy"' "${TMP}/math-offline.html"; then
   ok "ids eq-energy and eq-sum, tags 1 and 2, no literal {#eq-...} after a formula, link kept"
@@ -1878,7 +1879,7 @@ else
 fi
 printf '$$ a=b $$\n\n$$ c = d \\tag{*} $$ {#eq-own}\n' > "${TMP}/eq-plain.md"
 "$SPACEDOWN" "${TMP}/eq-plain.md" --out "${TMP}/eq-plain.html" --no-open >/dev/null 2>&1
-if [[ "$(grep -o 'class="tag"' "${TMP}/eq-plain.html" | wc -l | tr -d ' ')" == "1" ]] && grep -q 'id="eq-own"' "${TMP}/eq-plain.html" && grep -q '\\tag{\*}</annotation>' "${TMP}/eq-plain.html"; then
+if [[ "$(grep -o 'class="katex-tag"' "${TMP}/eq-plain.html" | wc -l | tr -d ' ')" == "1" ]] && grep -q 'id="eq-own"' "${TMP}/eq-plain.html" && grep -q '\\tag{\*}</annotation>' "${TMP}/eq-plain.html"; then
   ok "unlabeled \$\$ stays untagged; a formula with its own \\tag keeps it and gets the anchor"
 else
   no "eq-labels: unlabeled or self-tagged formula mishandled"
@@ -1898,7 +1899,7 @@ else
 import re, sys
 dom = open(sys.argv[1], encoding="utf-8", errors="replace").read()
 typeset = re.findall(r'<span class="katex">', dom)
-tags = re.findall(r'<span class="tag">', dom)
+tags = re.findall(r'<span class="katex-tag">', dom)
 errors = re.findall(r'class="katex-error"', dom)
 sys.exit(0 if len(typeset) == 6 and len(tags) == 2 and not errors else 1)
 PY

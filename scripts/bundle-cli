@@ -5,15 +5,15 @@
 # Layout written under <app>/Contents/Resources/cli/ (same shape as the repo, because
 # bin/spacedown finds its files at ../assets and ../scripts from its own real path):
 #   bin/spacedown            the CLI, includes the docx subcommand
-#   assets/                  the renderer (sd-cli-render.js), themes, page partials, KaTeX fonts,
-#                            docx reference doc
+#   assets/                  the renderer (sd-cli-render.js), themes, page partials, the KaTeX
+#                            license, docx reference doc
 #   scripts/sd-settings      the app's stored settings, read at every render
 # The CLI renders through the Quick Look core, and from inside the app it reads that core from
 # the app's own extension (Contents/PlugIns/SpacedownQL.appex/Contents/Resources), so no
-# render engine is copied here. Left out on purpose: the KaTeX script and stylesheet (the
-# extension has them), the iA TTF fonts (install them from assets/fonts/ia in the repo; the
-# page falls back to system fonts), the python page filters pandoc used to need, and
-# assets/REFRESH.md (maintainer notes). Run it before the app is signed: the signature seals
+# render engine is copied here. Left out on purpose: the KaTeX script, stylesheet and fonts (the
+# extension has all three: build-ql-katex embeds the fonts in its stylesheet), the iA TTF fonts
+# (install them from assets/fonts/ia in the repo; the page falls back to system fonts), the python
+# page filters pandoc used to need, and assets/REFRESH.md (maintainer notes). Run it before the app is signed: the signature seals
 # these files.
 set -euo pipefail
 
@@ -24,7 +24,7 @@ APP="${1:-}"
 DEST="${APP}/Contents/Resources/cli"
 mkdir -p "$DEST/bin" "$DEST/assets" "$DEST/scripts"
 rsync -a "${ROOT}/bin/spacedown" "$DEST/bin/"
-rsync -a --delete --exclude REFRESH.md --exclude fonts/ia --exclude katex/katex.min.js --exclude katex/katex.min.css \
+rsync -a --delete --delete-excluded --exclude REFRESH.md --exclude fonts/ia --exclude katex/fonts --exclude katex/katex.min.js --exclude katex/katex.min.css \
   --exclude embed-images.py --exclude inline-katex.py --exclude frontmatter-to-table.py --exclude callouts-to-html.py \
   --exclude details-summary.py --exclude eq-labels.py --exclude tsv-tables.py "${ROOT}/assets/" "$DEST/assets/"
 rsync -a "${ROOT}/scripts/sd-settings" "$DEST/scripts/"

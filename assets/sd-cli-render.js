@@ -411,7 +411,9 @@ function run(argv) {
   // ---- head ----
   function style(css) { return "<style>\n" + css + "\n</style>"; }
 
-  // katex.min.css plus its fonts as woff2 data URIs, only when the page has math
+  // katex.min.css plus its fonts as woff2 data URIs, only when the page has math. From the app
+  // the stylesheet already carries its fonts (scripts/build-ql-katex), so nothing matches here;
+  // in a checkout it names fonts/*.woff2 and they come from assets/katex/fonts.
   function katexCss() {
     var css = must(RES + "/katex.min.css");
     return css.replace(/url\(fonts\/([^)]+\.woff2)\) format\("woff2"\)(?:,url\(fonts\/[^)]+\) format\("[a-z0-9]+"\))*/g,

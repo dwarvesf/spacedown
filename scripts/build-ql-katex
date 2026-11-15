@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# build-ql-katex: the KaTeX stylesheet with its fonts embedded, for the app bundle.
+# The Quick Look panel gets one HTML string with no base URL, so the stylesheet's relative
+# url(fonts/...) never resolves there. This replaces each font's woff2/woff/ttf source chain
+# with the woff2 file as a base64 data URI. The bundled CLI reads the same stylesheet from
+# the app's extension, so the app carries KaTeX's fonts once.
+#   scripts/build-ql-katex [out.css]      default out: a temp file; prints the path
+# Input: integrations/safari/quick-look/Resources/katex.min.css (KaTeX 0.19.0) and the woff2
+# files in assets/katex/fonts. build-safari.sh runs this step by itself. Env: KATEX_FONT_DIR
+# overrides the font dir.
+set -euo pipefail
+
+_src="${BASH_SOURCE[0]}"
+while [[ -h "$_src" ]]; do
+  _dir="$(cd -P "$(dirname "$_src")" && pwd)"
+  _src="$(readlink "$_src")"
+  [[ "$_src" != /* ]] && _src="${_dir}/${_src}"
+done
+ROOT="$(cd -P "$(dirname "$_src")/.." && pwd)"
+CSS="${ROOT}/integrations/safari/quick-look/Resources/katex.min.css"
+FONT_DIR="${KATEX_FONT_DIR:-${ROOT}/assets/katex/fonts}"
+out="${1:-$(mktemp "${TMPDIR:-/tmp}/ql-katex.XXXXXX")}"
+
+[[ -f "$CSS" ]] || { echo "build-ql-katex: stylesheet missing: $CSS" >&2; exit 2; }
+[[ -d "$FONT_DIR" ]] || { echo "build-ql-katex: font dir missing: $FONT_DIR" >&2; exit 2; }
+
+/usr/bin/perl -MMIME::Base64 -e '
+  my ($css, $dir) = @ARGV;
+  local $/; open my $fh, "<", $css or die "build-ql-katex: cannot read $css\n"; my $s = <$fh>; close $fh;
+  my $n = 0;
+  $s =~ s{url\(fonts/([^)]+\.woff2)\) format\("woff2"\)(?:,url\(fonts/[^)]+\) format\("[a-z0-9]+"\))*}{
+    my $f = $1; open my $g, "<:raw", "$dir/$f" or die "build-ql-katex: font missing: $dir/$f\n";
+    my $raw = <$g>; close $g; $n++;
+    "url(data:font/woff2;base64," . encode_base64($raw, "") . ") format(\"woff2\")";
+  }ge;
+  die "build-ql-katex: no font url found in $css\n" unless $n;
+  die "build-ql-katex: a relative font url is left in $css\n" if $s =~ m{url\(fonts/};
+  print $s;
+' "$CSS" "$FONT_DIR" > "$out"
+echo "$out"
