@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# size-budget: fail when a Spacedown build is over its size budget.
+#
+# Usage: scripts/size-budget <Spacedown.app> [<Spacedown.dmg>]
+#   App budget  2 MB: the sum of the byte sizes of every file inside the .app.
+#   DMG budget  1 MB: the byte size of the .dmg file (it compresses, so it is the smaller number).
+# MB means 1,000,000 bytes (what Finder shows). Override with APP_BUDGET_BYTES / DMG_BUDGET_BYTES.
+# Prints both sizes and the biggest files in the app, and exits 1 when a budget is blown.
+set -euo pipefail
+
+APP_BUDGET="${APP_BUDGET_BYTES:-2000000}"
+DMG_BUDGET="${DMG_BUDGET_BYTES:-1000000}"
+APP="${1:-}"
+DMG="${2:-}"
+[[ -d "$APP" ]] || { echo "usage: size-budget <Spacedown.app> [<Spacedown.dmg>]" >&2; exit 64; }
+[[ -z "$DMG" || -f "$DMG" ]] || { echo "size-budget: dmg not found: $DMG" >&2; exit 64; }
+
+FILES="$(find "$APP" -type f -exec stat -f '%z %N' {} + | sort -rn)"
+APP_BYTES="$(printf '%s\n' "$FILES" | awk '{s += $1} END {print s + 0}')"
+fail=0
+
+echo "size-budget: app $APP_BYTES bytes (budget $APP_BUDGET)"
+if [[ "$APP_BYTES" -gt "$APP_BUDGET" ]]; then
+  echo "size-budget: FAIL app is $((APP_BYTES - APP_BUDGET)) bytes over budget; largest files:" >&2
+  printf '%s\n' "$FILES" | head -8 | sed "s|$APP/||" | awk '{printf "  %9d  %s\n", $1, substr($0, index($0, $2))}' >&2
+  fail=1
+fi
+
+if [[ -n "$DMG" ]]; then
+  DMG_BYTES="$(stat -f %z "$DMG")"
+  echo "size-budget: dmg $DMG_BYTES bytes (budget $DMG_BUDGET)"
+  if [[ "$DMG_BYTES" -gt "$DMG_BUDGET" ]]; then
+    echo "size-budget: FAIL dmg is $((DMG_BYTES - DMG_BUDGET)) bytes over budget" >&2
+    fail=1
+  fi
+fi
+
+[[ $fail -eq 0 ]] && echo "size-budget: ok"
+exit "$fail"
