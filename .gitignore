@@ -28,3 +28,6 @@ xcuserdata/
 
 # Python bytecode.
 __pycache__/
+
+# The landing site pages are source, not render output.
+!site/*.html

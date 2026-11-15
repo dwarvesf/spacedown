@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spacedown</title>
+<meta name="description" content="Spacedown renders Markdown right in Finder's Quick Look: tables, math, code, callouts and frontmatter, in a calm reading theme that follows light and dark mode.">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<!-- og:image and twitter:image paths are relative; set absolute URLs once the site domain is fixed -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Spacedown">
+<meta property="og:title" content="Spacedown: press space, read Markdown properly">
+<meta property="og:description" content="A Markdown reader for Quick Look. Tables, math, code, callouts and frontmatter, in a calm reading theme that follows light and dark mode.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Spacedown previewing a Markdown file in Finder's Quick Look panel">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Spacedown: press space, read Markdown properly">
+<meta name="twitter:description" content="A Markdown reader for Quick Look. Free, offline, MIT licensed.">
+<meta name="twitter:image" content="assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="tick" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol></svg>
+
+<header class="site-header">
+<div class="wrap nav">
+<a class="brand" href="#top">spacedown</a>
+<nav class="nav-links" aria-label="Main">
+<a href="#features">Features</a>
+<a href="#pro">Pro</a>
+<a href="#agents">For agents</a>
+<a href="#faq">FAQ</a>
+</nav>
+<a class="btn btn-primary btn-sm" href="https://github.com/dwarvesf/spacedown/releases/latest">Download</a>
+</div>
+</header>
+
+<main id="top">
+
+<section class="hero-sec">
+<div class="wrap hero">
+<div class="hero-copy">
+<div class="eyebrow">Markdown reader for Quick Look</div>
+<h1 class="h1">Press space. Read Markdown properly.</h1>
+<p class="hero-sub">Spacedown renders Markdown right in Finder's Quick Look: tables, math, code, callouts and frontmatter, in a calm reading theme that follows light and dark mode.</p>
+<a class="btn btn-primary btn-lg" href="https://github.com/dwarvesf/spacedown/releases/latest">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 11 12 15.5 16.5 11"/><path d="M5 19.5h14"/></svg>
+Download for Mac, free</a>
+<div class="install">
+<code>brew install --cask dwarvesf/tools/spacedown</code>
+<button class="copy" type="button" data-copy="brew install --cask dwarvesf/tools/spacedown">Copy</button>
+</div>
+<p class="facts"><span>macOS 13 or later</span> · <span>notarized</span> · <span>0.9 MB download</span> · <span>works offline</span> · <span>MIT licensed</span></p>
+</div>
+<div class="hero-img">
+<img src="assets/hero.webp" alt="Spacedown previewing a Markdown file in Finder's Quick Look panel" width="1400" height="1206" fetchpriority="high">
+</div>
+</div>
+</section>
+
+<section class="sec-white">
+<div class="wrap band">
+<h2 class="eyebrow eyebrow-strong">Built for what your agents write</h2>
+<p class="lede">Agents write your runbooks, specs and research in Markdown now. Spacedown is where you read it, check it, and see what changed.</p>
+</div>
+</section>
+
+<section id="features" class="sec">
+<div class="wrap features-inner">
+<div class="sec-head">
+<div class="eyebrow">Free reader</div>
+<h2 class="h2">Everything you need to read, free</h2>
+</div>
+<div class="feats">
+<div class="feat">
+<div class="feat-img"><img class="shot" src="assets/feat-quicklook.webp" alt="Spacedown rendering a restic backup runbook with a box drawing diagram, numbered steps, a bash block and a callout" width="1100" height="1070" loading="lazy"></div>
+<div class="feat-txt">
+<div class="eyebrow">Quick Look</div>
+<h3 class="h3">Quick Look on Space</h3>
+<p>Select a .md file in Finder and press Space. It opens rendered, diagrams and code blocks included, with no app to launch.</p>
+</div>
+</div>
+<div class="feat feat-r">
+<div class="feat-img"><img class="shot" src="assets/feat-math.webp" alt="Spacedown rendering a research note with display math, a callout and a table" width="1100" height="740" loading="lazy"></div>
+<div class="feat-txt">
+<div class="eyebrow">Math, code and tables</div>
+<h3 class="h3">Math, code and tables</h3>
+<p>KaTeX math, syntax highlighting, and wide tables that scroll instead of breaking the page.</p>
+<ul class="chips"><li>KaTeX math</li><li>Syntax highlighting</li><li>Scrolling tables</li><li>Callouts</li></ul>
+</div>
+</div>
+<div class="feat">
+<div class="feat-img"><img class="shot" src="assets/feat-skim.webp" alt="Spacedown in Skim reading mode, fading predictable words in an essay" width="1100" height="800" loading="lazy"></div>
+<div class="feat-txt">
+<div class="eyebrow">Reading modes and themes</div>
+<h3 class="h3">Reading modes and themes</h3>
+<p>Skim fades predictable words so the rest stands out. Bionic, BeeLine and RSVP are one menu away, and three themes follow your Mac.</p>
+<div class="themes">
+<figure><img class="shot shot-s shot-t" src="assets/theme-paper.webp" alt="The same essay in the Paper theme" width="1100" height="800" loading="lazy"><figcaption class="eyebrow">Paper</figcaption></figure>
+<figure><img class="shot shot-s shot-t" src="assets/theme-dark.webp" alt="The research note in dark mode" width="1100" height="740" loading="lazy"><figcaption class="eyebrow">Dark</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<div class="cards">
+<article class="card">
+<img class="shot shot-s card-img" src="assets/card-safari.webp" alt="A Markdown file being dragged onto a Safari tab and shown rendered" width="1100" height="700" loading="lazy">
+<div class="card-txt">
+<h3 class="h4">Safari drop</h3>
+<p>Drag a .md file onto a Safari tab and read it rendered right there.</p>
+</div>
+</article>
+<article class="card">
+<img class="shot shot-s" src="assets/card-xray.webp" alt="Writing X-ray marking a long sentence, dashes and filler words" width="1100" height="690" loading="lazy">
+<div class="card-txt">
+<div class="card-title"><h3 class="h4">Writing X-ray</h3><span class="tag">Coming in 1.2</span></div>
+<p>Marks long sentences, dashes and filler words, so you can see what to cut.</p>
+</div>
+</article>
+<article class="card">
+<img class="shot shot-s" src="assets/card-present.webp" alt="Present mode showing one slide for a heading" width="1100" height="690" loading="lazy">
+<div class="card-txt">
+<div class="card-title"><h3 class="h4">Present mode</h3><span class="tag">Coming in 1.2</span></div>
+<p>Press P and get one slide per heading, straight from the same file.</p>
+</div>
+</article>
+</div>
+<div class="strip">
+<div class="sec-head">
+<div class="eyebrow">Real documents</div>
+<h3 class="h3">Reads what you actually write</h3>
+</div>
+<div class="grid4">
+<figure>
+<div class="tw"><img src="assets/doc-runbook.webp" alt="A backup runbook with a box drawing diagram" width="1100" height="800" loading="lazy" style="margin-top:-35%"></div>
+<figcaption>Runbooks with diagrams that stay aligned.</figcaption>
+</figure>
+<figure>
+<div class="tw"><img src="assets/doc-research.webp" alt="A research note with math and a table in the serif theme" width="1100" height="640" loading="lazy" style="margin-top:-17%"></div>
+<figcaption>Research notes with math and tables.</figcaption>
+</figure>
+<figure>
+<div class="tw"><img src="assets/doc-readme.webp" alt="A project README with code in two languages and a wide table" width="1100" height="680" loading="lazy" style="margin-top:-23%"></div>
+<figcaption>READMEs with frontmatter, code and wide tables.</figcaption>
+</figure>
+<figure>
+<div class="tw"><img src="assets/doc-vietnamese.webp" alt="A Vietnamese meeting note with full diacritics and a checklist" width="1100" height="800" loading="lazy" style="margin-top:-40%"></div>
+<figcaption>Vietnamese notes with every diacritic and checklists.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+
+<section class="sec sec-white">
+<div class="wrap appearance-inner">
+<div class="sec-head">
+<div class="eyebrow">Appearance</div>
+<h2 class="h2">Light and dark, matched to your Mac</h2>
+</div>
+<div class="grid2">
+<figure>
+<img class="shot" src="assets/appearance-light.webp" alt="Spacedown rendering a rainfall review document in light mode, with frontmatter, a chart and a diagram" width="900" height="1150" loading="lazy">
+<figcaption><span class="eyebrow">Light</span>Warm paper ground, dark ink, tables and charts at reading width.</figcaption>
+</figure>
+<figure>
+<img class="shot" src="assets/appearance-dark.webp" alt="Spacedown rendering the same rainfall review document in dark mode" width="900" height="1150" loading="lazy">
+<figcaption><span class="eyebrow">Dark</span>The same document after dark, switching with your system appearance.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+
+<section id="pro" class="sec">
+<div class="wrap pro-inner">
+<div class="sec-head sec-head-wide">
+<div class="eyebrow">Pro</div>
+<h2 class="h2">Spacedown Pro, for people who read agent output every day</h2>
+</div>
+<div class="grid4">
+<div class="pro-item">
+<div class="eyebrow">Quick Look</div>
+<h3 class="h4">Since-last-read</h3>
+<p>See only what changed since you last opened a file. An edited runbook shows its edits, not the whole page again.</p>
+</div>
+<div class="pro-item">
+<div class="eyebrow">Menu bar</div>
+<h3 class="h4">Agent inbox</h3>
+<p>One menu bar list of every doc your agents wrote or changed today.</p>
+</div>
+<div class="pro-item">
+<div class="eyebrow">Quick Look</div>
+<h3 class="h4">Transcript view</h3>
+<p>Press Space on a Claude or Codex session log and read it as a chat.</p>
+</div>
+<div class="pro-item">
+<div class="eyebrow">Quick Look</div>
+<h3 class="h4">Read aloud</h3>
+<p>macOS voices in English and Vietnamese, highlighted word by word.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="pricing" class="sec pricing-sec">
+<div class="wrap pricing-inner">
+<div class="sec-head">
+<div class="eyebrow">Pricing</div>
+<h2 class="h2">Free for the reader, once for Pro</h2>
+</div>
+<div class="grid2 pricing-grid">
+<article class="price">
+<div class="price-head">
+<div class="eyebrow eyebrow-strong">Free</div>
+<div class="price-amount"><strong>0</strong></div>
+<p>Everything in the reader. Forever.</p>
+</div>
+<ul class="ticks">
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Quick Look and Safari rendering</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Math, code, tables, callouts and frontmatter</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Light and dark themes</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Skim, Bionic, BeeLine and RSVP reading modes</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Writing X-ray and Present mode</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>MCP server for your agents, in the next release</li>
+</ul>
+<a class="btn btn-ghost btn-lg btn-block" href="https://github.com/dwarvesf/spacedown/releases/latest">Download for Mac</a>
+</article>
+<article class="price price-pro">
+<div class="price-head">
+<div class="eyebrow eyebrow-strong" style="color:var(--accent)">Pro</div>
+<div class="price-amount"><strong>19 USD</strong><span>once</span></div>
+<p>14-day free trial · no account · App Store or license key</p>
+</div>
+<ul class="ticks">
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Everything in Free</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Since-last-read: only what changed</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Agent inbox in the menu bar</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Transcript view for Claude and Codex logs</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>Read aloud in English and Vietnamese</li>
+<li><svg width="18" height="18" aria-hidden="true"><use href="#tick"/></svg>One payment, no subscription</li>
+</ul>
+<a class="btn btn-primary btn-lg btn-block" href="#pro">Start free trial</a>
+</article>
+</div>
+</div>
+</section>
+
+<section id="agents" class="sec sec-white">
+<div class="wrap agents">
+<div class="agents-copy">
+<span class="tag tag-lg">Coming in the next release</span>
+<h2 class="h2">Give your agents eyes</h2>
+<p>The free MCP server lets an agent render, screenshot and lint its Markdown before you read it. What lands in front of you has already been checked.</p>
+</div>
+<div class="code">
+<div class="eyebrow">MCP client config</div>
+<pre>{
+  "mcpServers": {
+    "spacedown": {
+      "command": "spacedown",
+      "args": ["mcp"]
+    }
+  }
+}</pre>
+</div>
+</div>
+</section>
+
+<section id="faq" class="sec">
+<div class="wrap faq">
+<div class="faq-head">
+<div class="eyebrow">FAQ</div>
+<h2 class="h2">Questions, answered</h2>
+</div>
+<div class="faq-list">
+<details open>
+<summary>Does it need the internet?</summary>
+<p>No. Everything renders on your Mac.</p>
+</details>
+<details>
+<summary>Is it open source?</summary>
+<p>The reader is MIT licensed. Pro features are a paid add-on.</p>
+</details>
+<details>
+<summary>Do I need an account for Pro?</summary>
+<p>No. Buy in the App Store or get a license key.</p>
+</details>
+<details>
+<summary>Which macOS?</summary>
+<p>macOS 13 or later.</p>
+</details>
+<details>
+<summary>What happens after the trial?</summary>
+<p>The free reader keeps working. Pro features lock until you buy.</p>
+</details>
+</div>
+</div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+<div class="wrap foot">
+<div><span class="foot-brand">spacedown</span>Made by Dwarves Foundation</div>
+<nav aria-label="Footer">
+<a href="https://github.com/dwarvesf/spacedown">GitHub</a>
+<a href="privacy.html">Privacy</a>
+<a href="https://github.com/dwarvesf/spacedown/releases">Releases</a>
+</nav>
+</div>
+</footer>
+
+<script>
+document.querySelectorAll('button[data-copy]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(b.dataset.copy).then(function () { b.textContent = 'Copied'; }, function () {});
+  });
+});
+</script>
+</body>
+</html>
