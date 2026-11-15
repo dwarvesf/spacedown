@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# sd-settings: print the settings the Spacedown app saved, as one JSON object ({} when
+# there are none or the store cannot be read). Pass it straight to SD.config / SD.render
+# in quick-look/Resources/ql-render.js, which validates it and fills the defaults, so the
+# CLI keeps no copy of the defaults. Contract: docs/contract-r1.md.
+#   scripts/sd-settings           the stored settings as JSON
+#   scripts/sd-settings --path    the plist it reads
+# Env: SPACEDOWN_PREFS=<plist> reads that file instead (tests).
+# Reads the file directly, so a value the app wrote in the last few seconds can lag
+# (cfprefsd flushes to disk on its own schedule).
+set -euo pipefail
+
+GROUP="W777S7V8TN.dfoundation.spacedown"
+PLIST="${SPACEDOWN_PREFS:-${HOME}/Library/Group Containers/${GROUP}/Library/Preferences/${GROUP}.plist}"
+
+case "${1:-}" in
+  "") ;;
+  --path) echo "$PLIST"; exit 0 ;;
+  *) echo "usage: sd-settings [--path]" >&2; exit 64 ;;
+esac
+
+json=""
+[[ -r "$PLIST" ]] && json="$(plutil -convert json -o - "$PLIST" 2>/dev/null)" || json=""
+[[ "$json" == "{"* ]] || json="{}"
+echo "$json"

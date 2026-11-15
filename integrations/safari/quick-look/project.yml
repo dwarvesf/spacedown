@@ -19,6 +19,7 @@ targets:
     platform: macOS
     sources:
       - path: Sources
+      - path: ../shared   # SpacedownSettings.swift, shared with the app target
       - path: Resources   # xcodegen auto-adds non-source files here to a resources copy phase
     settings:
       base:

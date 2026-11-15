@@ -17,5 +17,12 @@
 	<array>
 		<string>/</string>
 	</array>
+	<!-- App Group: the settings store the app writes and the Quick Look extension reads
+	     (shared/SpacedownSettings.swift, docs/contract-r1.md). Team-prefixed macOS form:
+	     no provisioning profile entry needed. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>W777S7V8TN.dfoundation.spacedown</string>
+	</array>
 </dict>
 </plist>
