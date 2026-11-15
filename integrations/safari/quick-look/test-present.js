@@ -115,6 +115,11 @@ check("css: scroll snapping on, slides at least one screen tall",
 check("css: the checked state switches slides on, by sibling selector",
   /#sd-present:checked ~ \.sd-slide\{/.test(page.css));
 check("css: no :has() (the deployment target is macOS 12.0)", !/:has\(/.test(page.css));
+check("css: off, slide children keep the reading page's body-child measure, rhythm and phone table scroll",
+  /#sd-present:not\(:checked\) ~ \.sd-slide > p,/.test(page.css) &&
+  /#sd-present:not\(:checked\) ~ \.sd-slide > hr\{max-width:var\(--sd-measure\)\}/.test(page.css) &&
+  /#sd-present:not\(:checked\) ~ \.sd-slide > h2\{margin-top:32px\}/.test(page.css) &&
+  /max-width:600px\)\{#sd-present:not\(:checked\) ~ \.sd-slide > table:not\(\.sd-frontmatter\)\{display:block;overflow-x:auto/.test(page.css));
 check("css: no em or en dash", !/[\u2013\u2014]/.test(page.css + page.chrome));
 check("css: slide layout is screen only, so print stays the reading page",
   /@media screen\{#sd-present:checked ~ \.sd-slide\{/.test(page.css) &&
