@@ -51,21 +51,15 @@ previous one.
 Only parts 1-3 and 5 are hand-authored; if a future VS Code release renames a variable or a class,
 update those parts to match.
 
-## KaTeX (CLI pages)
+## KaTeX (one version for the panel and the CLI)
 
-`assets/katex/` holds KaTeX 0.19.0 (MIT): `katex.min.js`, `katex.min.css`, the 20 `fonts/*.woff2` files and
-the upstream `LICENSE`. After pandoc runs, `assets/inline-katex.py` swaps the CDN `<script>` and `<link>` tags
-pandoc writes for these files, with each font as a woff2 data URI (woff and ttf fallbacks dropped), so a page
-with math renders with no network. A page with no math gets nothing.
-
-To bump: change the version in `KATEX_BASE_URL` in `bin/spacedown`, then refresh the folder from the npm tarball.
-`tests/smoke.sh` fails if the pin and the vendored `version:"X.Y.Z"` disagree.
-
-```bash
-npm pack katex@X.Y.Z   # in an empty scratch dir; untar, copy package/dist/katex.min.{js,css}, dist/fonts/*.woff2, LICENSE
-```
-
-The Quick Look copy under `integrations/safari/quick-look/Resources/` is a separate, older KaTeX and is not touched.
+KaTeX 0.19.0 (MIT) is pinned in three places that must move together: `integrations/safari/quick-look/Resources/katex.min.js`,
+`.../katex.min.css` and the 20 `assets/katex/fonts/*.woff2` files (with the upstream `assets/katex/LICENSE`). To bump it, copy
+the new `katex.min.js` and `katex.min.css` from the upstream `dist/` into that Resources dir and the new `fonts/*.woff2` into
+`assets/katex/fonts`. `scripts/build-ql-katex` swaps each font's url chain in the stylesheet for the woff2 as a data URI, and
+`integrations/build-safari.sh` ships that file inside the Quick Look extension; the bundled CLI reads the same file, so the app
+carries the fonts once. In a checkout the CLI inlines the fonts from `assets/katex/fonts` at render time. The old
+`assets/katex/katex.min.js` and `katex.min.css` are pandoc-era copies and nothing reads them.
 
 ## highlight.js (Quick Look only)
 

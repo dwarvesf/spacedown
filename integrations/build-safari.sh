@@ -57,6 +57,15 @@ SKIN_CSS="${SKIN_CSS:-}"
 BUNDLE_CLI="${BUNDLE_CLI:-1}"
 [[ -z "$SKIN_CSS" || -f "$SKIN_CSS" ]] || { echo "build-safari: SKIN_CSS not found: $SKIN_CSS" >&2; exit 1; }
 
+# Every build ships stripped binaries: the symbol table and debug info are dead weight in an
+# app nobody debugs from a bundle (about 400 KB of the app). DEPLOYMENT_POSTPROCESSING makes
+# xcodebuild run the strip step on a plain `build` too, not only on `install`.
+STRIP_SETTINGS=(
+  DEPLOYMENT_POSTPROCESSING=YES STRIP_INSTALLED_PRODUCT=YES COPY_PHASE_STRIP=YES
+  STRIP_STYLE=all STRIP_SWIFT_SYMBOLS=YES DEAD_CODE_STRIPPING=YES
+  DEBUG_INFORMATION_FORMAT=dwarf GCC_GENERATE_DEBUGGING_SYMBOLS=NO
+)
+
 SAFARI=0
 case "${1:-}" in
   "") ;;
@@ -109,6 +118,7 @@ fi
 echo "build-safari: building app + Safari extension..."
 xcodebuild -project "$PROJ/SpacedownDrop.xcodeproj" \
   -scheme SpacedownDrop -configuration Release \
+  "${STRIP_SETTINGS[@]}" \
   -derivedDataPath "$PROJ/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   INFOPLIST_KEY_NSHumanReadableCopyright="© 2026 Dwarves Foundation" \
@@ -126,6 +136,7 @@ fi
 ( cd "$QLDIR" && xcodegen generate >/dev/null )
 xcodebuild -project "${QLDIR}/SpacedownQL.xcodeproj" \
   -scheme SpacedownQL -configuration Release \
+  "${STRIP_SETTINGS[@]}" \
   -derivedDataPath "${QLDIR}/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   build >/dev/null
@@ -145,6 +156,12 @@ else
 fi
 cp -f "$SKIN_OUT" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/ql-reading.css"
 [[ -n "$SKIN_CSS" ]] || rm -f "$SKIN_OUT"
+# One KaTeX in the app: the stylesheet with its woff2 fonts embedded. The panel needs them
+# inline (it has no base URL), and the bundled CLI reads this same file from the extension.
+KATEX_OUT="$("${HERE}/../scripts/build-ql-katex")" || { echo "build-safari: build-ql-katex FAILED" >&2; exit 1; }
+cp -f "$KATEX_OUT" "${APP}/Contents/PlugIns/SpacedownQL.appex/Contents/Resources/katex.min.css"
+rm -f "$KATEX_OUT"
+echo "build-safari: embedded the KaTeX fonts into the stylesheet"
 # The CLI rides inside the app, before signing seals the bundle.
 if [[ "$BUNDLE_CLI" != "0" ]]; then
   "${HERE}/../scripts/bundle-cli" "$APP" >/dev/null || { echo "build-safari: bundle-cli FAILED" >&2; exit 1; }

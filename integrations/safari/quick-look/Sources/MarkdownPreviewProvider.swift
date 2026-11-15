@@ -179,9 +179,11 @@ func buildPreviewHTML(_ md: String, fileURL: URL? = nil,
     <!-- marked passes raw HTML through, so a hostile document can put <script> or a
          remote <img> into the panel. Styles are inline and local images arrive as
          data: URIs (inlineLocalImages), so nothing needs the network: spacebar on an
-         untrusted file cannot beacon out or run anything. -->
+         untrusted file cannot beacon out or run anything. Fonts (KaTeX, iA Writer) are
+         base64 data: URIs in those same stylesheets; font-src data: lets them load and
+         still reaches nothing off the machine. -->
     <meta http-equiv="Content-Security-Policy"
-          content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+          content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:">
     <!-- Panel reset FIRST: it is the floor the stylesheets build on. Last place it
          beat ql-reading.css's centered column and outdented the whole page. -->
     <style>body { margin: 0; padding: 16px 22px; }</style>
