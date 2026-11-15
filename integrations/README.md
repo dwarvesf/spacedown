@@ -13,7 +13,7 @@ Both go through one shared wrapper, [`spacedown-open`](./spacedown-open), which 
 
 ```
  Finder double-click ─┐
-                      ├─► spacedown-open ─► spacedown (pandoc+KaTeX) ─► open -a Helium out.html
+                      ├─► spacedown-open ─► spacedown (QL JS core) ─► open -a Helium out.html
  browser drag-drop ───┘     ▲
    │                        │
    └─ extension dropzone ─► native-host (spacedown-host) ──┘
@@ -49,7 +49,7 @@ installer for the native bundle. Quick Look is the default; Safari is opt-in:
 
 ```bash
 ./build-safari.sh                # app + Quick Look appex only, installed to ~/Applications
-./build-safari.sh --with-safari  # also the Safari ext + helper/LaunchAgent (needs spacedown + pandoc)
+./build-safari.sh --with-safari  # also the Safari ext + helper/LaunchAgent (needs spacedown)
 ```
 
 After `--with-safari`, enable it once in Safari:
@@ -60,7 +60,7 @@ After `--with-safari`, enable it once in Safari:
 4. Click its toolbar button -> dropzone tab -> drag a `.md` in (opens in Safari).
 
 **Why the helper exists (the load bug, fixed):** a Safari Web Extension **must** be
-App-Sandboxed to load; a sandboxed handler **cannot** `Process`-spawn pandoc. The old
+App-Sandboxed to load; a sandboxed handler **cannot** `Process`-spawn the renderer. The old
 build disabled the sandbox so the handler could spawn `spacedown-open`, which is exactly what
 kept the extension from ever loading (absent from `Settings > Extensions`, unregistered
 in `pluginkit`). The fix: keep the appex sandboxed (+ adhoc + hardened runtime) and move
@@ -83,7 +83,7 @@ How Safari differs from Chromium (both share `dropzone.{html,js}`):
 |---|---|---|
 | Native messaging target | external binary via JSON manifest | sandboxed Swift handler -> XPC helper |
 | `sendNativeMessage` | `(host, msg, cb)` | `(msg) -> Promise` (dropzone.js branches on `navigator.vendor`) |
-| Sandbox | n/a | appex sandboxed (required); pandoc spawn lives in an unsandboxed XPC helper |
+| Sandbox | n/a | appex sandboxed (required); the `spacedown-open` spawn lives in an unsandboxed XPC helper |
 | Install | load unpacked | `build-safari.sh` (adhoc), enable in Settings |
 
 ## Default-handler tradeoff
@@ -98,7 +98,7 @@ duti -s com.visualstudio.code.oss net.daringfireball.markdown all   # back to VS
 
 - **Stable extension ID.** `extension/manifest.json` ships a fixed public `key`, so the unpacked extension always gets ID `mhifeggicglofancjnjmkgihedkddnpn`. That lets the native-host manifest pin `allowed_origins` ahead of time, so the whole thing is reproducible from this repo (no "copy the ID Edge assigned you" step).
 - **Text, not path.** A file dropped into a browser exposes only its basename, never the real filesystem path (browser security). So the extension sends the file *content*; the host writes a temp copy and renders that. Fine for markdown (well under the 1MB native-messaging message ceiling).
-- **PATH.** GUI/stdio contexts (LaunchServices, native messaging) get a minimal PATH without Homebrew or `~/.local/bin`. Both `spacedown-open` and the host re-export a full PATH so `spacedown` and `pandoc` resolve.
+- **PATH.** GUI/stdio contexts (LaunchServices, native messaging) get a minimal PATH without Homebrew or `~/.local/bin`. Both `spacedown-open` and the host re-export a full PATH so `spacedown` resolves.
 - **Native host is on-demand.** No daemon. The browser spawns `spacedown-host` per message and it exits after replying.
 
 ## Rebuild from zero

@@ -5,11 +5,11 @@
 //  Receives {filename, content} from the dropzone page via
 //  browser.runtime.sendNativeMessage and forwards it over XPC to the
 //  unsandboxed, launch-on-demand render helper (spacedown-render), which runs
-//  the shared `spacedown-open` wrapper (pandoc+KaTeX) and opens Safari. Replies
+//  the shared `spacedown-open` wrapper (the Quick Look JS core) and opens Safari. Replies
 //  {ok, html} or {ok:false, error}.
 //
 //  This appex IS App-Sandboxed (required for Safari to load it). A sandboxed
-//  handler cannot Process-spawn pandoc, so the spawn lives in the helper reached
+//  handler cannot Process-spawn the renderer, so the spawn lives in the helper reached
 //  via a per-user LaunchAgent Mach service; the sandbox carries a mach-lookup
 //  temporary-exception for that service name.
 
@@ -74,7 +74,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             result = ok ? ["ok": true, "html": payload] : ["ok": false, "error": payload]
             sem.signal()
         }
-        // pandoc render is fast; cap so a wedged helper can't hang the page.
+        // A render is fast; cap so a wedged helper can't hang the page.
         _ = sem.wait(timeout: .now() + 30)
         return result
     }
