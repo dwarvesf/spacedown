@@ -11,6 +11,20 @@ Node 0 of release 1: the plug-in registry in the Quick Look render core, the App
 | `node integrations/safari/quick-look/test-contract.js` | 0 | PASS, 28 checks |
 | `NO_INSTALL=1 bash integrations/build-safari.sh` | 0 | app and appex built headless and signed adhoc, nothing installed |
 
+```
+Command: bash tests/smoke.sh
+Exit: 0
+Output: smoke: all 155 passed
+Verdict: PASS
+```
+
+```
+Command: bash tests/smoke.sh --only quicklook,xray,present
+Exit: 0
+Output: smoke: all 7 passed
+Verdict: PASS
+```
+
 ## The real flow: Swift page builder
 
 The appex code ran outside Quick Look. `swiftc` compiled `MarkdownPreviewProvider.swift` and `SpacedownSettings.swift` with a three-line `main.swift`. The harness wrote `textSize=22`, `xrayEnabled=true` and `theme=paper` to a scratch defaults suite, then called `buildPreviewHTML(md, settings: SpacedownSettings.stored(in: suite))` with the built appex's Resources next to it.
