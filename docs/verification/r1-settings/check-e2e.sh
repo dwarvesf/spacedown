@@ -6,7 +6,9 @@
 # page. The sandboxed appex itself is not launched: no Quick Look host runs it here.
 #   bash docs/verification/r1-settings/check-e2e.sh
 #   SPACEDOWN_PREFS=<plist> bash docs/verification/r1-settings/check-e2e.sh   (another plist)
-# Expects textSize 24 and theme tm in the plist (the proof writes them first).
+# With no SPACEDOWN_PREFS it writes a scratch plist holding textSize 24 and theme tm, the
+# two values the check looks for. The app writing that same plist is shown separately
+# (docs/verification/r1-settings/e2e-general-signed.png).
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 QL="${ROOT}/integrations/safari/quick-look"
@@ -22,6 +24,11 @@ FileHandle.standardOutput.write(buildPreviewHTML(md, settings: settings))
 SWIFT
 swiftc -O -o "${WORK}/render" "${WORK}/main.swift" "${QL}/Sources/MarkdownPreviewProvider.swift" \
   "${ROOT}/integrations/safari/shared/SpacedownSettings.swift" 2>&1 | grep -E "error" && exit 2
+if [ -z "${SPACEDOWN_PREFS:-}" ]; then
+  export SPACEDOWN_PREFS="${WORK}/prefs.plist"
+  defaults write "${WORK}/prefs" textSize -int 24
+  defaults write "${WORK}/prefs" theme tm
+fi
 stored="$("${ROOT}/scripts/sd-settings")"
 echo "stored: ${stored}" | cut -c1-120
 html="$(printf '%s' "$stored" | "${WORK}/render")"

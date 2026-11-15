@@ -24,7 +24,7 @@ The app has a native Settings window (menu item "Settings..." with Cmd+,): a too
 | `bash tests/smoke.sh --only quicklook,bundle` | 0 | PASS, 11 checks |
 | `bash docs/verification/r1-settings/check-model.sh` | 0 | PASS, 19 checks: key names, types, clamping, per-tab restore |
 | `bash docs/verification/r1-settings/check-css.sh` | 0 | PASS, 9 cases: computed ground, face and size per theme, appearance, Mac scheme |
-| `bash docs/verification/r1-settings/check-e2e.sh` | 0 | PASS: `textSize` 24 and `theme` tm saved by the signed app's store show in the page `buildPreviewHTML` builds |
+| `bash docs/verification/r1-settings/check-e2e.sh` | 0 | PASS: a settings plist holding `textSize` 24 and `theme` tm, read by `scripts/sd-settings`, shows in the page `buildPreviewHTML` builds |
 
 ```
 check-model: all passed
@@ -54,7 +54,7 @@ Window captures with `screencapture -l` from the built app (adhoc build, launche
 |---|---|
 | Window controls write the store | Covered by `check-model.sh` (model driven in code, no pointer or key input to the owner's Mac) |
 | Developer ID build is granted the App Group and reads the group container plist | Covered: screenshot above |
-| Stored settings change the page the appex builds | Covered by `check-e2e.sh`, through the appex's own `buildPreviewHTML` compiled into a throwaway tool |
+| Stored settings change the page the appex builds | Covered by `check-e2e.sh`, through the appex's own `buildPreviewHTML` compiled into a throwaway tool, fed by `scripts/sd-settings` from a scratch plist |
 | The sandboxed appex running in a live Quick Look panel | Not run: no Quick Look host loads a NO_INSTALL build |
 | `defaults write W777S7V8TN.dfoundation.spacedown ...` from a terminal | Does NOT reach the app: a signed sandboxed app maps that suite to `~/Library/Group Containers/W777S7V8TN.dfoundation.spacedown/Library/Preferences/`, while the CLI tool writes `~/Library/Preferences/`. The app still showed 18 px after `textSize` 24 was written that way. Write the plist by path to test. |
 
