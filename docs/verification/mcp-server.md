@@ -4,26 +4,49 @@
 
 ## Green run
 
-| Command | Exit | Verdict |
-|---|---|---|
-| `bash tests/smoke.sh --only mcp,cli,xray` | 0 | PASS, 65 checks |
-| `bash tests/smoke.sh` | 0 | PASS, `smoke: all 192 passed` |
-
 The `mcp` section drives the server over stdin with a scripted session (`tests/mcp-test.js`): initialize and version handshake, `tools/list`, each tool on a fixture, settings applied through a stored-settings plist, every kind of bad input, and the README config snippet `{"mcpServers": {"spacedown": {"command": "spacedown", "args": ["mcp"]}}}` started by its command name from `PATH`.
+
+```
+Command: bash tests/smoke.sh
+Exit: 0
+Output:
+[mcp] stdio MCP server (tests/mcp-test.js)
+  ok: mcp: lint maps findings to source lines (really on 6, dash and ticket on 8, long sentence on 10)
+  ok: mcp: shot writes a PNG and returns its path
+  ok: mcp: shot returns the wide-table and red-KaTeX WARN lines as structured warnings
+  ok: mcp: the README config snippet {command: spacedown, args: [mcp]} starts a working server
+smoke: all 192 passed
+Verdict: PASS
+```
+
+```
+Command: bash tests/smoke.sh --only mcp,cli,xray
+Exit: 0
+Output: smoke: all 65 passed
+Verdict: PASS
+```
 
 ## Negative control
 
-The lint wiring broken (the renderer no longer writes the findings file), same section:
+The lint wiring broken (the renderer no longer writes the findings file), same `mcp` section, then restored:
 
 ```
+Command: bash tests/smoke.sh --only mcp
+Exit: 1
+Output:
   FAIL: mcp: lint returns structured findings and text content that parses to the same object [... "lint failed: the renderer wrote no findings file" ...]
   FAIL: mcp: lint finds the filler word, dash, ticket ID and long sentence, each with rule, line, excerpt, message
   FAIL: mcp: lint maps findings to source lines (really on 6, dash and ticket on 8, long sentence on 10)
-  ...
 smoke: 20 passed, 8 FAILED
+Result: RED as expected
 ```
 
-Restored, the section is back to 28 of 28.
+```
+Command: bash tests/smoke.sh --only mcp
+Exit: 0
+Output: smoke: all 28 passed
+Verdict: PASS
+```
 
 ## Notes
 
