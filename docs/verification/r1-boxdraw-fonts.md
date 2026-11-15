@@ -7,7 +7,7 @@ Two changes for the Quick Look panel. Box diagrams: `boxdraw.js` marks code bloc
 | Command | Exit | Verdict |
 |---|---|---|
 | `node integrations/safari/quick-look/test-boxdraw.js` | 0 | PASS, 10 checks |
-| `bash tests/smoke.sh --only quicklook,fonts,render`, with the three-line `tests/smoke.sh` change below | 0 | PASS, 28 checks |
+| `bash tests/smoke.sh --only quicklook,fonts,render`, on main with #64 merged in | 0 | PASS, 28 checks |
 | `NO_INSTALL=1 bash integrations/build-safari.sh` | 0 | PASS |
 
 ```
@@ -43,7 +43,7 @@ smoke: all 28 passed
 Verdict: PASS
 ```
 
-`tests/smoke.sh` is frozen for this node. Three of its lines count `data:font/ttf` data URIs (the `[fonts]` check twice, check 42 once), so on this branch alone the `[fonts]` check aborts the run. The change those lines need is the same three lines with `data:font/woff2`. It was applied only in a scratch run, not committed; the lead lands it through a contract PR.
+The font checks in `tests/smoke.sh` accept ttf or woff2 since PR #64, merged into this branch (no smoke.sh edit here). The TTFs stay: smoke check 41 and `bundle-1` need them, and the README tells users to install them. Nothing in `build-ql-skin` or `ia-fontface-css` copies them anywhere; the bundled CLI gets them from the `bundle-cli` rsync of `assets/`.
 
 ## Measured
 
@@ -51,7 +51,7 @@ Verdict: PASS
 |---|---|---|
 | Built QL skin CSS (`build-ql-skin`) | 790355 B | 267867 B |
 | `SpacedownQL.appex` (`du -sk`) | 1468 KB | 960 KB |
-| `Spacedown.app` (`du -sk`) | 3520 KB | 3208 KB |
+| `Spacedown.app` (`du -sk`) | 3520 KB | 3208 KB (same after the merge of #64) |
 | Font payload, 4 files | 588 KB TTF | 194 KB woff2 |
 
 The app shrinks less than the appex because `assets/` ships in the bundled CLI, which now carries the four woff2 files next to the TTFs.
