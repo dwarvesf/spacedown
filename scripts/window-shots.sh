@@ -5,7 +5,7 @@ set -euo pipefail
 S="$(cd "$(dirname "$0")" && pwd)"
 REPO="${REPO:-$(cd "$S/.." && pwd)}"
 RES="$REPO/integrations/safari/SpacedownDrop/SpacedownDrop/Resources"
-B="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+B="${BROWSER:-/Applications/Brave Browser.app/Contents/MacOS/Brave Browser}"
 W="$S/win"
 mkdir -p "$W/Base.lproj"
 cp -f "$RES/Style.css" "$RES/Script.js" "$W/"
