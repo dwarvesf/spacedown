@@ -13,8 +13,8 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 | Part | What it does | Needs |
 |---|---|---|
 | `Spacedown.app` | Quick Look preview for `.md` files | macOS 13 or later |
-| `spacedown` CLI | Companion renderer: Markdown to a self-contained HTML page via pandoc and KaTeX, opened in a browser; `spacedown docx` exports a `.docx` | any Unix shell, `pandoc` |
-| Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | build from source, the CLI and `pandoc` |
+| `spacedown` CLI | Companion renderer: Markdown to a self-contained HTML page through the same JavaScript core as Quick Look (marked, KaTeX, highlight.js), opened in a browser; `spacedown docx` exports a `.docx` | macOS and a shell; `pandoc` only for `docx` |
+| Safari drop extension (opt-in) | Drag a `.md` file onto a Safari tab to render it with the CLI | build from source and the CLI |
 
 ## Download
 
@@ -54,16 +54,16 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 
 ## Install the spacedown CLI
 
-The CLI is a single bash script plus the `assets/` folder next to it. The Quick Look panel carries the same iA look as the default `ia` theme.
+The CLI is a single bash script plus the `assets/` folder next to it. It renders HTML with the Quick Look JavaScript core under `osascript -l JavaScript`, so it needs macOS and nothing else: no `pandoc`, no `python3`. The Quick Look panel carries the same iA look as the default `ia` theme.
 
-**With the app.** From the next release, `Spacedown.app` carries the CLI at `Contents/Resources/cli/bin/spacedown`, with the assets it needs beside it, and the cask will link it. Until then, link a source checkout (below) or, with a build that has it, link it yourself: `ln -sfn /Applications/Spacedown.app/Contents/Resources/cli/bin/spacedown ~/.local/bin/spacedown`. The Mac App Store build does not carry the CLI. `pandoc` is still required.
+**With the app.** From the next release, `Spacedown.app` carries the CLI at `Contents/Resources/cli/bin/spacedown`, with the assets it needs beside it, and the cask will link it. Until then, link a source checkout (below) or, with a build that has it, link it yourself: `ln -sfn /Applications/Spacedown.app/Contents/Resources/cli/bin/spacedown ~/.local/bin/spacedown`. Inside the app the CLI reads the render core from the app's own Quick Look extension, so it carries no second copy; the iA fonts are not embedded in that copy, so install them (`assets/fonts/ia` in the repo) or the page falls back to system fonts. The Mac App Store build does not carry the CLI. `pandoc` is optional (see `spacedown docx`).
 
 **From source.**
 
 ```bash
-brew install pandoc        # required
 brew install entr          # optional, only for --watch
-# python3 is optional: it powers the frontmatter table, callouts and live reload.
+brew install pandoc        # optional, only for `spacedown docx` in the iA look
+# python3 is optional: it powers the --watch page refresh (live reload).
 
 git clone https://github.com/dwarvesf/spacedown.git
 cd spacedown
@@ -123,7 +123,7 @@ Renders as usual, then screenshots the page headless. The browser is found the w
 | Mode | Look |
 |---|---|
 | `ia` (default) | A port of iA Writer's Quattro template: every heading at body size in bold, dash bullets, hairline table rules, near-black on `#fcfcfc` with 164% leading. Set in iA Writer Quattro and iA Writer Mono. Dark ground is iA's night `#1a1a1a`. |
-| `tm` | Serif reading look with typography ported from thinkingmachines.ai (Georgia first, for full Vietnamese diacritics). Code containers are themed; syntax colors stay pandoc-tango. |
+| `tm` | Serif reading look with typography ported from thinkingmachines.ai (Georgia first, for full Vietnamese diacritics). Code containers are themed; syntax colors come from highlight.js (GitHub palette). |
 | `paper` | Warm paper ground, a modest heading scale and soft rules. Set in iA Writer Quattro and iA Writer Mono when installed, otherwise in system fonts. Carries its own dark palette. |
 | `read` | Proportional serif prose (Georgia first, for full Vietnamese diacritics) with monospace code and tables. |
 | `mono` | Full editor fidelity: the fonts mirrored from the editor settings, monospace everywhere. |
@@ -149,7 +149,7 @@ spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `mar
 |---|---|
 | `0` | Success |
 | `1` | Source file missing, unreadable or empty |
-| `2` | pandoc missing or failed |
+| `2` | The renderer failed (`osascript` missing, or the render script errored) |
 | `3` | `--watch` requested but `entr` is not installed |
 | `64` | Usage error |
 | `130` | Ctrl-C during `--watch` |
@@ -161,7 +161,7 @@ spacedown docx notes.md                      # writes notes.docx next to it, pri
 spacedown docx notes.md -o ~/Desktop/notes.docx
 ```
 
-The result uses a pandoc reference doc (`assets/docx/ia-reference.docx`) that carries the iA look: ink `#1a1a1a`, 1.64 line height, headings at body size in bold, one block gap and about 70 characters per line. Frontmatter `title:` becomes the title block. HTML comments are dropped, so a private note in a comment never reaches the reader. iA Writer Quattro is not in the Google Docs font list, so the doc uses IBM Plex Sans and IBM Plex Mono, the faces iA's fonts derive from. It is a subcommand of the one `spacedown` CLI; there is no separate script. Plain `spacedown <file>` still renders HTML. A file literally named `docx` renders with `spacedown ./docx`. Exit codes: `0` ok, `2` pandoc or the reference doc missing, `64` usage, `66` input file not found.
+The result uses a pandoc reference doc (`assets/docx/ia-reference.docx`) that carries the iA look: ink `#1a1a1a`, 1.64 line height, headings at body size in bold, one block gap and about 70 characters per line. Frontmatter `title:` becomes the title block. HTML comments are dropped, so a private note in a comment never reaches the reader. iA Writer Quattro is not in the Google Docs font list, so the doc uses IBM Plex Sans and IBM Plex Mono, the faces iA's fonts derive from. It is a subcommand of the one `spacedown` CLI; there is no separate script. Plain `spacedown <file>` still renders HTML. A file literally named `docx` renders with `spacedown ./docx`. Without `pandoc` the `.docx` comes from macOS `textutil` instead: plainer (no iA styles, math as plain TeX), with a one-line note on stderr. Exit codes: `0` ok, `2` the reference doc missing (with `pandoc`) or neither `pandoc` nor `textutil` found, `64` usage, `66` input file not found.
 
 To open it as a Google Doc, upload the `.docx` with [GAM](https://github.com/GAM-team/GAM) and ask Drive to convert it:
 
@@ -198,7 +198,7 @@ The Quick Look panel shows the iA look. Its sandboxed webview cannot load fonts 
 
 After the build, select a `.md` file in Finder and press space. If the preview does not appear, enable **Spacedown** under System Settings > General > Login Items & Extensions > Quick Look.
 
-The Safari extension must be App-Sandboxed to load, and a sandboxed extension cannot run pandoc. It therefore forwards each dropped file over XPC to a small unsandboxed helper, which launchd starts on demand and which exits when idle. To enable the extension after `--with-safari`:
+The Safari extension must be App-Sandboxed to load, and a sandboxed extension cannot run the CLI. It therefore forwards each dropped file over XPC to a small unsandboxed helper, which launchd starts on demand and which exits when idle. To enable the extension after `--with-safari`:
 
 1. Safari > Settings > Developer: tick **Allow unsigned extensions**. An ad hoc signature counts as unsigned, and this setting resets on every Safari restart. A build signed and notarized with a Developer ID (`SIGN_ID` and `NOTARIZE`, see the header of `build-safari.sh`) skips this step; Safari does not list a Developer ID extension that is not notarized.
 2. Quit and relaunch Safari.
@@ -240,15 +240,15 @@ The Releases page carries one release: each new version replaces the previous on
 
 ## Limitations
 
-- Pages open with `open(1)`, so browser launch is macOS only. On other systems, use `--no-open` and open the printed path yourself.
-- In browser output, pandoc loads KaTeX from a CDN, so math in those pages needs a network connection. The Quick Look panel bundles KaTeX and works offline.
+- The CLI renders with `osascript` and opens pages with `open(1)`, so it is macOS only.
+- The HTML path reads GitHub-flavored Markdown (marked), not pandoc Markdown: pandoc-only syntax such as definition lists, grid tables, citations and `{#id .class}` attributes shows as written.
 - The input is Markdown only.
 - Release downloads are notarized. A build from source is signed ad hoc, so Gatekeeper and Safari treat it as unsigned.
 
 ## Credits
 
 - The browser look builds on VS Code's markdown preview stylesheet (Microsoft, MIT).
-- Math by [KaTeX](https://katex.org), Markdown parsing in Quick Look by [marked](https://marked.js.org), code highlighting in Quick Look by [highlight.js](https://highlightjs.org), conversion by [pandoc](https://pandoc.org).
+- Math by [KaTeX](https://katex.org), Markdown parsing in Quick Look by [marked](https://marked.js.org), code highlighting in Quick Look by [highlight.js](https://highlightjs.org), `.docx` conversion by [pandoc](https://pandoc.org).
 - The `ia` and `paper` themes and the Quick Look skin use the iA Writer Quattro and iA Writer Mono typefaces, vendored under the SIL Open Font License 1.1. Fonts by Information Architects. The `ia` look ports the Quattro template of iA Writer, and the `tm` look ports the typography of thinkingmachines.ai.
 
 Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

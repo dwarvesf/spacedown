@@ -58,12 +58,20 @@ want() { [[ "$ONLY" == "," || "$ONLY" == *",$1,"* ]]; }
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+# The CLI reads the settings the Spacedown app saved. A test must not depend on this machine's
+# real store, so every check reads an empty one unless it sets SPACEDOWN_PREFS itself.
+export SPACEDOWN_PREFS="${TMP}/no-prefs.plist"
 
 pass=0
 fail=0
 
 ok() { echo "  ok: $*"; pass=$((pass+1)); }
 no() { echo "  FAIL: $*" >&2; fail=$((fail+1)); }
+
+# strip_code <html>: the page without its <script> and <style> blocks. The CLI page carries the
+# render core for the plug-ins' page-time hooks (SD.boot), whose source names the markup it emits,
+# so a check that asserts a piece of markup is ABSENT looks at the document, not the scripts.
+strip_code() { perl -0pe 's{<script\b.*?</script>}{}gs; s{<style\b.*?</style>}{}gs' "$1"; }
 
 # A valid markdown fixture with LaTeX math, shared by the cli and chrome sections.
 cat > "${TMP}/fixture.md" <<'EOF'
@@ -133,19 +141,20 @@ if [[ -f "$nested" ]]; then ok "nested dir created"; else no "nested dir missing
 echo "[9] KaTeX reference present"
 if grep -q 'katex' "${TMP}/fixture.html"; then ok "katex found"; else no "katex missing"; fi
 
-# 10. rendered math element present
+# 10. rendered math element present (the Quick Look core typesets at render time: KaTeX spans, no
+#     pandoc .math wrapper and no KaTeX script in the page)
 echo "[10] math span rendered"
-if grep -q 'class="math inline"' "${TMP}/fixture.html" && grep -q 'class="math display"' "${TMP}/fixture.html"; then
+if grep -q '<span class="katex">' "${TMP}/fixture.html" && grep -q 'class="katex-display"' "${TMP}/fixture.html"; then
   ok "inline + display math both present"
 else
   no "missing inline or display math"
 fi
 
-# 10b. a render prints no pandoc deprecation warning on stderr (pandoc 3.11 deprecated --katex)
+# 10b. a render prints no deprecation warning on stderr (pandoc 3.11 deprecated --katex; the HTML path no longer runs pandoc)
 echo "[10b] render stderr has no Deprecated warning"
 "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/deprecation.html" --no-open >/dev/null 2>"${TMP}/deprecation.err"
 if grep -q 'Deprecated' "${TMP}/deprecation.err"; then
-  no "pandoc deprecation warning: $(grep 'Deprecated' "${TMP}/deprecation.err" | head -1)"
+  no "deprecation warning: $(grep 'Deprecated' "${TMP}/deprecation.err" | head -1)"
 else
   ok "no Deprecated warning on stderr"
 fi
@@ -206,11 +215,12 @@ echo "[15] font fallback when no settings"
 SPACEDOWN_SETTINGS="${TMP}/does-not-exist.json" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/nofonts.html" --no-open >/dev/null 2>&1
 if grep -q "Smoke Font" "${TMP}/nofonts.html"; then no "override leaked without settings"; else ok "no override; base defaults apply"; fi
 
-# 16. smart typography OFF: straight quotes stay literal (match VS Code's markdown-it, not pandoc curly)
+# 16. smart typography OFF: straight quotes stay straight (match VS Code's markdown-it; marked writes
+#     them as &quot;, the same character)
 echo "[16] smart typography disabled"
 printf '%s\n' '> a "quoted" word.' > "${TMP}/smart.md"
 "$SPACEDOWN" "${TMP}/smart.md" --out "${TMP}/smart.html" --no-open >/dev/null 2>&1
-if grep -q '"quoted"' "${TMP}/smart.html"; then ok "straight quotes preserved (smart off)"; else no "quotes were smart-converted (curly)"; fi
+if grep -Eq '(&quot;|")quoted(&quot;|")' "${TMP}/smart.html" && ! grep -Eq '&ldquo;quoted|“quoted' "${TMP}/smart.html"; then ok "straight quotes preserved (smart off)"; else no "quotes were smart-converted (curly)"; fi
 
 # 16b. Obsidian-style wikilinks render as anchors with class="wikilink"
 echo "[16b] wikilinks"
@@ -298,6 +308,98 @@ else
   no "SPACEDOWN_THEME_CSS hook not behaving (rc=$rc)"
 fi
 
+# ---- the HTML path runs the Quick Look core under osascript (no pandoc, no python) ----
+# A shim dir puts a pandoc, python3 and python that record a call and fail ahead of the real ones.
+mkdir -p "${TMP}/shim"
+for tool in pandoc python3 python; do
+  printf '#!/bin/bash\necho "%s called: $*" >> "%s/shim-called"\nexit 99\n' "$tool" "$TMP" > "${TMP}/shim/${tool}"
+  chmod +x "${TMP}/shim/${tool}"
+done
+
+echo "[core-1] an HTML render runs neither pandoc nor python, and still typesets math offline"
+: > "${TMP}/shim-called"
+set +e; PATH="${TMP}/shim:$PATH" "$SPACEDOWN" "${SCRIPT_DIR}/tests/fixture/fixture.md" --out "${TMP}/core.html" --no-open >/dev/null 2>"${TMP}/core.err"; rc=$?; set -e
+if [[ $rc -eq 0 && ! -s "${TMP}/shim-called" ]] && grep -q '<span class="katex">' "${TMP}/core.html" \
+   && grep -q 'data:font/woff2;base64,' "${TMP}/core.html" && grep -q 'id="TOC"' "${TMP}/core.html" && grep -q 'class="sourceCode' "${TMP}/core.html"; then
+  ok "rc 0, no pandoc or python call, math with inlined fonts, outline and code blocks present"
+else
+  no "core render: rc=$rc shim-called=[$(cat "${TMP}/shim-called")] err=$(head -c 200 "${TMP}/core.err")"
+fi
+
+echo "[core-2] a folder render also runs without pandoc"
+mkdir -p "${TMP}/folder"; printf '# A\n' > "${TMP}/folder/a.md"; printf '# B\n' > "${TMP}/folder/b.md"
+: > "${TMP}/shim-called"
+set +e; PATH="${TMP}/shim:$PATH" "$SPACEDOWN" "${TMP}/folder" --out "${TMP}/folder-index.html" --no-open >/dev/null 2>&1; rc=$?; set -e
+if [[ $rc -eq 0 && ! -s "${TMP}/shim-called" && -f "${TMP}/folder-index.html" ]] && grep -q 'a.md' "${TMP}/folder-index.html" && ! grep -q 'render failed' "${TMP}/folder-index.html"; then
+  ok "index written, both files rendered"
+else
+  no "folder render: rc=$rc"
+fi
+
+echo "[core-3] the app's stored settings reach the page, except the theme: --font-mode alone sets that"
+printf '{"textSize":22,"theme":"tm"}' > "${TMP}/core-prefs.json"
+plutil -convert binary1 -o "${TMP}/core-prefs.plist" "${TMP}/core-prefs.json"
+SPACEDOWN_PREFS="${TMP}/core-prefs.plist" "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/stored.html" --no-open >/dev/null 2>&1
+SPACEDOWN_PREFS="${TMP}/core-prefs.plist" "$SPACEDOWN" "${TMP}/fixture.md" --font-mode paper --out "${TMP}/stored-flag.html" --no-open >/dev/null 2>&1
+if grep -q -- '--ql-size:22px' "${TMP}/stored.html" && grep -q -- '--ia-bg' "${TMP}/stored.html" && ! grep -q -- '--tm-bg' "${TMP}/stored.html" \
+   && grep -q -- '--paper-bg' "${TMP}/stored-flag.html" && grep -q 'data-sd-theme="paper"' "${TMP}/stored-flag.html" && grep -q -- '--ql-size:22px' "${TMP}/stored-flag.html"; then
+  ok "textSize 22 applied; the stored theme tm is ignored (ia default); --font-mode paper sets the theme"
+else
+  no "stored settings not applied to the page"
+fi
+
+echo "[core-4] the page boots the plug-ins (SD.boot) and carries no core engine"
+if grep -q 'SD.boot(document, {' "${TMP}/core.html" && grep -q 'id: "present"' "${TMP}/core.html" \
+   && ! grep -q 'marked v12' "${TMP}/core.html" && ! grep -q 'version:"0.16' "${TMP}/core.html"; then
+  ok "SD.boot called with the settings; plug-ins inline; marked and KaTeX scripts not in the page"
+else
+  no "page-time boot missing, or an engine script was inlined"
+fi
+
+echo "[core-5] --no-standalone writes the body fragment only"
+printf '# Heading One\n\nBody with $x^2$.\n' > "${TMP}/frag-src.md"
+"$SPACEDOWN" "${TMP}/frag-src.md" --no-standalone --out "${TMP}/frag.html" --no-open >/dev/null 2>&1
+if grep -q '<h1 id="heading-one">' "${TMP}/frag.html" && ! grep -qi '<html\|<head\|<script' "${TMP}/frag.html"; then
+  ok "headings with ids, no html, head or script"
+else
+  no "fragment output wrong"
+fi
+
+echo "[core-6] --version reports pandoc as optional"
+core_ver="$("$SPACEDOWN" --version 2>&1)"
+if grep -q 'pandoc.*optional' <<<"$core_ver"; then ok "pandoc optional"; else no "version does not say pandoc is optional"; fi
+
+echo "[core-7] spacedown docx without pandoc falls back to textutil, with one note on stderr"
+set +e
+PATH="/usr/bin:/bin:/usr/sbin:/sbin" "$SPACEDOWN" docx "${TMP}/d.md" -o "${TMP}/nopandoc.docx" >"${TMP}/np.out" 2>"${TMP}/np.err"; rc=$?
+set -e
+if [[ $rc -eq 0 && "$(cat "${TMP}/np.out")" == "${TMP}/nopandoc.docx" && -s "${TMP}/nopandoc.docx" ]] \
+   && unzip -p "${TMP}/nopandoc.docx" word/document.xml 2>/dev/null | grep -q 'Body with' \
+   && [[ "$(grep -c 'simpler' "${TMP}/np.err")" -eq 1 ]]; then
+  ok "a .docx from textutil, stdout is the path, one stderr note"
+else
+  no "docx fallback: rc=$rc out=$(cat "${TMP}/np.out") err=$(head -c 200 "${TMP}/np.err")"
+fi
+
+echo "[core-8] --watch re-renders on save and keeps the live-reload script"
+if ! command -v entr >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+  echo "  skip: entr or python3 not installed"
+else
+  printf '# One\n\ntext\n' > "${TMP}/watch.md"
+  "$SPACEDOWN" "${TMP}/watch.md" --out "${TMP}/watch.html" --no-open --watch >/dev/null 2>"${TMP}/watch.err" &
+  watch_pid=$!
+  for _ in $(seq 1 40); do grep -q 'watching' "${TMP}/watch.err" 2>/dev/null && break; sleep 0.25; done
+  sleep 0.5
+  printf '# Two\n\ntext\n' > "${TMP}/watch.md"
+  for _ in $(seq 1 40); do grep -q 'id="two"' "${TMP}/watch.html" 2>/dev/null && break; sleep 0.25; done
+  pkill -P "$watch_pid" 2>/dev/null || true; kill "$watch_pid" 2>/dev/null || true; wait "$watch_pid" 2>/dev/null || true
+  if grep -q 'id="two"' "${TMP}/watch.html" && grep -q '__sd_version' "${TMP}/watch.html"; then
+    ok "the saved edit shows in the page; the poll script survived the re-render"
+  else
+    no "watch: no re-render after the edit ($(tail -2 "${TMP}/watch.err" | head -c 200))"
+  fi
+fi
+
 fi  # cli
 
 if want chrome; then
@@ -379,7 +481,7 @@ fi
 # 24. no-frontmatter doc is unaffected (no table, no stray yaml fence injected)
 echo "[24] no-frontmatter doc unaffected"
 "$SPACEDOWN" "${TMP}/fixture.md" --out "${TMP}/nofm.html" --no-open >/dev/null 2>&1
-if ! grep -q 'class="sd-frontmatter"' "${TMP}/nofm.html" && ! grep -q 'sourceCode yaml' "${TMP}/nofm.html"; then
+if ! strip_code "${TMP}/nofm.html" | grep -q 'class="sd-frontmatter"' && ! strip_code "${TMP}/nofm.html" | grep -q 'sourceCode yaml'; then
   ok "no frontmatter table and no yaml fence injected"
 else
   no "stray frontmatter rendering on plain doc"
@@ -421,7 +523,7 @@ fi
 echo "[28] unparseable frontmatter -> yaml fence fallback"
 printf -- '---\nname: ok\nthis line has no colon and is weird\n---\n\n# Body\n' > "${TMP}/bad.md"
 set +e; "$SPACEDOWN" "${TMP}/bad.md" --out "${TMP}/bad.html" --no-open >/dev/null 2>&1; rc=$?; set -e
-if [[ $rc -eq 0 ]] && grep -q 'sourceCode yaml' "${TMP}/bad.html" && ! grep -q 'class="sd-frontmatter"' "${TMP}/bad.html"; then
+if [[ $rc -eq 0 ]] && grep -q 'sourceCode yaml' "${TMP}/bad.html" && ! strip_code "${TMP}/bad.html" | grep -q 'class="sd-frontmatter"'; then
   ok "unparseable block fell back to fence; no table; no crash"
 else
   no "fallback failed (rc=$rc)"
@@ -722,8 +824,8 @@ FIX="${SCRIPT_DIR}/tests/fixture/fixture.md"
 set +e; "$SPACEDOWN" "$FIX" --out "${TMP}/fx.html" --no-open >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 0 ]] \
    && grep -q 'class="sd-frontmatter"' "${TMP}/fx.html" \
-   && grep -q 'class="math inline"' "${TMP}/fx.html" \
-   && grep -q 'class="math display"' "${TMP}/fx.html" \
+   && grep -q '<span class="katex">' "${TMP}/fx.html" \
+   && grep -q 'class="katex-display"' "${TMP}/fx.html" \
    && [[ "$(grep -c '<table' "${TMP}/fx.html")" -ge 3 ]] \
    && grep -q 'class="sourceCode' "${TMP}/fx.html" \
    && grep -q 'sd-callout-warning' "${TMP}/fx.html" \
@@ -1145,7 +1247,7 @@ read_a=$(grep -n 'window.sdSurprise = {' "${TMP}/read/en.html" | head -1 | cut -
 read_b=$(grep -n 'function applyReadMode' "${TMP}/read/en.html" | head -1 | cut -d: -f1 || true)
 if [[ -f "$READ_PART" && -n "$read_a" && -n "$read_b" && "$read_a" -lt "$read_b" ]] \
    && [[ "$(grep -c 'window.sdSurprise = {' "${TMP}/read/en.html")" -eq 1 ]] \
-   && grep -qF 'SKIM_SURPRISE="${SCRIPT_DIR}/../assets/skim-surprise.html"' "${SCRIPT_DIR}/bin/spacedown" \
+   && grep -qF 'ASSETS + "/skim-surprise.html"' "${SCRIPT_DIR}/assets/sd-cli-render.js" \
    && perl -ne 'exit 1 if /[^\x00-\x7f]/' "$READ_PART"; then
   ok "partial present, injected once ahead of the chrome script, plain ASCII"
 else
@@ -1325,19 +1427,33 @@ else
     no "Read menu structure or keyboard behaviour wrong"
   fi
 
-  echo "[read-math] a saved reading mode never touches math: every formula still typesets"
+  echo "[read-math] a saved reading mode never touches math: every formula is still typeset, untouched"
   for mode in beeline skim bionic; do
-    if python3 - "${TMP}/read/reading-math-${mode}.dom" <<'PY'
+    if python3 - "${TMP}/read/reading-math-${mode}.html" "${TMP}/read/reading-math-${mode}.dom" <<'PY'
 import re, sys
-dom = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-spans = re.findall(r'<span class="math (?:inline|display)">(.{0,40})', dom)
-typeset = [s for s in spans if s.startswith('<span class="katex')]
-sys.exit(0 if spans and len(typeset) == len(spans) else 1)
+def katex(path):
+    # every <span class="katex"> element, cut out by counting nested spans
+    text, out, pos = open(path, encoding="utf-8", errors="replace").read(), [], 0
+    while True:
+        start = text.find('<span class="katex">', pos)
+        if start < 0:
+            return out
+        depth, i = 0, start
+        for m in re.finditer(r"<span\b|</span>", text[start:]):
+            depth += 1 if m.group(0) == "<span" else -1
+            if depth == 0:
+                i = start + m.end()
+                break
+        out.append(text[start:i])
+        pos = i
+src, dom = katex(sys.argv[1]), katex(sys.argv[2])
+marks = re.compile(r'class="(?:sd-bi|sd-bl-|sd-sk)')
+sys.exit(0 if src and len(dom) == len(src) and not any(marks.search(d) for d in dom) else 1)
 PY
     then
-      ok "$mode saved: all formulas typeset"
+      ok "$mode saved: all formulas typeset, none wrapped by the mode"
     else
-      no "$mode saved: some formulas stayed raw TeX"
+      no "$mode saved: a formula is missing or a reading mode wrapped it"
     fi
   done
 
@@ -1440,19 +1556,25 @@ FAKE_APP="${TMP}/stage/Spacedown.app"
 mkdir -p "${FAKE_APP}/Contents"
 "${SCRIPT_DIR}/scripts/bundle-cli" "$FAKE_APP" >/dev/null 2>&1 || true
 CLI_DIR="${FAKE_APP}/Contents/Resources/cli"
+# The bundled CLI renders with the app's own Quick Look extension, so the staged app carries one.
+mkdir -p "${FAKE_APP}/Contents/PlugIns/SpacedownQL.appex/Contents"
+rsync -a "${SCRIPT_DIR}/integrations/safari/quick-look/Resources" "${FAKE_APP}/Contents/PlugIns/SpacedownQL.appex/Contents/"
 
 echo "[bundle-1] bundle-cli lays out the CLI and every runtime file under Contents/Resources/cli"
 need_ok=1
-for f in bin/spacedown scripts/ia-fontface-css assets/ia-theme.css assets/tm-theme.css assets/paper-theme.css \
+for f in bin/spacedown scripts/sd-settings assets/sd-cli-render.js assets/cli-base.css \
+         assets/ia-theme.css assets/tm-theme.css assets/paper-theme.css \
          assets/vscode-preview-head.html assets/reading-chrome-head.html assets/reading-chrome-foot.html assets/skim-surprise.html \
-         assets/livereload-foot.html assets/livereload-server.py assets/embed-images.py \
-         assets/frontmatter-to-table.py assets/callouts-to-html.py assets/docx/ia-reference.docx \
-         assets/fonts/ia/iAWriterQuattroV.ttf; do
+         assets/livereload-foot.html assets/livereload-server.py assets/docx/ia-reference.docx \
+         assets/katex/fonts/KaTeX_Main-Regular.woff2; do
   [[ -f "${CLI_DIR}/${f}" ]] || { need_ok=0; echo "    missing: ${f}" >&2; }
 done
-if [[ $need_ok -eq 1 && -x "${CLI_DIR}/bin/spacedown" && -x "${CLI_DIR}/scripts/ia-fontface-css" \
-      && ! -e "${CLI_DIR}/assets/REFRESH.md" ]]; then
-  ok "layout complete, scripts executable, maintainer notes left out"
+# Left out on purpose: the render engine (the app's extension has it), the iA TTFs, maintainer notes.
+for f in assets/katex/katex.min.js assets/katex/katex.min.css assets/fonts/ia/iAWriterQuattroV.ttf assets/REFRESH.md; do
+  [[ ! -e "${CLI_DIR}/${f}" ]] || { need_ok=0; echo "    should be absent: ${f}" >&2; }
+done
+if [[ $need_ok -eq 1 && -x "${CLI_DIR}/bin/spacedown" && -x "${CLI_DIR}/scripts/sd-settings" ]]; then
+  ok "layout complete, scripts executable, no second KaTeX or TTF copy, maintainer notes left out"
 else
   no "bundled layout incomplete"
 fi
@@ -1468,9 +1590,9 @@ BUNDLED="${TMP}/relocated/Spacedown.app/Contents/Resources/cli/bin/spacedown"
 mkdir -p "${TMP}/brewbin"
 ln -s "$BUNDLED" "${TMP}/brewbin/spacedown"
 
-echo "[bundle-3] the bundled CLI, moved and run through a symlink, renders the same HTML as the repo CLI"
+echo "[bundle-3] the bundled CLI, moved and run through a symlink, renders the same HTML as the repo CLI (fonts aside)"
 printf -- '---\ntitle: B\n---\n\n> [!note] Hi\n> body\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "${TMP}/b.md"
-"$SPACEDOWN" "${TMP}/b.md" --out "${TMP}/b-repo.html" --no-open >/dev/null 2>&1 || true
+SPACEDOWN_EMBED_FONTS=0 "$SPACEDOWN" "${TMP}/b.md" --out "${TMP}/b-repo.html" --no-open >/dev/null 2>&1 || true
 "${TMP}/brewbin/spacedown" "${TMP}/b.md" --out "${TMP}/b-bundled.html" --no-open >/dev/null 2>&1 || true
 if [[ -s "${TMP}/b-bundled.html" ]] && cmp -s "${TMP}/b-repo.html" "${TMP}/b-bundled.html"; then
   ok "byte-identical page (theme, chrome, frontmatter table, callout)"
@@ -1478,11 +1600,14 @@ else
   no "bundled render differs from the repo render or failed"
 fi
 
-echo "[bundle-4] the bundled CLI embeds the iA fonts"
-if grep -q 'iA Writer Quattro V' "${TMP}/b-bundled.html" && grep -q 'base64,' "${TMP}/b-bundled.html"; then
-  ok "font faces embedded from the bundle"
+echo "[bundle-4] the bundled CLI renders math offline from the app's own KaTeX and leaves the iA fonts to the system"
+printf 'Math $x^2$ here.\n' > "${TMP}/b-math.md"
+"${TMP}/brewbin/spacedown" "${TMP}/b-math.md" --out "${TMP}/b-math.html" --no-open >/dev/null 2>&1 || true
+if grep -q '<span class="katex">' "${TMP}/b-math.html" && grep -q 'data:font/woff2;base64,' "${TMP}/b-math.html" \
+   && grep -q 'iA Writer Quattro V' "${TMP}/b-bundled.html" && ! grep -q 'data:font/ttf' "${TMP}/b-bundled.html"; then
+  ok "math typeset with inlined woff2 fonts; the ia theme names the iA fonts but embeds none"
 else
-  no "bundled render carries no embedded iA fonts"
+  no "bundled math render failed, or the bundled page embeds the iA TTFs"
 fi
 
 echo "[bundle-5] the bundled CLI exports .docx in the iA look"
@@ -1701,14 +1826,19 @@ fi
 fi  # shot
 
 if want katex; then
-echo "[katex] one pinned KaTeX version, never katex@latest, and the vendored copy is that version"
-pin_ver="$(grep -Eo 'katex@[0-9]+\.[0-9]+\.[0-9]+' "${SCRIPT_DIR}/bin/spacedown" | head -1 | sed 's/^katex@//')"
-if grep -v '^[[:space:]]*#' "${SCRIPT_DIR}/bin/spacedown" | grep -q 'katex@latest'; then
-  no "katex pin: katex@latest appears in bin/spacedown code"
-elif [[ -n "$pin_ver" ]] && grep -q "version:\"${pin_ver}\"" "${SCRIPT_DIR}/assets/katex/katex.min.js"; then
-  ok "bin/spacedown pins katex@${pin_ver} and assets/katex is that version"
+echo "[katex] the CLI typesets with the Quick Look KaTeX (one script, one stylesheet), never a CDN, and every font its stylesheet names is vendored"
+QL_RES_DIR="${SCRIPT_DIR}/integrations/safari/quick-look/Resources"
+katex_missing=0
+for f in $(grep -o 'url(fonts/[^)]*\.woff2)' "${QL_RES_DIR}/katex.min.css" | sed 's/^url(fonts\///; s/)$//' | sort -u); do
+  [[ -f "${SCRIPT_DIR}/assets/katex/fonts/${f}" ]] || katex_missing=$((katex_missing+1))
+done
+if grep -v '^[[:space:]]*#' "${SCRIPT_DIR}/bin/spacedown" "${SCRIPT_DIR}/assets/sd-cli-render.js" | grep -Eq 'katex@|cdn\.jsdelivr'; then
+  no "katex: a CDN reference appears in the CLI code"
+elif [[ -f "${QL_RES_DIR}/katex.min.js" && -f "${QL_RES_DIR}/katex.min.css" && $katex_missing -eq 0 ]] \
+     && [[ "$(grep -c 'KaTeX_' "${QL_RES_DIR}/katex.min.css")" -gt 0 ]]; then
+  ok "KaTeX comes from quick-look/Resources (version $(grep -o 'version:"[0-9.]*"' "${QL_RES_DIR}/katex.min.js" | head -1 | sed 's/version://; s/"//g')); all its woff2 fonts are in assets/katex/fonts"
 else
-  no "katex pin: bin/spacedown pin (${pin_ver:-none}) does not match the vendored katex.min.js"
+  no "katex: the Quick Look KaTeX script or stylesheet is missing, or ${katex_missing} font(s) are not vendored in assets/katex/fonts"
 fi
 
 echo "[katex-offline] a page with math inlines KaTeX: no CDN, no network needed"
@@ -1716,15 +1846,15 @@ cp "${SCRIPT_DIR}/tests/fixture/math-offline.md" "${TMP}/math-offline.md"
 "$SPACEDOWN" "${TMP}/math-offline.md" --out "${TMP}/math-offline.html" --no-open >/dev/null 2>&1
 if ! grep -q 'cdn.jsdelivr.net' "${TMP}/math-offline.html" \
    && grep -q 'data:font/woff2;base64,' "${TMP}/math-offline.html" \
-   && grep -q 'katex.render' "${TMP}/math-offline.html" \
+   && grep -q '<span class="katex">' "${TMP}/math-offline.html" \
    && ! grep -q 'url(fonts/' "${TMP}/math-offline.html"; then
-  ok "no CDN reference, fonts as woff2 data URIs, KaTeX script inline"
+  ok "no CDN reference, fonts as woff2 data URIs, the formulas already typeset"
 else
   no "katex-offline: the page still points at the CDN or leaves font urls unresolved"
 fi
 printf 'No math here.\n' > "${TMP}/nomath.md"
 "$SPACEDOWN" "${TMP}/nomath.md" --out "${TMP}/nomath.html" --no-open >/dev/null 2>&1
-if ! grep -q 'data:font/woff2;base64,' "${TMP}/nomath.html" && ! grep -q 'katex.render' "${TMP}/nomath.html"; then
+if ! grep -q 'data:font/woff2;base64,' "${TMP}/nomath.html" && ! grep -q 'KaTeX_Main' "${TMP}/nomath.html"; then
   ok "a page without math carries no KaTeX bytes"
 else
   no "katex-offline: a page without math was given KaTeX"
@@ -1732,8 +1862,9 @@ fi
 
 echo "[eq-labels] a labeled display equation is numbered in order and linkable"
 if grep -q 'id="eq-energy"' "${TMP}/math-offline.html" && grep -q 'id="eq-sum"' "${TMP}/math-offline.html" \
-   && grep -q '\\tag{1}</span>' "${TMP}/math-offline.html" && grep -q '\\tag{2}</span>' "${TMP}/math-offline.html" \
-   && ! grep -q '\\tag{3}</span>' "${TMP}/math-offline.html" \
+   && grep -q '\\tag{1}</annotation>' "${TMP}/math-offline.html" && grep -q '\\tag{2}</annotation>' "${TMP}/math-offline.html" \
+   && ! grep -q '\\tag{3}</annotation>' "${TMP}/math-offline.html" \
+   && [[ "$(grep -o 'class="tag"' "${TMP}/math-offline.html" | wc -l | tr -d ' ')" == "2" ]] \
    && ! grep -q '</span> {#eq-' "${TMP}/math-offline.html" \
    && grep -q 'href="#eq-energy"' "${TMP}/math-offline.html"; then
   ok "ids eq-energy and eq-sum, tags 1 and 2, no literal {#eq-...} after a formula, link kept"
@@ -1747,7 +1878,7 @@ else
 fi
 printf '$$ a=b $$\n\n$$ c = d \\tag{*} $$ {#eq-own}\n' > "${TMP}/eq-plain.md"
 "$SPACEDOWN" "${TMP}/eq-plain.md" --out "${TMP}/eq-plain.html" --no-open >/dev/null 2>&1
-if [[ "$(grep -o '\\tag{[0-9*]*}</span>' "${TMP}/eq-plain.html" | wc -l | tr -d ' ')" == "1" ]] && grep -q 'id="eq-own"' "${TMP}/eq-plain.html" && grep -q '\\tag{\*}</span>' "${TMP}/eq-plain.html"; then
+if [[ "$(grep -o 'class="tag"' "${TMP}/eq-plain.html" | wc -l | tr -d ' ')" == "1" ]] && grep -q 'id="eq-own"' "${TMP}/eq-plain.html" && grep -q '\\tag{\*}</annotation>' "${TMP}/eq-plain.html"; then
   ok "unlabeled \$\$ stays untagged; a formula with its own \\tag keeps it and gets the anchor"
 else
   no "eq-labels: unlabeled or self-tagged formula mishandled"
@@ -1766,15 +1897,34 @@ else
   if python3 -I - "${TMP}/math-offline.dom" <<'PY'
 import re, sys
 dom = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-spans = re.findall(r'<span class="math (?:inline|display)">(.{0,40})', dom)
-typeset = [s for s in spans if s.startswith('<span class="katex')]
-tags = re.findall(r'<span class="katex-tag">', dom)
-sys.exit(0 if len(spans) == 6 and len(typeset) == 6 and len(tags) == 2 else 1)
+typeset = re.findall(r'<span class="katex">', dom)
+tags = re.findall(r'<span class="tag">', dom)
+errors = re.findall(r'class="katex-error"', dom)
+sys.exit(0 if len(typeset) == 6 and len(tags) == 2 and not errors else 1)
 PY
   then
-    ok "6 of 6 formulas typeset with the network blocked, 2 equation numbers drawn"
+    ok "6 of 6 formulas typeset with the network blocked, 2 equation numbers drawn, no KaTeX error"
   else
     no "katex-offline: formulas stayed raw TeX or the equation numbers are missing with the network blocked"
+  fi
+fi
+
+
+echo "[core-4b] in a browser the page boots the plug-ins without errors"
+if [[ -z "$READ_BROWSER" ]]; then
+  echo "  skip: no headless Chromium-family browser found"
+else
+  { cat "${TMP}/math-offline.html"; printf '<script>document.documentElement.setAttribute("data-sd-boot", SD.plugins().join(",") + "|" + SD.errors.length + "|" + typeof marked);</script>\n'; } > "${TMP}/boot-probe.html"
+  boot_prof="$(mktemp -d "${TMP}/boot-prof.XXXXXX")"
+  "$READ_BROWSER" --headless=new "--user-data-dir=${boot_prof}" --disable-gpu --virtual-time-budget=3000 \
+    --dump-dom "file://${TMP}/boot-probe.html" >| "${TMP}/boot-probe.dom" 2>/dev/null &
+  boot_pid=$!
+  for _ in $(seq 1 60); do grep -q '</html>' "${TMP}/boot-probe.dom" 2>/dev/null && break; sleep 0.5; done
+  kill "$boot_pid" 2>/dev/null || true; wait "$boot_pid" 2>/dev/null || true
+  if grep -q 'data-sd-boot="boxdraw,xray,present|0|undefined"' "${TMP}/boot-probe.dom"; then
+    ok "SD.plugins() = boxdraw,xray,present, SD.errors empty, no marked in the page"
+  else
+    no "page-time boot: $(grep -o 'data-sd-boot="[^"]*"' "${TMP}/boot-probe.dom" | head -1)"
   fi
 fi
 
