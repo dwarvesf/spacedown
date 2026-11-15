@@ -58,8 +58,7 @@ KaTeX 0.19.0 (MIT) is pinned in three places that must move together: `integrati
 the new `katex.min.js` and `katex.min.css` from the upstream `dist/` into that Resources dir and the new `fonts/*.woff2` into
 `assets/katex/fonts`. `scripts/build-ql-katex` swaps each font's url chain in the stylesheet for the woff2 as a data URI, and
 `integrations/build-safari.sh` ships that file inside the Quick Look extension; the bundled CLI reads the same file, so the app
-carries the fonts once. In a checkout the CLI inlines the fonts from `assets/katex/fonts` at render time. The old
-`assets/katex/katex.min.js` and `katex.min.css` are pandoc-era copies and nothing reads them.
+carries the fonts once. In a checkout the CLI inlines the fonts from `assets/katex/fonts` at render time.
 
 ## highlight.js (Quick Look only)
 
