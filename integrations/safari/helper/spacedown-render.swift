@@ -3,7 +3,7 @@
 //  Unsandboxed, launch-on-demand XPC helper for the Safari drag-drop extension.
 //
 //  Why this exists: a Safari Web Extension MUST be App-Sandboxed to load, and a
-//  sandboxed handler cannot `Process`-spawn pandoc. So the spawn moved here, into
+//  sandboxed handler cannot `Process`-spawn the renderer. So the spawn moved here, into
 //  an unsandboxed helper that launchd starts on demand (user LaunchAgent +
 //  MachServices) when the sandboxed appex opens an XPC connection.
 //
@@ -41,8 +41,8 @@ final class RenderImpl: NSObject, SpacedownRenderService {
 
         let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
         var env = ProcessInfo.processInfo.environment
-        // launchd gives a minimal PATH; add Homebrew + ~/.local/bin so spacedown-open,
-        // spacedown, and pandoc resolve.
+        // launchd gives a minimal PATH; add Homebrew + ~/.local/bin so spacedown-open
+        // and spacedown resolve.
         env["PATH"] = "/opt/homebrew/bin:\(home)/.local/bin:/usr/local/bin:/usr/bin:/bin"
         env["SPACEDOWN_BROWSER"] = "Safari"   // drop happened in Safari -> open in Safari
 
