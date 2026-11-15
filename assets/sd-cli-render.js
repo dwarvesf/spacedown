@@ -8,7 +8,8 @@
 // resources (the Quick Look Resources dir: the repo copy, or the app's own extension), src,
 // out, title, fontMode (becomes the core's theme setting), themeOverride (a CSS file),
 // standalone, livereload, embedImages, embedFonts, absImages, mathAs ("tex" = plain TeX, for
-// docx), settings (the JSON scripts/sd-settings prints), vscodeSettings (a settings.json).
+// docx), settings (the JSON scripts/sd-settings prints), vscodeSettings (a settings.json),
+// lintOut (a path: also write the Writing X-ray findings there as JSON; see lintFindings).
 // Diagnostics go to stderr through console.log; the page is written to `out`.
 // Page contract: docs/contract-r1.md (host order), README "CLI".
 ObjC.import("Foundation");
@@ -375,6 +376,73 @@ function run(argv) {
     });
   }
 
+
+  // ---- Writing X-ray findings as data (--lint-json; the MCP lint tool reads it) ----
+  // The xray plug-in marks hits at render time as <span class="sd-xr sd-xr-RULE" title="X-ray, ...">.
+  // Read those marks back out of the rendered body in document order, and give each a source
+  // line: a forward search through the source with code and comments blanked out, so the same
+  // dash or word in two places lands on the right lines. line is null when no match is found.
+  var LINT_RULES = { dash: "dash", long: "long-sentence", filler: "filler", ticket: "ticket-id" };
+  function unesc(s) { return s.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&"); }
+  function reEscape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function maskSource(src) {
+    function blank(w) { return w.replace(/[^\n]/g, " "); }
+    return src.replace(/^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n {0,3}\1[`~]*[ \t]*(?=\n|$)|$)/gm, blank)
+      .replace(/<!--[\s\S]*?-->/g, blank).replace(/(`+)[^\n]*?\1/g, blank);
+  }
+  function lintFindings(body, src) {
+    var findings = [], stack = [], open = null, m, re = /<[^>]*>|[^<]+/g;
+    while ((m = re.exec(body)) !== null) {
+      var tok = m[0];
+      if (tok.charAt(0) !== "<") {
+        var text = unesc(tok);
+        stack.forEach(function (e) { if (e) e.f.text += text; });
+      } else if (/^<span\b/i.test(tok)) {
+        var c = /class="sd-xr sd-xr-(\w+)"/.exec(tok), rule = c && LINT_RULES[c[1]];
+        if (!rule) { stack.push(null); continue; }
+        var title = /title="([^"]*)"/.exec(tok), last = /data-sd-words="\d+"/.test(tok), f;
+        if (rule === "long-sentence" && open) f = open; // a later piece of the same sentence
+        else {
+          f = { rule: rule, text: "", message: unesc(title ? title[1] : "").replace(/^X-ray, /, "") };
+          findings.push(f);
+          if (rule === "long-sentence") open = f;
+        }
+        stack.push({ f: f, last: last });
+      } else if (/^<\/span/i.test(tok)) {
+        var e = stack.pop();
+        if (e && e.last) open = null;
+      }
+    }
+    var masked = maskSource(src), cursor = 0;
+    function snippet(at, len) {
+      var a = src.lastIndexOf("\n", at - 1) + 1, b = src.indexOf("\n", at + len);
+      if (b < 0) b = src.length;
+      var from = Math.max(a, at - 40), to = Math.min(b, at + len + 40);
+      return (from > a ? "..." : "") + src.slice(from, to).trim() + (to < b ? "..." : "");
+    }
+    return findings.map(function (f) {
+      var match = f.text.replace(/\s+/g, " ").trim(), rx = null, skip = 0;
+      if (f.rule === "dash") rx = /[\u2014\u2013]/g;
+      else if (f.rule === "filler") { rx = new RegExp("(^|[^\\p{L}\\p{N}_])(" + reEscape(match).replace(/ /g, "\\s+") + ")(?![\\p{L}\\p{N}_])", "giu"); skip = 1; }
+      else if (f.rule === "ticket-id") rx = new RegExp("(^|[^A-Za-z0-9_-])(" + reEscape(match) + ")(?![A-Za-z0-9])", "g"), skip = 1;
+      else {
+        var words = match.match(/[\p{L}\p{N}]+/gu) || [];
+        if (words.length) rx = new RegExp(words.slice(0, 4).map(reEscape).join("[^\\p{L}\\p{N}]+"), "giu");
+      }
+      var hit = null, line = null;
+      if (rx) { rx.lastIndex = cursor; hit = rx.exec(masked); }
+      var out = { rule: f.rule, line: null, excerpt: match.length > 100 ? match.slice(0, 100) + "..." : match, message: f.message };
+      if (hit) {
+        var at = hit.index + (skip ? hit[1].length : 0);
+        out.line = masked.slice(0, at).split("\n").length;
+        if (f.rule !== "long-sentence") out.excerpt = snippet(at, hit[0].length - (skip ? hit[1].length : 0));
+        cursor = at + 1;
+      }
+      if (f.rule !== "long-sentence") out.match = match;
+      return out;
+    });
+  }
+
   // ---- render ----
   var source = must(opt.src);
   var settings = {};
@@ -390,6 +458,14 @@ function run(argv) {
 
   var notes = footnotes(source);
   var page = SD.render(protectCode(prePasses(notes.src)), settings);
+  if (opt.lintOut) {
+    var cfg = page.config || {};
+    var rulesOn = [["xrayDashes", "dash"], ["xrayLongSentences", "long-sentence"], ["xrayFillers", "filler"], ["xrayTicketIds", "ticket-id"]]
+      .filter(function (r) { return cfg[r[0]] && (r[0] !== "xrayFillers" || (cfg.xrayFillerWords || []).length > 0); })
+      .map(function (r) { return r[1]; });
+    var lint = { rules: rulesOn, sentenceWordLimit: cfg.xraySentenceWords, findings: lintFindings(page.body, source) };
+    $(JSON.stringify(lint) + "\n").writeToFileAtomicallyEncodingError(opt.lintOut, true, $.NSUTF8StringEncoding, null);
+  }
   var body = page.body;
   body = unguard(body);
   body = wrapCode(body);
