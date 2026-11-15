@@ -62,8 +62,8 @@ Window captures with `screencapture -l` from the built app (adhoc build, launche
 
 | Change | Expected | Result |
 |---|---|---|
-| `CSS=/dev/null bash docs/verification/r1-settings/check-css.sh` (no settings CSS) | theme and forced-appearance cases fail | see the PR body |
-| Save `textsize` instead of `textSize` in `SettingsModel` | `check-model.sh` fails on the key names | see the PR body |
+| `CSS=/dev/null bash docs/verification/r1-settings/check-css.sh` (no settings CSS) | theme and forced-appearance cases fail | FAIL: 7 of 9 cases red (tm, paper, read, mono, and both forced-appearance cases); the two `ia` cases stay green because the default skin needs no settings CSS |
+| Save `textsize` instead of `textSize` in `SettingsModel` | `check-model.sh` fails on the key names | FAIL: "textSize saved as int" and "a new window reads back what was saved" (2 of 19), then the change was reverted |
 
 ## Found on the way
 
