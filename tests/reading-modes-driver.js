@@ -31,11 +31,13 @@
   function gdist(a, b) { return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2])); }
   function gLeft(el) { var g = gradient(el); return g ? g[0] : null; }
   function gRight(el) { var g = gradient(el); return g ? g[g.length - 1] : null; }
-  // text of every prose element plus how many text nodes it holds: equal before and after means restored
+  // text of every prose element plus how many text nodes it holds: equal before and after means restored.
+  // The outline's scroll-spy marks the section in view with class sd-active, and its IntersectionObserver
+  // reports a few frames after load (later on a loaded machine), so that one class is not part of the text.
   function sig() {
     var out = [], nodes = 0;
     Array.prototype.forEach.call(document.querySelectorAll("p, li, td, th, blockquote, h1, h2, h3"), function (e) {
-      out.push(e.innerHTML);
+      out.push(e.innerHTML.replace(/ class="sd-active"/g, ""));
       var w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
       while (w.nextNode()) nodes++;
     });
