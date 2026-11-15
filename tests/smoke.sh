@@ -25,7 +25,10 @@ SPACEDOWN="${SCRIPT_DIR}/bin/spacedown"
 #   bundle     CLI bundled inside the app                 notary   build-safari notarytool credential choice
 #   layout     layout-check usage                         shot     --shot and --offline (headless browser)
 #   katex      pinned and vendored KaTeX, offline math
-SECTIONS=(cli chrome quicklook render fonts docx polish skim reading parity bundle notary layout shot katex)
+#   xray       Writing X-ray plug-in (node)               present  Present mode plug-in (node)
+# Release-1 contract (hooks, settings, which node owns which section): docs/contract-r1.md.
+# A check that is red on purpose is listed in tests/known-failures.txt.
+SECTIONS=(cli chrome quicklook render fonts docx polish skim reading parity bundle notary layout shot katex xray present)
 ONLY=","
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -655,6 +658,57 @@ if command -v node >/dev/null 2>&1; then
   fi
 else
   ok "node absent, ql-render suite skipped"
+fi
+
+# 39b. The release-1 contract: plug-in registry, settings, and the copies of the
+#      contract in Swift, the entitlements and scripts/sd-settings (docs/contract-r1.md).
+echo "[39b] release-1 contract"
+if command -v node >/dev/null 2>&1; then
+  if node "${SCRIPT_DIR}/integrations/safari/quick-look/test-contract.js" >/dev/null 2>&1; then
+    ok "contract suite passes"
+  else
+    no "contract suite failed (run integrations/safari/quick-look/test-contract.js for the detail)"
+  fi
+else
+  ok "node absent, contract suite skipped"
+fi
+
+# 39c. The same core and plug-ins render under osascript JavaScript (the CLI's engine),
+#      loaded in Resources/load-order.txt order, with no DOM.
+echo "[39c] render core under osascript"
+osa_out=$(osascript -l JavaScript - "${SCRIPT_DIR}/integrations/safari/quick-look/Resources" 2>&1 <<'JXA' || true
+ObjC.import("Foundation");
+function run(argv) {
+  function read(f) { return $.NSString.stringWithContentsOfFileEncodingError(argv[0] + "/" + f, $.NSUTF8StringEncoding, null).js; }
+  read("load-order.txt").split("\n").forEach(function (f) {
+    f = f.trim();
+    if (f && f.charAt(0) !== "#") (0, eval)(read(f));
+  });
+  var p = SD.render("# Hi\n\n$x^2$", { surface: "cli" });
+  return [SD.plugins().join(","), /<h1/.test(p.body), /class="katex/.test(p.body), SD.errors.length].join(" ");
+}
+JXA
+)
+if [[ "$osa_out" == "boxdraw,xray,present true true 0" ]]; then ok "osascript renders with every plug-in"; else no "osascript render: $osa_out"; fi
+
+# 39d. scripts/sd-settings: the app's stored settings as JSON, {} when there are none.
+echo "[39d] sd-settings"
+printf '{"textSize":22,"xrayEnabled":true}' > "${TMP}/prefs.json"
+plutil -convert binary1 -o "${TMP}/prefs.plist" "${TMP}/prefs.json"
+sd_json=$(SPACEDOWN_PREFS="${TMP}/prefs.plist" "${SCRIPT_DIR}/scripts/sd-settings")
+sd_none=$(SPACEDOWN_PREFS="${TMP}/missing.plist" "${SCRIPT_DIR}/scripts/sd-settings")
+if [[ "$sd_json" == *'"textSize":22'* && "$sd_json" == *'"xrayEnabled":true'* && "$sd_none" == "{}" ]]; then
+  ok "stored settings as JSON, {} when missing"
+else
+  no "sd-settings: '$sd_json' / '$sd_none'"
+fi
+
+# 39e. Box-drawing code blocks plug-in (Resources/boxdraw.js); its owner extends test-boxdraw.js.
+echo "[39e] box-drawing plug-in"
+if node "${SCRIPT_DIR}/integrations/safari/quick-look/test-boxdraw.js" >/dev/null 2>&1; then
+  ok "boxdraw suite passes"
+else
+  no "boxdraw suite failed (run integrations/safari/quick-look/test-boxdraw.js for the detail)"
 fi
 
 fi  # quicklook
@@ -1725,6 +1779,25 @@ PY
 fi
 
 fi  # katex
+
+# Release-1 plug-in sections. Each owner extends its node test file, not this one.
+if want xray; then
+echo "[xray] Writing X-ray plug-in"
+if node "${SCRIPT_DIR}/integrations/safari/quick-look/test-xray.js" >/dev/null 2>&1; then
+  ok "xray suite passes"
+else
+  no "xray suite failed (run integrations/safari/quick-look/test-xray.js for the detail)"
+fi
+fi  # xray
+
+if want present; then
+echo "[present] Present mode plug-in"
+if node "${SCRIPT_DIR}/integrations/safari/quick-look/test-present.js" >/dev/null 2>&1; then
+  ok "present suite passes"
+else
+  no "present suite failed (run integrations/safari/quick-look/test-present.js for the detail)"
+fi
+fi  # present
 
 echo
 if [[ $fail -gt 0 ]]; then

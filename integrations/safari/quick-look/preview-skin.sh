@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Assemble the EXACT page the Quick Look appex builds (katex.min.css +
-# md-style.html + ql-reading.css around the ql-render body) and shoot it in
+# md-style.html + hljs-theme.css + ql-reading.css + ql-settings.css + plug-in css
+# around the SD.render body) and shoot it in
 # both appearances. Verifies the reading skin and its dark-mode block without
 # a GUI, since the appex head is assembled in Swift and has no headless twin.
 #
@@ -18,9 +19,13 @@ mkdir -p "$OUT"
 BASE="${QL}/Resources/md-style.html"
 [ -f "$BASE" ] || BASE="${HERE}/../../../assets/vscode-preview-head.html"
 
-node "${QL}/render-file.js" "$MD" --out "${OUT}/body.html" >/dev/null
+# SD.render gives the page parts buildPreviewHTML places: body, plug-in css, the
+# top-of-body chrome (controls + toolbar) and the <html> attributes. Default settings.
+node -e 'const fs = require("fs"); const p = require(process.argv[1]).loadCore().SD.render(fs.readFileSync(process.argv[2], "utf8"), {});
+for (const k of ["body", "css", "chrome", "attrs"]) fs.writeFileSync(process.argv[3] + "/" + k + ".html", p[k]);' \
+  "${QL}/load-core.js" "$MD" "$OUT"
 {
-  echo '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+  echo "<!doctype html><html lang=\"en\" $(cat "${OUT}/attrs.html")><head><meta charset=\"utf-8\">"
   # Same panel reset, in the same position, as buildPreviewHTML. Order is the
   # whole point: the reset must precede the stylesheets or it outdents the page.
   echo '<style>body { margin: 0; padding: 16px 22px; }</style>'
@@ -30,8 +35,10 @@ node "${QL}/render-file.js" "$MD" --out "${OUT}/body.html" >/dev/null
   # NO_SKIN=1 is the negative control: drop the reading skin and the page falls
   # back to the VS Code look, sans and light-only in both appearances.
   [ "${NO_SKIN:-0}" = "1" ] || echo "<style>$(cat "${QL}/Resources/ql-reading.css")</style>"
+  echo "<style>$(cat "${QL}/Resources/ql-settings.css")</style>"
+  [ -s "${OUT}/css.html" ] && echo "<style>$(cat "${OUT}/css.html")</style>"
   echo '</head><body>'
-  cat "${OUT}/body.html"
+  cat "${OUT}/chrome.html" "${OUT}/body.html"
   echo '</body></html>'
 } > "${OUT}/page.html"
 

@@ -14,7 +14,7 @@
 // <br> hard breaks, and unresolved SD placeholders (always a bug when nonzero).
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
+const { loadCore } = require("./load-core");
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
@@ -28,11 +28,7 @@ const dir = args.includes("--app")
   ? path.join(process.env.HOME, "Applications/Spacedown.app/Contents/PlugIns/SpacedownQL.appex/Contents/Resources")
   : path.join(__dirname, "Resources");
 
-const ctx = {};
-ctx.self = ctx; ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
-vm.createContext(ctx);
-for (const f of ["marked.min.js", "katex.min.js", "highlight.min.js", "ql-render.js"])
-  vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), ctx, { filename: f });
+const ctx = loadCore(dir);
 
 const t0 = Date.now();
 const html = ctx.mdToHtml(fs.readFileSync(file, "utf8"));

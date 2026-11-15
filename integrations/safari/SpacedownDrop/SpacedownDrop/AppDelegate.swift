@@ -9,7 +9,9 @@ import Cocoa
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Override point for customization after application launch.
+        // Release-1 hooks (docs/contract-r1.md): each feature lives in its own file.
+        SettingsWindow.install()
+        Onboarding.start()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
