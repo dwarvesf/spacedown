@@ -20,3 +20,27 @@ With `BROWSER` unset the scripts fall back to the original Brave path, so the ol
 ## Limits
 
 The X-ray and Present toolbar is not in these renders: `render-file.js` plus `qlwrap.js` emit the body only. `docs/images/quicklook-panel.png` is a real panel capture and was not regenerated.
+
+## Captured run
+
+```
+Command: syntax check of the three scripts, then pixel size of each regenerated PNG, then the staged diff
+Exit: 0
+Output:
+syntax rc=0
+docs/app-store/screenshots/1-quicklook.png 2880 1800 
+docs/app-store/screenshots/2-dark.png 2880 1800 
+docs/images/quicklook-light.png 900 1150 
+docs/images/quicklook-dark.png 900 1150 
+Verdict: PASS
+```
+
+## After
+
+| Store 1 | Store 2 |
+|---|---|
+| ![store 1](../app-store/screenshots/1-quicklook.png) | ![store 2](../app-store/screenshots/2-dark.png) |
+
+| README light | README dark |
+|---|---|
+| ![light](../images/quicklook-light.png) | ![dark](../images/quicklook-dark.png) |
