@@ -4,14 +4,55 @@
 # The --watch path is not covered here because it depends on whether entr is
 # installed on the host.
 #
-# Run: bash tests/smoke.sh
-# Pass: prints "smoke: all passed", exit 0.
-# Fail: prints which test failed, exit 1.
+# Run: bash tests/smoke.sh                       (the whole suite)
+#      bash tests/smoke.sh --list                (print the section names)
+#      bash tests/smoke.sh --only cli,docx       (run only those sections)
+# Pass: prints "smoke: all N passed", exit 0.
+# Fail: prints which test failed, exit 1. An unknown section or option exits 64.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SPACEDOWN="${SCRIPT_DIR}/bin/spacedown"
+
+# Sections, one per area of the code. Each one below is wrapped in `if want <name>; then ... fi`.
+#   cli        CLI contract, render, fonts, themes        chrome   outline, frontmatter, callouts, dark mode
+#   quicklook  Quick Look render core (node)              render   the synthetic fixture and the theme polish checks
+#   fonts      vendored iA fonts, Quick Look skin build   docx     the docx subcommand
+#   polish     outline, tables, images, links, print      skim     Skim CSS values (static)
+#   reading    reading modes: static checks, then headless-browser behaviour
+#   parity     Skim engine against the skimgram goldens (node)
+#   bundle     CLI bundled inside the app                 notary   build-safari notarytool credential choice
+#   layout     layout-check usage                         shot     --shot and --offline (headless browser)
+#   katex      pinned and vendored KaTeX, offline math
+SECTIONS=(cli chrome quicklook render fonts docx polish skim reading parity bundle notary layout shot katex)
+ONLY=","
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --list) printf '%s\n' "${SECTIONS[@]}"; exit 0 ;;
+    --only) [[ $# -ge 2 ]] || { echo "smoke: --only needs a section list (see --list)" >&2; exit 64; }
+            ONLY+="$2,"; shift 2 ;;
+    --only=*) ONLY+="${1#--only=},"; shift ;;
+    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "smoke: unknown option '$1' (use --list, --only <section>[,<section>])" >&2; exit 64 ;;
+  esac
+done
+if [[ "$ONLY" != "," ]]; then
+  IFS=',' read -r -a picked <<<"${ONLY#,}"
+  named=0
+  for name in "${picked[@]}"; do
+    [[ -z "$name" ]] && continue
+    named=$((named+1))
+    case " ${SECTIONS[*]} " in
+      *" $name "*) ;;
+      *) echo "smoke: unknown section '$name' (valid: ${SECTIONS[*]})" >&2; exit 64 ;;
+    esac
+  done
+  [[ $named -gt 0 ]] || { echo "smoke: --only needs at least one section (valid: ${SECTIONS[*]})" >&2; exit 64; }
+fi
+# want <section>: true for every section on a full run, only for the named ones under --only.
+want() { [[ "$ONLY" == "," || "$ONLY" == *",$1,"* ]]; }
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -21,6 +62,29 @@ fail=0
 ok() { echo "  ok: $*"; pass=$((pass+1)); }
 no() { echo "  FAIL: $*" >&2; fail=$((fail+1)); }
 
+# A valid markdown fixture with LaTeX math, shared by the cli and chrome sections.
+cat > "${TMP}/fixture.md" <<'EOF'
+# Test fixture
+
+Inline math: $\alpha^2 + \beta^2 = 1$.
+
+Display math:
+$$
+\sum_{i=0}^{n-1} |\alpha_i|^2 = 1
+$$
+
+A Hadamard:
+$$
+H = \tfrac{1}{\sqrt{2}} \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}
+$$
+EOF
+
+# A docx input and its helpers, shared by the docx and bundle sections.
+docx() { "$SPACEDOWN" docx "$@"; }
+docx_styles() { unzip -p "$1" word/styles.xml 2>/dev/null; }
+printf -- '---\ntitle: "T"\n---\n\n<!-- private note -->\n\n## Head\n\nBody with [a link](https://x.test).\n\n> quote\n' > "${TMP}/d.md"
+
+if want cli; then
 # 1. --version exits 0
 echo "[1] --version"
 if out=$("$SPACEDOWN" --version 2>&1) && echo "$out" | grep -q '^spacedown '; then ok "version output"; else no "version output: $out"; fi
@@ -44,23 +108,6 @@ echo "[5] empty file → exit 1"
 : > "${TMP}/empty.md"
 set +e; "$SPACEDOWN" "${TMP}/empty.md" >/dev/null 2>&1; rc=$?; set -e
 if [[ $rc -eq 1 ]]; then ok "exit 1"; else no "got $rc"; fi
-
-# Prepare a valid markdown fixture with LaTeX math.
-cat > "${TMP}/fixture.md" <<'EOF'
-# Test fixture
-
-Inline math: $\alpha^2 + \beta^2 = 1$.
-
-Display math:
-$$
-\sum_{i=0}^{n-1} |\alpha_i|^2 = 1
-$$
-
-A Hadamard:
-$$
-H = \tfrac{1}{\sqrt{2}} \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}
-$$
-EOF
 
 # 6. valid render with --no-open prints output path on stdout
 echo "[6] valid render --no-open → stdout = path"
@@ -248,6 +295,9 @@ else
   no "SPACEDOWN_THEME_CSS hook not behaving (rc=$rc)"
 fi
 
+fi  # cli
+
+if want chrome; then
 # ---- reading chrome: outline sidebar + zoom + copy-source ----
 # fixture.md has one heading, so it carries a TOC. Build a multi-heading one too.
 cat > "${TMP}/chrome.md" <<'EOF'
@@ -591,6 +641,9 @@ else
   no "the dark ground has drifted between surfaces"
 fi
 
+fi  # chrome
+
+if want quicklook; then
 # 39. The Quick Look appex is the largest surface in this tool and its tests only ran
 #     inside build-safari.sh, so `bash tests/smoke.sh` reported green on a broken panel.
 echo "[39] Quick Look render core"
@@ -604,6 +657,9 @@ else
   ok "node absent, ql-render suite skipped"
 fi
 
+fi  # quicklook
+
+if want render; then
 # 40. The synthetic fixture renders every feature it exercises: frontmatter table,
 #     inline + display math, a wide table in its scroll wrapper, highlighted code, a
 #     callout, an image, and a wikilink.
@@ -780,6 +836,9 @@ printf '| Company | Reason |\n|---------|--------|\n' > "${TMP}/tbe.md"
 if grep -q '<th>Company</th>' "${TMP}/tbe.html" && [[ $(sed -n '/<tbody>/,/<\/tbody>/p' "${TMP}/tbe.html" | grep -c '<td') -eq 2 ]] \
    && grep -q 'td:empty::after' "${TMP}/tbe.html"; then ok "blank fill-in row"; else no "header-only table has no row, or empty cells collapse"; fi
 
+fi  # render
+
+if want fonts; then
 # 41. The vendored iA fonts exist with their license, and the Quick Look skin build embeds
 #     exactly the four as data URIs (the sandboxed panel cannot load installed fonts).
 echo "[41] vendored iA fonts + license"
@@ -803,10 +862,10 @@ else
   no "skin build did not embed exactly 4 fonts"
 fi
 
+fi  # fonts
+
+if want docx; then
 # 43-46. spacedown docx: markdown to .docx in the iA look.
-docx() { "$SPACEDOWN" docx "$@"; }
-docx_styles() { unzip -p "$1" word/styles.xml 2>/dev/null; }
-printf -- '---\ntitle: "T"\n---\n\n<!-- private note -->\n\n## Head\n\nBody with [a link](https://x.test).\n\n> quote\n' > "${TMP}/d.md"
 
 echo "[43] spacedown docx writes a .docx next to the input in the iA look"
 docx "${TMP}/d.md" >/dev/null 2>&1 || true
@@ -864,6 +923,9 @@ if [[ "$hp" == "${TMP}/plain.html" ]] && grep -q '<html' "${TMP}/plain.html"; th
 echo "[docx-5] the retired bin/spacedown-docx is gone"
 if [[ ! -e "${SCRIPT_DIR}/bin/spacedown-docx" ]]; then ok "removed"; else no "bin/spacedown-docx still exists"; fi
 
+fi  # docx
+
+if want polish; then
 # ---- reading-view polish: outline, tables, images, links, print, toolbar ----
 printf '# Polish\n\n## Section\n\nSee https://d.foundation and [Dwarves](https://dwarves.foundation).\n\n- one\n- two\n' > "${TMP}/polish.md"
 "$SPACEDOWN" "${TMP}/polish.md" --out "${TMP}/polish.html" --no-open >/dev/null 2>&1
@@ -938,6 +1000,9 @@ else
   no "toolbar labels or progress bar missing"
 fi
 
+fi  # polish
+
+if want skim; then
 # ---- Skim reading mode ----
 printf '# Skim\n\nPlot raised $10M in Q1.\n' > "${TMP}/skim.md"
 "$SPACEDOWN" "${TMP}/skim.md" --out "${TMP}/skim.html" --no-open >/dev/null 2>&1 || true
@@ -1012,6 +1077,9 @@ else
   no "a Skim rule can reach print (${skim_loose} outside @media screen of ${skim_all})"
 fi
 
+fi  # skim
+
+if want reading; then
 # ---- Reading modes: Skim, Bionic, BeeLine, RSVP ----
 mkdir -p "${TMP}/read"
 "$SPACEDOWN" "${SCRIPT_DIR}/tests/fixture/reading-en.md" --out "${TMP}/read/en.html" --no-open >/dev/null 2>&1 || true
@@ -1082,6 +1150,9 @@ else
   no "restore path missing"
 fi
 
+fi  # reading
+
+if want parity; then
 echo "[parity-1] the Skim engine matches skimgram 4ebb78a on every fixture: tokens, levels, raw and smoothed scores, page flattening, word lists"
 if ! command -v node >/dev/null 2>&1; then
   echo "  skipped: node not found"
@@ -1118,6 +1189,8 @@ else
     no "a golden no longer covers a boundary it should"
   fi
 fi
+
+fi  # parity
 
 # The behaviour checks need a Chromium-family browser with --headless=new. SPACEDOWN_TEST_BROWSER names one;
 # otherwise the usual places are tried. Without one the behaviour checks are skipped, not failed.
@@ -1174,6 +1247,7 @@ sys.exit(0 if (not r.get("error") and eval(sys.argv[2])) else 1)
 PY
 }
 
+if want reading; then
 if [[ -z "$READ_BROWSER" ]]; then
   echo "[read-7..13] skipped: no headless Chromium-family browser found (set SPACEDOWN_TEST_BROWSER)"
 else
@@ -1304,6 +1378,9 @@ PY
   fi
 fi
 
+fi  # reading
+
+if want bundle; then
 # ---- CLI bundled inside the app (scripts/bundle-cli) ----
 FAKE_APP="${TMP}/stage/Spacedown.app"
 mkdir -p "${FAKE_APP}/Contents"
@@ -1367,6 +1444,9 @@ else
   no "build wiring missing"
 fi
 
+fi  # bundle
+
+if want notary; then
 # notary-auth: build-safari.sh picks the notarytool credentials like scripts/release.sh.
 # A fake xcrun on PATH records its argv; the real build needs Xcode, so only the choice runs.
 echo "[notary-auth] NOTARY_KEY selects the API key; else the keychain profile"
@@ -1409,6 +1489,9 @@ else
   no "build-safari.sh notary wiring missing"
 fi
 
+fi  # notary
+
+if want layout; then
 # layout-check: the no-browser surface only (--help, no args, bad option)
 echo "[layout-check] usage and argument errors need no browser"
 LC="${SCRIPT_DIR}/scripts/layout-check"
@@ -1423,6 +1506,9 @@ else
   no "layout-check usage: help=$lc_help none=$lc_none bad=$lc_bad"
 fi
 
+fi  # layout
+
+if want shot; then
 # --shot: argument errors need no browser; the render needs Helium, Chrome or Chromium
 echo "[--shot] argument errors"
 cp "${SCRIPT_DIR}/tests/fixture/math-offline.md" "${TMP}/math-offline-src.md"
@@ -1558,6 +1644,9 @@ PY
   fi
 fi
 
+fi  # shot
+
+if want katex; then
 echo "[katex] one pinned KaTeX version, never katex@latest, and the vendored copy is that version"
 pin_ver="$(grep -Eo 'katex@[0-9]+\.[0-9]+\.[0-9]+' "${SCRIPT_DIR}/bin/spacedown" | head -1 | sed 's/^katex@//')"
 if grep -v '^[[:space:]]*#' "${SCRIPT_DIR}/bin/spacedown" | grep -q 'katex@latest'; then
@@ -1634,6 +1723,8 @@ PY
     no "katex-offline: formulas stayed raw TeX or the equation numbers are missing with the network blocked"
   fi
 fi
+
+fi  # katex
 
 echo
 if [[ $fail -gt 0 ]]; then

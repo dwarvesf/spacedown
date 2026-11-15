@@ -216,6 +216,8 @@ node integrations/safari/quick-look/test-render.js    # Quick Look render core o
 spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```
 
+`bash tests/smoke.sh --list` prints the section names (`cli`, `chrome`, `docx`, `reading`, `parity`, `shot`, ...); `bash tests/smoke.sh --only docx,parity` runs just those, and an unknown name exits 64. With no flag the whole suite runs, as before.
+
 `assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.
 
 ### Releasing
