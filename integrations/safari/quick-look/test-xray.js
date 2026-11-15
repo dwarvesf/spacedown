@@ -61,6 +61,12 @@ xray.transform = transform;
   check("long: setting 40 lets 26 words pass", marks(body(s26, { ...only("xrayLongSentences"), xraySentenceWords: 40 }), "long") === 0);
   check("long: setting 8 marks 12 words", marks(body(sentence(12), { ...only("xrayLongSentences"), xraySentenceWords: 8 }), "long") === 1);
   check("long: off means no marks", marks(body(s26, only("xrayDashes")), "long") === 0);
+  check("long: a word-count tag follows the sentence", /\.<\/span><span class="sd-xr-count" aria-hidden="true">26w<\/span>/.test(body(s26, only("xrayLongSentences"))));
+  check("long: no tag on a short sentence or with the rule off", !/sd-xr-count/.test(body(s25, only("xrayLongSentences"))) &&
+    !/sd-xr-count/.test(body(s26, only("xrayDashes"))));
+  const split = body("word ".repeat(12) + "**bold " + "word ".repeat(12) + "end**.", only("xrayLongSentences"));
+  check("long: a sentence across bold gets one tag, after its last piece",
+    (split.match(/sd-xr-count/g) || []).length === 1 && /<\/strong><span[^>]*>\.<\/span><span class="sd-xr-count"[^>]*>26w<\/span><\/p>/.test(split));
   const two = sentence(30) + " Short one. " + sentence(30);
   check("long: only the long sentences are marked, each its own span",
     marks(body(two, only("xrayLongSentences")), "long") === 2);
@@ -107,8 +113,10 @@ xray.transform = transform;
     marks(html, "ticket") === 1 && marks(html, "long") >= 1);
   check("all rules off: the body is identical to a render with no plug-in output",
     body(mixed, only()) === body(mixed, only()).replace(/class="sd-xr/g, "x") && marks(body(mixed, only()), "dash") === 0);
-  const stripped = html.replace(/<span class="sd-xr [^"]*" title="[^"]*">/g, "");
-  const opens = (html.match(/<span class="sd-xr /g) || []).length;
+  // The word-count tag is the one piece of text the lens adds; it shows only while X-ray is on.
+  const stripped = html.replace(/<span class="sd-xr-count" aria-hidden="true">\d+w<\/span>/g, "")
+    .replace(/<span class="sd-xr [^"]*" title="[^"]*">/g, "");
+  const opens = (html.match(/<span class="sd-xr[ -]/g) || []).length;
   const closes = (html.match(/<\/span>/g) || []).length;
   check("marks nest: every opened span is closed", opens === closes);
   check("marks add no text: removing them restores the plain render",
@@ -194,6 +202,11 @@ xray.transform = transform;
     /#sd-xray:checked ~ \* \.sd-xr-filler\{/.test(on.css) && /#sd-xray:checked ~ \* \.sd-xr-ticket\{/.test(on.css) &&
     !/:has\(/.test(on.css));
   check("css: unchecked marks take no pointer events (no tooltips while the lens is off)", /\.sd-xr\{pointer-events:none\}/.test(on.css));
+  const longRule = (/#sd-xray:checked ~ \* \.sd-xr-long\{([^}]*)\}/.exec(on.css) || [])[1] || "";
+  check("css: a long sentence is a dotted underline in its rule color, never a fill",
+    /underline dotted var\(--sd-xr-longline\)/.test(longRule) && !/background/.test(longRule));
+  check("css: the word-count tag is hidden until the checkbox is checked",
+    /(^|\n)\.sd-xr-count\{display:none\}/.test(on.css) && /#sd-xray:checked ~ \* \.sd-xr-count\{display:inline-block/.test(on.css));
   check("render output has no em or en dash characters", !(on.css + on.chrome + off.chrome).includes(EM) && !(on.css + on.chrome).includes(EN));
 }
 

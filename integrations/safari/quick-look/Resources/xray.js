@@ -7,6 +7,7 @@
 //   controls   a hidden checkbox #sd-xray (checked when xrayEnabled)
 //   toolbar    the label that toggles it, with a legend that shows while it is on
 //   css        marks look plain until the checkbox is checked: #sd-xray:checked ~ * .sd-xr-RULE
+//              (a long sentence also gets a word-count tag, "27w", hidden until then)
 // No :has() (macOS 12.0 target) and no regex lookbehind (JavaScriptCore on macOS 12).
 (function (global) {
   "use strict";
@@ -203,12 +204,15 @@
       var words = countWords(run.text.slice(sp[0], sp[1]));
       if (words <= limit) return;
       var title = "long sentence: " + words + " words, limit " + limit;
+      var last = null;
       run.nodes.forEach(function (node) {
         var a = Math.max(sp[0], node.runStart) - node.runStart;
         var b = Math.min(sp[1], node.runStart + node.scan.length) - node.runStart;
         if (b <= a || /^\s*$/.test(node.scan.slice(a, b))) return;
-        node.clips.push({ s: a, e: b, title: title });
+        last = { s: a, e: b, title: title };
+        node.clips.push(last);
       });
+      if (last) last.words = words; // the word-count tag goes after the sentence's last piece
     });
   }
 
@@ -252,7 +256,8 @@
       var save = out;
       out = "";
       plainTo(c.e);
-      out = save + span("sd-xr-long", c.title, out);
+      out = save + span("sd-xr-long", c.title, out) +
+        (c.words ? '<span class="sd-xr-count" aria-hidden="true">' + c.words + "w</span>" : "");
     });
     plainTo(node.scan.length);
     return out;
@@ -308,17 +313,20 @@
 
   // Marks carry their own ink so contrast holds in every theme. Light fills differ in
   // lightness (orange darkest, yellow lightest) and each rule has its own line style, so the
-  // four are told apart without color. Dark fills are deep tints under light ink.
+  // four are told apart without color. Dark fills are deep tints under light ink. A long
+  // sentence is not filled (a whole sentence of fill is too loud): it gets a dotted underline
+  // in --sd-xr-longline and a word-count tag on the long fill.
   var LIGHT = "--sd-xr-ink:#1a1a1a;--sd-xr-dash:#db8f58;--sd-xr-long:#92bde8;" +
-    "--sd-xr-ticket:#8fe687;--sd-xr-filler:#f7ea7a;";
+    "--sd-xr-ticket:#8fe687;--sd-xr-filler:#f7ea7a;--sd-xr-longline:#2557c7;";
   var DARK = "--sd-xr-ink:#f2f2f2;--sd-xr-dash:#422510;--sd-xr-long:#193f66;" +
-    "--sd-xr-ticket:#1d5c17;--sd-xr-filler:#71631c;";
+    "--sd-xr-ticket:#1d5c17;--sd-xr-filler:#71631c;--sd-xr-longline:#8ab4f8;";
   var ON = "#sd-xray:checked ~ * .sd-xr-";
 
   function css(cfg) {
     var marks = [
       [ON + "dash", "background:var(--sd-xr-dash)"],
-      [ON + "long", "background:var(--sd-xr-long);text-decoration:underline dotted;text-decoration-thickness:2px"],
+      [ON + "long", "color:inherit;padding:0;text-decoration:underline dotted var(--sd-xr-longline);" +
+        "-webkit-text-decoration:underline dotted var(--sd-xr-longline);text-decoration-thickness:2px;text-underline-offset:.3em"],
       [ON + "ticket", "background:var(--sd-xr-ticket);box-shadow:inset 0 0 0 1px var(--sd-xr-ink)"],
       [ON + "filler", "background:var(--sd-xr-filler);text-decoration:underline wavy;text-decoration-thickness:1px"]
     ].map(function (r) { return r[0] + "{" + r[1] + "}"; }).join("\n");
@@ -333,6 +341,10 @@
       "#sd-xray:checked ~ * .sd-xr{pointer-events:auto;color:var(--sd-xr-ink);border-radius:2px;" +
         "padding:0 .06em;-webkit-box-decoration-break:clone;box-decoration-break:clone}",
       marks,
+      ".sd-xr-count{display:none}",
+      "#sd-xray:checked ~ * .sd-xr-count{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;" +
+        "background:var(--sd-xr-long);color:var(--sd-xr-ink);font:400 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "vertical-align:2px;text-decoration:none;white-space:nowrap}",
       ".sd-xr-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 9px;" +
         "border:1px solid var(--ql-rule,#1a1a1a);border-radius:4px;background:var(--ql-paper,#fcfcfc);" +
         "color:var(--ql-ink,#1a1a1a);user-select:none;-webkit-user-select:none}",

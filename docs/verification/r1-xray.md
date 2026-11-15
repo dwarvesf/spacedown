@@ -10,6 +10,22 @@
 | Code, pre, math, link URLs | no marks inside, bytes preserved |
 | Contrast and lightness | every fill 4.5:1 or better against its ink, light and dark; four fills at least 6 L* apart |
 | 2,000 words | about 1 ms median in node (limit 50) |
+| Long-sentence look | a dotted underline in `--sd-xr-longline` (no fill) plus a word-count tag after the sentence (`26w`), one tag per sentence even across bold; the tag is hidden until X-ray is on |
+
+## Long-sentence restyle (review round)
+
+The first cut filled the whole sentence with solid blue, which was too loud. It now matches the approved design (Spacedown Next canvas, `Xray` artboard): a 2px dotted underline in the rule color (`#2557c7` light, `#8ab4f8` dark) and a small mono tag on the long fill after the sentence. The other three marks are unchanged.
+
+```
+Command: node integrations/safari/quick-look/test-xray.js && bash tests/smoke.sh --only xray,quicklook
+Exit: 0
+Output: xray: PASS (65 checks); smoke: all 6 passed
+Verdict: PASS
+```
+
+Negative control: the old `xray.js` against the new tests gives `xray: 4 FAILED` (the tag after the sentence, one tag across bold, underline not fill, tag hidden until checked). Restored: PASS.
+
+Screenshots (X-ray on, the panel page from `preview-skin.sh`, headless Helium): `r1-xray/xray-light.png`, `r1-xray/xray-dark.png` (dark emulated by rewriting the color-scheme media queries, since the headless flag did not switch it).
 
 ## Green run
 ```
