@@ -26,9 +26,10 @@ SPACEDOWN="${SCRIPT_DIR}/bin/spacedown"
 #   layout     layout-check usage                         shot     --shot and --offline (headless browser)
 #   katex      pinned and vendored KaTeX, offline math
 #   xray       Writing X-ray plug-in (node)               present  Present mode plug-in (node)
+#   mcp        `spacedown mcp` driven over stdin (node), and --lint-json
 # Release-1 contract (hooks, settings, which node owns which section): docs/contract-r1.md.
 # A check that is red on purpose is listed in tests/known-failures.txt.
-SECTIONS=(cli chrome quicklook render fonts docx polish skim reading parity bundle notary layout shot katex xray present)
+SECTIONS=(cli chrome quicklook render fonts docx polish skim reading parity bundle notary layout shot katex xray present mcp)
 ONLY=","
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -1949,6 +1950,44 @@ else
   no "present suite failed (run integrations/safari/quick-look/test-present.js for the detail)"
 fi
 fi  # present
+
+if want mcp; then
+# ---- the stdio MCP server: a scripted JSON-RPC session over stdin and stdout ----
+echo "[mcp] stdio MCP server (tests/mcp-test.js)"
+printf '# Lint json\n\nReally, a long run.\n' > "${TMP}/lint-json.md"
+set +e
+"$SPACEDOWN" "${TMP}/lint-json.md" --out "${TMP}/lint-json.html" --lint-json "${TMP}/lint-json.out" --no-open >/dev/null 2>&1; lj_rc=$?
+"$SPACEDOWN" "$TMP" --lint-json "${TMP}/x.json" >/dev/null 2>&1; lj_dir=$?
+"$SPACEDOWN" mcp extra >/dev/null 2>&1 </dev/null; mcp_arg=$?
+set -e
+if [[ $lj_rc -eq 0 && "$(<"${TMP}/lint-json.out")" == *'"rule":"filler"'* && $lj_dir -eq 64 && $mcp_arg -eq 64 ]]; then
+  ok "--lint-json writes the findings and rejects a directory; mcp rejects arguments (exit 64)"
+else
+  no "--lint-json / mcp arguments: rc=$lj_rc dir=$lj_dir mcp-arg=$mcp_arg"
+fi
+if ! command -v node >/dev/null 2>&1; then
+  echo "  skip: node not installed (the MCP session driver)"
+else
+  mkdir -p "${TMP}/pathbin"
+  ln -sfn "$SPACEDOWN" "${TMP}/pathbin/spacedown"
+  printf '{"xrayDashes": false, "xraySentenceWords": 40}\n' > "${TMP}/mcp-prefs.json"
+  plutil -convert binary1 -o "${TMP}/mcp-prefs.plist" "${TMP}/mcp-prefs.json"
+  set +e
+  mcp_out=$(PATH="${TMP}/pathbin:$PATH" node "${SCRIPT_DIR}/tests/mcp-test.js" "$SPACEDOWN" "$TMP" "${TMP}/mcp-prefs.plist" "${SCRIPT_DIR}/README.md" 2>&1); mcp_rc=$?
+  set -e
+  mcp_checks=0
+  while IFS= read -r mcp_line; do
+    case "$mcp_line" in
+      "ok: "*) ok "mcp: ${mcp_line#ok: }"; mcp_checks=$((mcp_checks+1)) ;;
+      "FAIL: "*) no "mcp: ${mcp_line#FAIL: }"; mcp_checks=$((mcp_checks+1)) ;;
+      "  skip: "*) echo "$mcp_line" ;;
+    esac
+  done <<<"$mcp_out"
+  if [[ $mcp_checks -eq 0 || ( $mcp_rc -ne 0 && "$mcp_out" != *"FAIL: "* ) ]]; then
+    no "mcp: the session driver produced no result (rc=$mcp_rc): ${mcp_out:0:300}"
+  fi
+fi
+fi  # mcp
 
 echo
 if [[ $fail -gt 0 ]]; then

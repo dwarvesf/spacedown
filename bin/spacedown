@@ -13,6 +13,9 @@
 # instead of HTML (pandoc; without it a simpler textutil .docx; exit codes there: 0 ok
 # | 2 reference doc or converter missing | 64 usage | 66 input not found).
 #
+# Subcommand: `spacedown mcp` starts a stdio MCP server (tools render, shot, lint) for coding
+# agents; it runs assets/sd-mcp.js under osascript and calls this script for each tool.
+#
 # stdout: absolute output path (one line, on success only).
 # stderr: diagnostics, prefixed with "spacedown:".
 
@@ -64,13 +67,19 @@ Usage:
   spacedown <file> [--out PATH] [--no-open] [--watch] [--title STR]
                     [--font-mode ia|tm|paper|read|mono] [--standalone | --no-standalone]
                     [--shot PNG [--shot-width N] [--shot-height N] [--offline]]
-                    [--help] [--version]
+                    [--lint-json FILE] [--help] [--version]
+  spacedown mcp
   spacedown <dir>  [--out PATH] [--no-open]
 
 Subcommands:
   docx              Markdown to .docx in the iA look (Word and Google Docs).
                     `spacedown docx --help` for its usage. A file literally named
                     "docx" is rendered as `spacedown ./docx`.
+  mcp               Start a stdio MCP server (JSON-RPC 2.0 on stdin and stdout) with the
+                    tools render, shot and lint, so an agent can see its Markdown before a
+                    person reads it. Config: {"mcpServers":{"spacedown":{"command":
+                    "spacedown","args":["mcp"]}}}. A file literally named "mcp" is
+                    rendered as `spacedown ./mcp`.
 
 Args:
   <file>            Path to a markdown file.
@@ -91,6 +100,11 @@ Flags:
   --shot-height N   Screenshot window height in px. Default: 1100.
   --offline         With --shot only: the browser resolves no hostnames, so the PNG shows
                     what a reader with no network sees (remote images and fonts missing).
+  --lint-json FILE  Also write the Writing X-ray findings (dashes, long sentences, filler
+                    words, ticket IDs, with the app's settings applied) to FILE as JSON:
+                    {"rules":[...],"sentenceWordLimit":N,"findings":[{"rule","line",
+                    "excerpt","message"}]}. line is null when the source line is not found.
+                    Not with a <dir>.
   --font-mode MODE  ia (default): iA Writer's Quattro reading look, set in the
                     free iA Writer Quattro and Mono fonts (system fonts when
                     those are not installed). tm: serif reading look ported
@@ -264,6 +278,17 @@ docx_main() {
   echo "$out"
 }
 
+# ---- mcp subcommand ----
+# `spacedown mcp`: the MCP server. osascript replaces this process, so stdin and stdout are the
+# JSON-RPC channel; nothing else may print to stdout. The server calls $SELF per tool call.
+if [[ "${1:-}" == "mcp" ]]; then
+  shift
+  [[ $# -eq 0 ]] || die 64 "mcp takes no arguments"
+  command -v osascript >/dev/null 2>&1 || die 2 "osascript not found (the MCP server runs on macOS)"
+  [[ -f "${SCRIPT_DIR}/../assets/sd-mcp.js" ]] || die 2 "MCP server missing: ${SCRIPT_DIR}/../assets/sd-mcp.js"
+  exec osascript -l JavaScript "${SCRIPT_DIR}/../assets/sd-mcp.js" "self=${SELF}" "version=${VERSION}"
+fi
+
 if [[ "${1:-}" == "docx" ]]; then
   shift
   docx_main "$@"
@@ -281,6 +306,7 @@ SHOT=""
 SHOT_W=1300
 SHOT_H=1100
 OFFLINE=0
+LINT_JSON=""
 # Body font mode: "ia" (default), "tm" and "paper" = reading themes; "mono" = full editor
 # fidelity (mirrored mono everywhere); "read" = proportional serif. Override default via
 # $SPACEDOWN_FONT_MODE. It becomes the core's `theme` setting; the app's stored theme is not read.
@@ -308,6 +334,8 @@ while [[ $# -gt 0 ]]; do
     --shot-height) [[ "${2:-}" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$2"; shift 2 ;;
     --shot-height=*) v="${1#--shot-height=}"; [[ "$v" =~ ^[0-9]+$ ]] || die 64 "--shot-height requires an integer"; SHOT_H="$v"; shift ;;
     --offline) OFFLINE=1; shift ;;
+    --lint-json) [[ -n "${2:-}" ]] || die 64 "--lint-json requires a path"; LINT_JSON="$2"; shift 2 ;;
+    --lint-json=*) LINT_JSON="${1#--lint-json=}"; shift ;;
     --title) [[ -n "${2:-}" ]] || die 64 "--title requires a string"; TITLE="$2"; shift 2 ;;
     --title=*) TITLE="${1#--title=}"; shift ;;
     --font-mode) [[ "${2:-}" =~ $FONT_MODE_RE ]] || die 64 "$FONT_MODE_MSG"; FONT_MODE="$2"; shift 2 ;;
@@ -333,6 +361,7 @@ if [[ -n "$SHOT" ]]; then
   [[ ! -d "$FILE" ]] || die 64 "--shot needs a single file, not a directory"
   NO_OPEN=1
 fi
+[[ -z "$LINT_JSON" || ! -d "$FILE" ]] || die 64 "--lint-json needs a single file, not a directory"
 # A SPACEDOWN_FONT_MODE typo is caught here too, not silently rendered as no theme.
 [[ "$FONT_MODE" =~ $FONT_MODE_RE ]] || die 64 "SPACEDOWN_FONT_MODE: $FONT_MODE_MSG"
 if [[ -n "${SPACEDOWN_THEME_CSS:-}" ]]; then
@@ -459,7 +488,7 @@ do_render() {
   run_renderer "$FILE" "$OUT" "$STANDALONE" \
     "title=${TITLE}" "fontMode=${FONT_MODE}" "themeOverride=${SPACEDOWN_THEME_CSS:-}" \
     "livereload=${LIVERELOAD}" "embedImages=${EMBED_IMAGES}" "embedFonts=${EMBED_FONTS}" \
-    "vscodeSettings=$(vscode_settings_path)" || return 2
+    "vscodeSettings=$(vscode_settings_path)" ${LINT_JSON:+"lintOut=${LINT_JSON}"} || return 2
   size_out="$(wc -c < "$OUT" | tr -d ' ')"
   log "wrote ${OUT} (${size_out} bytes)"
 }

@@ -108,6 +108,7 @@ The default output path is `/tmp/spacedown/<slug>.html`, where the slug is the l
 | `--title STR` | Browser tab title. Default: the file name without its extension. |
 | `--font-mode MODE` | `ia` (default), `tm`, `paper`, `read` or `mono`. See below. |
 | `--no-standalone` | Emit an HTML fragment for embedding instead of a full page. |
+| `--lint-json FILE` | Also write the Writing X-ray findings (dashes, long sentences, filler words, ticket IDs) to FILE as JSON, with the app's settings applied. |
 | `--help`, `--version` | Print usage, or the version plus dependency status. |
 
 ### Checking the layout with `--shot`
@@ -153,6 +154,22 @@ spacedown reads `markdown.preview.fontFamily`, `markdown.preview.fontSize`, `mar
 | `3` | `--watch` requested but `entr` is not installed |
 | `64` | Usage error |
 | `130` | Ctrl-C during `--watch` |
+
+## MCP server: give your agents eyes
+
+`spacedown mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io) server on stdio, so a coding agent can render, screenshot and lint the Markdown it writes before a person reads it. It is free, runs on the same `osascript` core as the CLI, and needs no node, python or network. Add it to your client's MCP config:
+
+```json
+{"mcpServers": {"spacedown": {"command": "spacedown", "args": ["mcp"]}}}
+```
+
+| Tool | Input | Returns |
+|---|---|---|
+| `render` | `path` or `text` (exactly one); optional `out`, `title`, `font_mode` | `html_path`, the CLI's stdout line |
+| `shot` | the `render` inputs, plus optional `png`, `width`, `height`, `offline` | `png_path`, `html_path` and `warnings`: each table wider than the page and each red KaTeX formula, as `{kind, message, ...}` |
+| `lint` | `path` or `text` (exactly one) | `findings`: `{rule, line, excerpt, message}` for each dash, long sentence, filler word and ticket ID, plus the active `rules`. The app's settings apply. |
+
+Inputs are strict: an unknown argument, a wrong type or both `path` and `text` come back as a tool result with `isError: true` and a message, never a crash. An unknown tool, an unknown method or malformed JSON is a JSON-RPC error. `shot` needs Helium, Chrome or Chromium, like `--shot`. The server implements protocol 2025-11-25 (it also answers 2025-06-18), and serves `tools/list` and `tools/call` without a prior `initialize`, so clients on the stateless 2026-07-28 revision work too. Files go to `/tmp/spacedown/`, as for the CLI. `tests/smoke.sh --only mcp` drives a scripted session.
 
 ## Export to Word and Google Docs: spacedown docx
 
@@ -216,7 +233,7 @@ node integrations/safari/quick-look/test-render.js    # Quick Look render core o
 spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
 ```
 
-`bash tests/smoke.sh --list` prints the section names (`cli`, `chrome`, `docx`, `reading`, `parity`, `shot`, ...); `bash tests/smoke.sh --only docx,parity` runs just those, and an unknown name exits 64. With no flag the whole suite runs, as before.
+`bash tests/smoke.sh --list` prints the section names (`cli`, `chrome`, `docx`, `reading`, `parity`, `shot`, `mcp`, ...); `bash tests/smoke.sh --only docx,parity` runs just those, and an unknown name exits 64. With no flag the whole suite runs, as before.
 
 `assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.
 
