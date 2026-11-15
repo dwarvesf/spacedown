@@ -4,7 +4,7 @@
 set -euo pipefail
 S="$(cd "$(dirname "$0")" && pwd)"
 REPO="${REPO:-$(cd "$S/.." && pwd)}"
-B="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+B="${BROWSER:-/Applications/Brave Browser.app/Contents/MacOS/Brave Browser}"
 Q="$S/qlshot"
 mkdir -p "$Q" "$REPO/docs/images"
 cp -f "$REPO/tests/fixture/"*.svg "$Q/"

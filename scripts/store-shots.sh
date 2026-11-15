@@ -6,7 +6,7 @@ set -euo pipefail
 S="$(cd "$(dirname "$0")" && pwd)"
 REPO="${REPO:-$(cd "$S/.." && pwd)}"
 OUT="${OUT:-$S/out}"
-B="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+B="${BROWSER:-/Applications/Brave Browser.app/Contents/MacOS/Brave Browser}"
 RES="$REPO/integrations/safari/quick-look/Resources"
 mkdir -p "$OUT" "$S/qlshot" "$S/store"
 cp -f "$REPO/assets/vscode-preview-head.html" "$RES/md-style.html"
