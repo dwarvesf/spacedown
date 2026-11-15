@@ -1,0 +1,4 @@
+# Known failures: smoke checks that are red on purpose while a release-1 node is in flight.
+# One line per check: <section>: <exact check text as printed after "FAIL:">  # <node>, <why>, <until>
+# Empty means main is green: every check in `bash tests/smoke.sh` must pass.
+# Contract: docs/contract-r1.md.
