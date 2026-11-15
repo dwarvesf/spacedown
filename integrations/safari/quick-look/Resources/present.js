@@ -90,6 +90,7 @@
 
   // ---- render time ----
 
+  var R = "#sd-present:not(:checked) ~ .sd-slide > "; // a slide child on the reading page
   var CSS =
     // Snap points exist only while a slide has scroll-snap-align (checked, below), so this
     // rule changes nothing on the reading page. It sits on html because :has() is not
@@ -118,6 +119,18 @@
     "#sd-present:checked ~ .sd-slide pre,#sd-present:checked ~ .sd-slide table{max-width:100%;overflow:auto}" +
     "#sd-present:checked ~ .sd-title{text-align:center;align-items:center}" +
     "#sd-present:checked ~ .sd-title h1{font-size:2.1em}" +
+    "}" +
+    // The slide sections make every block a grandchild of body, so the reading page's
+    // "body > p" measure and rhythm rules (md-style.html, the CLI reading chrome) stop
+    // matching. Restore them for slide children while not presenting. Screen only: print
+    // drops the measure anyway.
+    "@media screen{" +
+    R + "p," + R + "ul," + R + "ol," + R + "blockquote," + R + "h1," + R + "h2," + R + "h3," +
+    R + "h4," + R + "h5," + R + "h6," + R + "table:not(.sd-wide)," + R + "hr{max-width:var(--sd-measure)}" +
+    R + "hr{margin-left:0}" + R + "h2{margin-top:32px}" + R + "ul," + R + "ol{margin-bottom:16px}" +
+    "}" +
+    "@media screen and (max-width:600px){" +
+    R + "table:not(.sd-frontmatter){display:block;overflow-x:auto;max-width:100%}" +
     "}";
 
   // ---- page time ----
