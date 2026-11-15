@@ -14,6 +14,31 @@ Release 1 moved rendering to the Quick Look JavaScript core. Nine pandoc-era fil
 | `bash tests/smoke.sh` | 0 | PASS, 164 passed |
 | `NO_INSTALL=1 bash integrations/build-safari.sh` | 0 | PASS, app built and signed |
 
+```
+Command: bash tests/smoke.sh --only cli,docx,katex,bundle,shot
+Exit: 0
+Output:
+  ok: 6 of 6 formulas typeset with the network blocked, 2 equation numbers drawn, no KaTeX error
+  ok: SD.plugins() = boxdraw,xray,present, SD.errors empty, no marked in the page
+smoke: all 69 passed
+Verdict: PASS
+
+Command: bash tests/smoke.sh
+Exit: 0
+Output:
+  ok: present suite passes
+smoke: all 164 passed
+Verdict: PASS
+
+Command: NO_INSTALL=1 bash integrations/build-safari.sh
+Exit: 0
+Output:
+  .../Release/Spacedown.app: replacing existing signature
+  .../Release/Spacedown.app
+  build-exit=0
+Verdict: PASS
+```
+
 ## Negative control
 
 `assets/katex/fonts` moved away, then `bash tests/smoke.sh --only katex`:
