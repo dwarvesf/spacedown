@@ -105,6 +105,7 @@ if [[ $MAS -eq 1 ]]; then
   # BUNDLE_CLI=0: the store app is sandboxed and Homebrew never links it, so no CLI inside.
   BUILT="$(SKIN_CSS= BUNDLE_CLI=0 NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
   [[ -d "$BUILT" ]] || die "build did not report an app path"
+  [[ ! -e "$BUILT/Contents/PlugIns/SpacedownDrop Extension.appex" ]] || die "the Safari drop extension is in the store build (it is opt-in: build-safari.sh --with-safari)"
   mkdir -p "$MDIST"
   rsync -a --delete "$BUILT" "$MDIST/"
   APP="$MDIST/$APP_NAME"
@@ -177,6 +178,8 @@ echo "== build + sign ($SIGN_ID)"
 # SKIN_CSS is blanked so a personal skin set in the shell never ships in a release.
 BUILT="$(SKIN_CSS= SIGN_ID="$SIGN_ID" NO_INSTALL=1 bash "$ROOT/integrations/build-safari.sh" | tail -1)"
 [[ -d "$BUILT" ]] || die "build did not report an app path"
+# The release app is Quick Look only; the Safari drop extension stays behind build-safari.sh --with-safari.
+[[ ! -e "$BUILT/Contents/PlugIns/SpacedownDrop Extension.appex" ]] || die "the Safari drop extension is in the release build"
 mkdir -p "$DIST"
 rsync -a --delete "$BUILT" "$DIST/"
 APP="$DIST/$APP_NAME"

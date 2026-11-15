@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# hljs-build: rebuild the Quick Look highlight.js bundle (a custom build of common languages).
+#
+# Source:  https://github.com/highlightjs/highlight.js, tag HLJS_VERSION (BSD-3-Clause).
+# Method:  the project's own build tool, `node tools/build.js -t cdn <languages>`, which writes
+#          build/highlight.min.js with only the named languages. No code of ours is mixed in.
+# Why:     the cdnjs "common" bundle is 127 KB and carries languages a Markdown preview rarely
+#          meets. The Finder panel and the size budget (scripts/size-budget) reward a small one.
+# Output:  integrations/safari/quick-look/Resources/highlight.min.js, or the path given as $1.
+#          The cdnjs SRI pinned in assets/REFRESH.md no longer applies to this file; the pin is
+#          the upstream tag's commit below, and a rebuild with the same tag and list is
+#          reproducible up to the copyright year in the banner.
+# Needs:   node, npm, git, network. Works in a scratch dir and leaves the repo alone but for the output.
+#
+# To add a language: add it to LANGS, run this script, then run
+#   node integrations/safari/quick-look/test-render.js
+# Aliases (sh, js, ts, yml, html, toml, py, md, ...) come with each language module.
+set -euo pipefail
+
+HLJS_VERSION="11.11.1"
+HLJS_COMMIT="08cb242e7d4aee787114eb04cc7ab18314d82f92"
+LANGS=(bash shell javascript typescript json yaml ini python go rust swift sql xml css markdown diff dockerfile makefile plaintext)
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OUT="${1:-$HERE/../integrations/safari/quick-look/Resources/highlight.min.js}"
+for tool in node npm git; do
+  command -v "$tool" >/dev/null 2>&1 || { echo "hljs-build: $tool not found" >&2; exit 1; }
+done
+
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/hljs-build.XXXXXX")"
+echo "hljs-build: building highlight.js $HLJS_VERSION in $WORK"
+git clone -q --depth 1 --branch "$HLJS_VERSION" https://github.com/highlightjs/highlight.js.git "$WORK/src" 2>/dev/null
+GOT="$(git -C "$WORK/src" rev-parse HEAD)"
+[[ "$GOT" == "$HLJS_COMMIT" ]] || { echo "hljs-build: tag $HLJS_VERSION is $GOT, expected $HLJS_COMMIT" >&2; exit 1; }
+( cd "$WORK/src" && npm ci --ignore-scripts >/dev/null 2>&1 && node tools/build.js -t cdn "${LANGS[@]}" >/dev/null )
+cp -f "$WORK/src/build/highlight.min.js" "$OUT"
+echo "hljs-build: wrote $OUT ($(wc -c < "$OUT" | tr -d ' ') bytes, ${#LANGS[@]} languages)"
+echo "hljs-build: scratch dir left at $WORK"
