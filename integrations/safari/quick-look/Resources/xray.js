@@ -7,7 +7,8 @@
 //   controls   a hidden checkbox #sd-xray (checked when xrayEnabled)
 //   toolbar    the label that toggles it, with a legend that shows while it is on
 //   css        marks look plain until the checkbox is checked: #sd-xray:checked ~ * .sd-xr-RULE
-//              (a long sentence also gets a word-count tag, "27w", hidden until then)
+//              (a long sentence's last piece carries data-sd-words; its ::after is the "27w" tag,
+//              so the tag adds no text to the DOM that copy, Skim or BeeLine could see)
 // No :has() (macOS 12.0 target) and no regex lookbehind (JavaScriptCore on macOS 12).
 (function (global) {
   "use strict";
@@ -220,8 +221,9 @@
 
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 
-  function span(cls, title, inner) {
-    return '<span class="sd-xr ' + cls + '" title="' + esc("X-ray, " + title) + '">' + inner + "</span>";
+  function span(cls, title, inner, words) {
+    return '<span class="sd-xr ' + cls + '" title="' + esc("X-ray, " + title) + '"' +
+      (words ? ' data-sd-words="' + words + '"' : "") + ">" + inner + "</span>";
   }
 
   // Raw HTML of one text node with its marks. Marks cannot overlap (the first wins), and a
@@ -256,8 +258,7 @@
       var save = out;
       out = "";
       plainTo(c.e);
-      out = save + span("sd-xr-long", c.title, out) +
-        (c.words ? '<span class="sd-xr-count" aria-hidden="true">' + c.words + "w</span>" : "");
+      out = save + span("sd-xr-long", c.title, out, c.words);
     });
     plainTo(node.scan.length);
     return out;
@@ -341,8 +342,7 @@
       "#sd-xray:checked ~ * .sd-xr{pointer-events:auto;color:var(--sd-xr-ink);border-radius:2px;" +
         "padding:0 .06em;-webkit-box-decoration-break:clone;box-decoration-break:clone}",
       marks,
-      ".sd-xr-count{display:none}",
-      "#sd-xray:checked ~ * .sd-xr-count{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;" +
+      ON + "long[data-sd-words]::after{content:attr(data-sd-words) \"w\";display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;" +
         "background:var(--sd-xr-long);color:var(--sd-xr-ink);font:400 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;" +
         "vertical-align:2px;text-decoration:none;white-space:nowrap}",
       ".sd-xr-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 9px;" +
