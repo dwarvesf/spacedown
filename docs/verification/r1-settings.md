@@ -18,24 +18,115 @@ The app has a native Settings window (menu item "Settings..." with Cmd+,): a too
 
 ## Green run
 
-| Command | Exit | Verdict |
-|---|---|---|
-| `NO_INSTALL=1 bash integrations/build-safari.sh` | 0 | PASS, app and appex build, adhoc and Developer ID |
-| `bash tests/smoke.sh --only quicklook,bundle` | 0 | PASS, 11 checks |
-| `bash docs/verification/r1-settings/check-model.sh` | 0 | PASS, 19 checks: key names, types, clamping, per-tab restore |
-| `bash docs/verification/r1-settings/check-css.sh` | 0 | PASS, 9 cases: computed ground, face and size per theme, appearance, Mac scheme |
-| `bash docs/verification/r1-settings/check-e2e.sh` | 0 | PASS: a settings plist holding `textSize` 24 and `theme` tm, read by `scripts/sd-settings`, shows in the page `buildPreviewHTML` builds |
+Command: `NO_INSTALL=1 bash integrations/build-safari.sh`
+Exit: 0
+Output:
 
 ```
+build-safari: embedded the iA Writer fonts into the reading skin
+build-safari: bundled the spacedown CLI into Contents/Resources/cli
+build-safari: signing (- + runtime + entitlements)...
+integrations/safari/SpacedownDrop/build/Build/Products/Release/Spacedown.app/Contents/PlugIns/SpacedownQL.appex: replacing existing signature
+integrations/safari/SpacedownDrop/build/Build/Products/Release/Spacedown.app: replacing existing signature
+integrations/safari/SpacedownDrop/build/Build/Products/Release/Spacedown.app
+```
+
+Verdict: PASS (app and Quick Look appex build and sign (last lines))
+
+Command: `bash tests/smoke.sh --only quicklook,bundle`
+Exit: 0
+Output:
+
+```
+[39] Quick Look render core
+  ok: ql-render suite passes
+[39b] release-1 contract
+  ok: contract suite passes
+[39c] render core under osascript
+  ok: osascript renders with every plug-in
+[39d] sd-settings
+  ok: stored settings as JSON, {} when missing
+[39e] box-drawing plug-in
+  ok: boxdraw suite passes
+[bundle-1] bundle-cli lays out the CLI and every runtime file under Contents/Resources/cli
+  ok: layout complete, scripts executable, maintainer notes left out
+[bundle-2] bundle-cli refuses a path that is not an app bundle
+  ok: exit 64
+[bundle-3] the bundled CLI, moved and run through a symlink, renders the same HTML as the repo CLI
+  ok: byte-identical page (theme, chrome, frontmatter table, callout)
+[bundle-4] the bundled CLI embeds the iA fonts
+  ok: font faces embedded from the bundle
+[bundle-5] the bundled CLI exports .docx in the iA look
+  ok: docx from the bundle
+[bundle-6] build-safari.sh bundles the CLI by default; the store build opts out
+  ok: default on, MAS build off
+
+smoke: all 11 passed
+```
+
+Verdict: PASS (every section check passes)
+
+Command: `bash docs/verification/r1-settings/check-model.sh`
+Exit: 0
+Output:
+
+```
+ok   an empty store reads as the contract defaults
+ok   X-ray defaults
+ok   the text field writing back an untouched list stores nothing
+ok   theme saved as string
+ok   appearance saved as string
+ok   textSize saved as int
+ok   outlineDefault saved as string
+ok   xrayEnabled saved as bool
+ok   xrayDashes saved as bool
+ok   xrayLongSentences saved as bool
+ok   xraySentenceWords saved as int
+ok   xrayFillers saved as bool
+ok   xrayFillerWords saved as trimmed list, empty entries dropped
+ok   xrayTicketIds saved as bool
+ok   a new window reads back what was saved
+ok   out-of-range int clamps, unknown enum falls back to the default
+ok   Restore defaults on General clears General keys
+ok   Restore defaults on General leaves X-ray keys alone
+ok   Restore defaults on X-ray clears the rest
 check-model: all passed
+```
+
+Verdict: PASS (key names, types, clamping, per-tab restore)
+
+Command: `bash docs/verification/r1-settings/check-css.sh`
+Exit: 0
+Output:
+
+```
+ok   ia appearance=system mac=light size=18: rgb(252, 252, 252) 18px
+ok   ia appearance=system mac=dark size=18: rgb(26, 26, 26) 18px
+ok   tm appearance=system mac=light size=22: rgb(255, 255, 255) 22px
+ok   paper appearance=system mac=light size=18: rgb(251, 250, 247) 18px
+ok   paper appearance=system mac=dark size=18: rgb(31, 30, 28) 18px
+ok   read appearance=system mac=light size=20: rgb(252, 252, 252) 20px
+ok   mono appearance=system mac=light size=18: rgb(252, 252, 252) 18px
 ok   tm appearance=dark mac=light size=32: rgb(27, 26, 25) 32px
 ok   paper appearance=light mac=dark size=12: rgb(251, 250, 247) 12px
 check-css: all 9 cases passed
+```
+
+Verdict: PASS (computed ground, face and size per theme, appearance and Mac scheme)
+
+Command: `bash docs/verification/r1-settings/check-e2e.sh`
+Exit: 0
+Output:
+
+```
+stored: {"textSize":24,"theme":"tm"}
 ok   page has style="--ql-size:24px"
 ok   page has data-sd-theme="tm"
+ok   page has <h1
 check-e2e: passed
-smoke: all 11 passed
 ```
+
+Verdict: PASS (a saved setting shows in the page the appex builds)
 
 ## Screenshots
 
@@ -45,6 +136,12 @@ Window captures with `screencapture -l` from the built app (adhoc build, launche
 |---|---|---|
 | General | `r1-settings/general-light.png` | `r1-settings/general-dark.png` |
 | X-ray | `r1-settings/xray-light.png` | `r1-settings/xray-dark.png` |
+
+![General, light](r1-settings/general-light.png)
+![General, dark](r1-settings/general-dark.png)
+![X-ray, light](r1-settings/xray-light.png)
+![X-ray, dark](r1-settings/xray-dark.png)
+![Developer ID build reading textSize 24 and theme tm](r1-settings/e2e-general-signed.png)
 
 `r1-settings/e2e-general-signed.png` is the Developer ID build reading a group container plist that holds `textSize` 24 and `theme` tm: the window shows 24 px and Thinking Machines serif.
 
