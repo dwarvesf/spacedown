@@ -11,6 +11,51 @@ A first-launch window in `Spacedown.app` (`Onboarding.swift`): a three-row check
 | `node integrations/safari/quick-look/render-file.js integrations/safari/SpacedownDrop/SpacedownDrop/Resources/Sample.md` | 0 | `callouts:1 katex:3 leaked-placeholders:0` |
 | headless launch of the built app with `SPACEDOWN_ONBOARDING_STATE=<state>`, `screencapture -l <window>` | 0 | every state, light and dark, in `docs/verification/r1-onboarding/` |
 
+```
+Command: bash tests/smoke.sh --only quicklook,bundle
+Exit: 0
+Output:
+[bundle-6] build-safari.sh bundles the CLI by default; the store build opts out
+  ok: default on, MAS build off
+
+smoke: all 11 passed
+Verdict: PASS
+```
+
+```
+Command: NO_INSTALL=1 bash integrations/build-safari.sh
+Exit: 0
+Output:
+build-safari: signing (- + runtime + entitlements)...
+.../integrations/safari/SpacedownDrop/build/Build/Products/Release/Spacedown.app
+Verdict: PASS
+```
+
+```
+Command: node integrations/safari/quick-look/render-file.js integrations/safari/SpacedownDrop/SpacedownDrop/Resources/Sample.md
+Exit: 0
+Output:
+Sample.md: 2343b in 16ms | fm-table:0 callouts:1 literal-[!:0 katex:3 tasklist:0 br:1 leaked-placeholders:0
+Verdict: PASS
+```
+
+```
+Command: SPACEDOWN_ONBOARDING_STATE=start SPACEDOWN_ONBOARDING_APPEARANCE=light <app copy>/Contents/MacOS/Spacedown
+Exit: 0
+Output:
+SD_ONBOARDING window=147729 frame={{120, 197}, {560, 593}} claimants=done([]) safari=notBundled cli=none help=Welcome to Spacedown
+Verdict: PASS
+```
+
+Screenshots, taken with `screencapture -l <window>` and no input sent:
+
+![checklist, Quick Look to check, light](r1-onboarding/start-light.png)
+![try it now, light](r1-onboarding/tryit-light.png)
+![Quick Look still off, dark](r1-onboarding/off-dark.png)
+![fix it, dark](r1-onboarding/fix-dark.png)
+![all set, light](r1-onboarding/allset-light.png)
+![the Quick Look panel on the sample, light](r1-onboarding/quicklook-panel-light.png)
+
 The same hooks open the real panel (`SPACEDOWN_ONBOARDING_PANEL=1`). In the capture, Quick Look renders `Sample.md` with Spacedown's reading theme (table, typeset `E = mc^2`, callout) from inside the sandboxed app: `quicklook-panel-light.png`, `quicklook-panel-dark.png`.
 
 ## What a sandboxed app can and cannot do (measured in the sandbox)
@@ -24,11 +69,14 @@ The same hooks open the real panel (`SPACEDOWN_ONBOARDING_PANEL=1`). In the capt
 
 ## Negative control
 
-Run after the commit. A copy of `Sample.md` without its inline math and callout, through the same render command:
+Run after the proof was committed (18ca422). A copy of `Sample.md` without its inline math and callout lines (`grep -F -v -e 'mc^2' -e '[!note]' -e 'Obsidian-style'`), through the same render command with `--out`, counting `<span class="katex">` and `callout` class names in the HTML:
 
-```
-Sample.md: ... callouts:0 ... katex:0 ...
-```
+| Input | katex spans | callout classes | summary line |
+|---|---|---|---|
+| `Sample.md` | 1 | 3 | `callouts:1` |
+| broken copy | 0 | 0 | `callouts:0 katex:0` |
+
+The summary's `katex:` count alone is not a signal: it is 3 on the real file, so the proof reads the HTML counts.
 
 Also seen while building: the first build failed with "missing import of defining module 'Combine'" until the import was added, so the build check does bite.
 
