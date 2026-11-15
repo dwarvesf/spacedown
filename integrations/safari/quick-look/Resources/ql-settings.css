@@ -1,4 +1,285 @@
 /* ql-settings.css: Quick Look CSS that applies the user's settings, keyed off the
    attributes on <html> (data-sd-theme, data-sd-appearance, data-sd-outline, and the
    --ql-size custom property). Injected last, after ql-reading.css. Contract:
-   docs/contract-r1.md. Empty until the settings node fills it. */
+   docs/contract-r1.md.
+
+   What each attribute does here:
+   - --ql-size: ql-reading.css already sets the page font-size from it, and the host's
+     inline style="--ql-size:<n>px" on <html> wins over the :root default. Nothing to add.
+   - data-sd-theme: ia (the default, the existing skin), tm, paper, read, mono. A theme
+     is a set of --ql-* tokens, so every rule in ql-reading.css follows it. Colors come
+     as a light and a dark value (--sd-l-*, --sd-d-*); the scheme blocks below pick one.
+   - data-sd-appearance: system (no rule: the panel follows the Mac), light, dark. A
+     forced scheme repeats the token flips that md-style.html, ql-reading.css and
+     hljs-theme.css do in their prefers-color-scheme blocks.
+   - data-sd-outline: the Quick Look page has no outline sidebar (the panel runs no
+     script). The rules at the end set the first paint of the browser-chrome outline for
+     hosts that load it; the page script keeps ownership once it has run. */
+
+/* ---- Themes: tokens, one block per theme ---- */
+
+:root[data-sd-theme="ia"] {
+  --ql-body-font: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ql-head-font: var(--ql-body-font);
+  --ql-leading: 1.64;
+  --ql-measure: 38rem;
+  --sd-l-paper: #fcfcfc;  --sd-d-paper: #1a1a1a;
+  --sd-l-ink: #1a1a1a;    --sd-d-ink: #cccccc;
+  --sd-l-soft: #1a1a1a;   --sd-d-soft: #cccccc;
+  --sd-l-rule: #1a1a1a;   --sd-d-rule: #cccccc;
+  --sd-l-accent: #1a1a1a; --sd-d-accent: #cccccc;
+  --sd-l-code: rgba(36, 36, 36, 0.055); --sd-d-code: rgba(245, 245, 245, 0.06);
+}
+
+/* Thinking Machines: Georgia serif, near-black ink, a red accent. */
+:root[data-sd-theme="tm"] {
+  --ql-body-font: Georgia, "Iowan Old Style BT", "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --ql-head-font: var(--ql-body-font);
+  --ql-leading: 1.65;
+  --ql-measure: 40rem;
+  --sd-l-paper: #ffffff;  --sd-d-paper: #1b1a19;
+  --sd-l-ink: #282828;    --sd-d-ink: #e6e2dc;
+  --sd-l-soft: #504945;   --sd-d-soft: #c8c3bc;
+  --sd-l-rule: #969696;   --sd-d-rule: #6b6866;
+  --sd-l-accent: #ad2111; --sd-d-accent: #e0705f;
+  --sd-l-code: #f3f3f2;   --sd-d-code: rgba(255, 255, 255, 0.07);
+}
+
+/* Paper: warm paper ground, the iA faces, a blue link. */
+:root[data-sd-theme="paper"] {
+  --ql-body-font: "iA Writer Quattro V", "iA Writer Quattro S", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ql-head-font: var(--ql-body-font);
+  --ql-leading: 1.6;
+  --ql-measure: 40rem;
+  --sd-l-paper: #fbfaf7;  --sd-d-paper: #1f1e1c;
+  --sd-l-ink: #242321;    --sd-d-ink: #e4e1da;
+  --sd-l-soft: #6e6c67;   --sd-d-soft: #a8a59d;
+  --sd-l-rule: #dcd9d2;   --sd-d-rule: #3a3835;
+  --sd-l-accent: #2b5f91; --sd-d-accent: #7fb2e6;
+  --sd-l-code: #f0eee9;   --sd-d-code: rgba(255, 255, 255, 0.06);
+}
+
+/* Read: proportional serif for long prose; code and tables keep the mono face. */
+:root[data-sd-theme="read"] {
+  --ql-body-font: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --ql-head-font: var(--ql-body-font);
+  --ql-leading: 1.6;
+  --ql-measure: 40rem;
+  --sd-l-paper: #fcfcfc;  --sd-d-paper: #1a1a1a;
+  --sd-l-ink: #1f1f1f;    --sd-d-ink: #d6d6d6;
+  --sd-l-soft: #4a4a4a;   --sd-d-soft: #b8b8b8;
+  --sd-l-rule: #bdbdbd;   --sd-d-rule: #555555;
+  --sd-l-accent: #1f1f1f; --sd-d-accent: #d6d6d6;
+  --sd-l-code: rgba(36, 36, 36, 0.055); --sd-d-code: rgba(245, 245, 245, 0.06);
+}
+
+/* Mono: the editor look, monospace for everything. */
+:root[data-sd-theme="mono"] {
+  --ql-body-font: "iA Writer Mono V", "iA Writer Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  --ql-head-font: var(--ql-body-font);
+  --ql-leading: 1.6;
+  --ql-measure: 42rem;
+  --sd-l-paper: #fcfcfc;  --sd-d-paper: #1a1a1a;
+  --sd-l-ink: #1a1a1a;    --sd-d-ink: #cccccc;
+  --sd-l-soft: #1a1a1a;   --sd-d-soft: #cccccc;
+  --sd-l-rule: #1a1a1a;   --sd-d-rule: #cccccc;
+  --sd-l-accent: #1a1a1a; --sd-d-accent: #cccccc;
+  --sd-l-code: rgba(36, 36, 36, 0.055); --sd-d-code: rgba(245, 245, 245, 0.06);
+}
+
+/* ---- Scheme: pick the light or the dark value of every theme token ---- */
+
+:root[data-sd-theme] {
+  --ql-paper: var(--sd-l-paper);
+  --ql-ink: var(--sd-l-ink);
+  --ql-ink-soft: var(--sd-l-soft);
+  --ql-rule: var(--sd-l-rule);
+  --ql-accent: var(--sd-l-accent);
+  --ql-code-bg: var(--sd-l-code);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-sd-theme]:not([data-sd-appearance="light"]) {
+    --ql-paper: var(--sd-d-paper);
+    --ql-ink: var(--sd-d-ink);
+    --ql-ink-soft: var(--sd-d-soft);
+    --ql-rule: var(--sd-d-rule);
+    --ql-accent: var(--sd-d-accent);
+    --ql-code-bg: var(--sd-d-code);
+  }
+}
+:root[data-sd-theme][data-sd-appearance="dark"] {
+  --ql-paper: var(--sd-d-paper);
+  --ql-ink: var(--sd-d-ink);
+  --ql-ink-soft: var(--sd-d-soft);
+  --ql-rule: var(--sd-d-rule);
+  --ql-accent: var(--sd-d-accent);
+  --ql-code-bg: var(--sd-d-code);
+}
+
+/* ---- Theme shape: what a token swap cannot carry ---- */
+
+/* The page ground must follow the theme: md-style.html paints html and body from
+   --vscode-editor-background, and ql-reading.css only repaints them from --ql-paper
+   for the default skin. Restate it so every theme and scheme lands on one ground. */
+:root[data-sd-theme] body,
+:root[data-sd-theme] { background-color: var(--ql-paper); }
+:root[data-sd-theme] body { color: var(--ql-ink); }
+
+/* Every theme except iA keeps ordinary headings: the bold-only, body-size headings are
+   the iA signature. */
+:root[data-sd-theme="tm"] h1, :root[data-sd-theme="paper"] h1,
+:root[data-sd-theme="read"] h1, :root[data-sd-theme="mono"] h1 { font-size: 1.7em; line-height: 1.25; margin-bottom: 0.8em; }
+:root[data-sd-theme="tm"] h2, :root[data-sd-theme="paper"] h2,
+:root[data-sd-theme="read"] h2, :root[data-sd-theme="mono"] h2 { font-size: 1.35em; line-height: 1.3; margin-bottom: 0.7em; }
+:root[data-sd-theme="tm"] h3, :root[data-sd-theme="paper"] h3,
+:root[data-sd-theme="read"] h3, :root[data-sd-theme="mono"] h3 { font-size: 1.12em; line-height: 1.35; margin-bottom: 0.4em; }
+:root[data-sd-theme="paper"] h5, :root[data-sd-theme="paper"] h6 { color: var(--ql-ink-soft); }
+
+/* Links and quotes carry the theme accent where the theme has one. */
+:root[data-sd-theme="tm"] a, :root[data-sd-theme="paper"] a { color: var(--ql-accent); }
+:root[data-sd-theme="paper"] blockquote { color: var(--ql-ink-soft); }
+:root[data-sd-theme="paper"] li::marker { color: var(--ql-ink-soft); }
+
+/* Serif prose keeps a mono face in code and tables, at the optical size of the serif. */
+:root[data-sd-theme="tm"] table, :root[data-sd-theme="read"] table { font-family: var(--ql-mono-font); font-size: 0.82em; }
+:root[data-sd-theme="mono"] table { font-size: 0.82em; }
+
+/* ---- Appearance: a forced scheme ---- */
+/* "system" has no rule: the panel inherits the Mac's appearance and every block above
+   already follows prefers-color-scheme. */
+
+:root[data-sd-appearance="dark"] {
+  color-scheme: dark;
+  --vscode-editor-foreground: #e3e3e6;
+  --vscode-editor-background: #23252a;
+  --vscode-textCodeBlock-background: #2c2f36;
+  --vscode-widget-border: #3c404a;
+  --sd-link: #79b8ff;
+  --sd-link-underline: rgba(121, 184, 255, 0.4);
+  --sd-code-chip-bg: rgba(255, 255, 255, 0.09);
+  --sd-border: rgba(255, 255, 255, 0.18);
+  --sd-border-strong: rgba(255, 255, 255, 0.62);
+  --sd-rule: #3c404a;
+  --sd-rule-soft: #32353c;
+  --sd-rail: #3a3e46;
+  --sd-zebra: #232327;
+  --sd-quote-rule: #4a4a50;
+  --sd-scrollbar: #4a4a50;
+  --sd-ink-muted: #9a9aa2;
+  --sd-ink-soft: #b4b4bc;
+  --sd-ink-faint: #8b8b93;
+  --sd-ink-strong: #f2f2f4;
+  --sd-marker: #8b8b93;
+  --sd-neg: #f2857a;
+  --sd-pos: #5ec99a;
+  --sd-syn-alert: #ff7b72;
+  --sd-syn-comment: #b9a06a;
+  --sd-syn-keyword: #8cb4ff;
+  --sd-syn-number: #a2a0ff;
+  --sd-syn-string: #9ece6a;
+  --sd-syn-error: #ff8a80;
+  --sd-syn-operator: #ffa657;
+  --sd-syn-var: #e3e3e6;
+}
+:root[data-sd-appearance="dark"] img { filter: brightness(0.92); }
+/* The default theme's own dark tokens, for a forced dark under a light Mac. */
+:root[data-sd-appearance="dark"]:not([data-sd-theme]) {
+  --ql-paper: #1a1a1a; --ql-ink: #cccccc; --ql-ink-soft: #cccccc;
+  --ql-rule: #cccccc; --ql-accent: #cccccc; --ql-code-bg: rgba(245, 245, 245, 0.06);
+}
+:root[data-sd-appearance="dark"] .hljs { color: #cccccc; background: transparent; }
+:root[data-sd-appearance="dark"] .hljs-doctag, :root[data-sd-appearance="dark"] .hljs-keyword,
+:root[data-sd-appearance="dark"] .hljs-template-tag, :root[data-sd-appearance="dark"] .hljs-template-variable,
+:root[data-sd-appearance="dark"] .hljs-type, :root[data-sd-appearance="dark"] .hljs-variable.language_,
+:root[data-sd-appearance="dark"] .hljs-title { color: #ba8db2; }
+:root[data-sd-appearance="dark"] .hljs-regexp, :root[data-sd-appearance="dark"] .hljs-string,
+:root[data-sd-appearance="dark"] .hljs-name, :root[data-sd-appearance="dark"] .hljs-quote,
+:root[data-sd-appearance="dark"] .hljs-selector-pseudo, :root[data-sd-appearance="dark"] .hljs-selector-tag { color: #82a56f; }
+:root[data-sd-appearance="dark"] .hljs-attr, :root[data-sd-appearance="dark"] .hljs-attribute,
+:root[data-sd-appearance="dark"] .hljs-literal, :root[data-sd-appearance="dark"] .hljs-meta,
+:root[data-sd-appearance="dark"] .hljs-number, :root[data-sd-appearance="dark"] .hljs-operator,
+:root[data-sd-appearance="dark"] .hljs-selector-attr, :root[data-sd-appearance="dark"] .hljs-selector-class,
+:root[data-sd-appearance="dark"] .hljs-selector-id, :root[data-sd-appearance="dark"] .hljs-variable,
+:root[data-sd-appearance="dark"] .hljs-built_in, :root[data-sd-appearance="dark"] .hljs-symbol,
+:root[data-sd-appearance="dark"] .hljs-bullet, :root[data-sd-appearance="dark"] .hljs-section { color: #c1944e; }
+:root[data-sd-appearance="dark"] .hljs-code, :root[data-sd-appearance="dark"] .hljs-comment,
+:root[data-sd-appearance="dark"] .hljs-formula { color: #878787; }
+:root[data-sd-appearance="dark"] .hljs-subst, :root[data-sd-appearance="dark"] .hljs-emphasis,
+:root[data-sd-appearance="dark"] .hljs-strong { color: #cccccc; }
+
+:root[data-sd-appearance="light"] {
+  color-scheme: light;
+  --vscode-editor-foreground: #3b3b3b;
+  --vscode-editor-background: #ffffff;
+  --vscode-textCodeBlock-background: #f3f3f3;
+  --vscode-widget-border: #e5e5e5;
+  --sd-link: #006ab1;
+  --sd-link-underline: rgba(0, 106, 177, 0.35);
+  --sd-code-chip-bg: rgba(0, 0, 0, 0.06);
+  --sd-border: rgba(0, 0, 0, 0.18);
+  --sd-border-strong: rgba(0, 0, 0, 0.69);
+  --sd-rule: #d8dce1;
+  --sd-rule-soft: #eef0f3;
+  --sd-rail: #ececec;
+  --sd-zebra: #f6f8fa;
+  --sd-quote-rule: #d1d5db;
+  --sd-scrollbar: #d1d5db;
+  --sd-ink-muted: #6e7681;
+  --sd-ink-soft: #4b5563;
+  --sd-ink-faint: #8a8a8a;
+  --sd-ink-strong: #18181b;
+  --sd-marker: #6b7280;
+  --sd-neg: #b91c1c;
+  --sd-pos: #047857;
+  --sd-syn-alert: #ef2929;
+  --sd-syn-comment: #8f5902;
+  --sd-syn-keyword: #204a87;
+  --sd-syn-number: #0000cf;
+  --sd-syn-string: #4e9a06;
+  --sd-syn-error: #a40000;
+  --sd-syn-operator: #ce5c00;
+  --sd-syn-var: #000000;
+}
+:root[data-sd-appearance="light"] img { filter: none; }
+/* The default theme's own light tokens, for a forced light under a dark Mac. */
+:root[data-sd-appearance="light"]:not([data-sd-theme]) {
+  --ql-paper: #fcfcfc; --ql-ink: #1a1a1a; --ql-ink-soft: #1a1a1a;
+  --ql-rule: #1a1a1a; --ql-accent: #1a1a1a; --ql-code-bg: rgba(36, 36, 36, 0.055);
+}
+/* GitHub light token colors (hljs-theme.css), restored over the dark block. */
+:root[data-sd-appearance="light"] .hljs { color: #24292e; background: transparent; }
+:root[data-sd-appearance="light"] .hljs-doctag, :root[data-sd-appearance="light"] .hljs-keyword,
+:root[data-sd-appearance="light"] .hljs-template-tag, :root[data-sd-appearance="light"] .hljs-template-variable,
+:root[data-sd-appearance="light"] .hljs-type, :root[data-sd-appearance="light"] .hljs-variable.language_ { color: #d73a49; }
+:root[data-sd-appearance="light"] .hljs-title { color: #6f42c1; }
+:root[data-sd-appearance="light"] .hljs-attr, :root[data-sd-appearance="light"] .hljs-attribute,
+:root[data-sd-appearance="light"] .hljs-literal, :root[data-sd-appearance="light"] .hljs-meta,
+:root[data-sd-appearance="light"] .hljs-number, :root[data-sd-appearance="light"] .hljs-operator,
+:root[data-sd-appearance="light"] .hljs-selector-attr, :root[data-sd-appearance="light"] .hljs-selector-class,
+:root[data-sd-appearance="light"] .hljs-selector-id, :root[data-sd-appearance="light"] .hljs-variable,
+:root[data-sd-appearance="light"] .hljs-section { color: #005cc5; }
+:root[data-sd-appearance="light"] .hljs-regexp, :root[data-sd-appearance="light"] .hljs-string { color: #032f62; }
+:root[data-sd-appearance="light"] .hljs-built_in, :root[data-sd-appearance="light"] .hljs-symbol { color: #e36209; }
+:root[data-sd-appearance="light"] .hljs-code, :root[data-sd-appearance="light"] .hljs-comment,
+:root[data-sd-appearance="light"] .hljs-formula { color: #6a737d; }
+:root[data-sd-appearance="light"] .hljs-name, :root[data-sd-appearance="light"] .hljs-quote,
+:root[data-sd-appearance="light"] .hljs-selector-pseudo, :root[data-sd-appearance="light"] .hljs-selector-tag { color: #22863a; }
+:root[data-sd-appearance="light"] .hljs-bullet { color: #735c0f; }
+:root[data-sd-appearance="light"] .hljs-subst, :root[data-sd-appearance="light"] .hljs-emphasis,
+:root[data-sd-appearance="light"] .hljs-strong { color: #24292e; }
+/* Highlighted code keeps the panel ink for its base color, as hljs-theme.css ends. */
+:root[data-sd-appearance] pre code.hljs, :root[data-sd-appearance] code.hljs { background: transparent; }
+
+/* ---- Outline: first paint of the browser-chrome outline sidebar ---- */
+/* nav#TOC and html.sd-has-toc come from reading-chrome-head.html. Before the page
+   script marks the page ready (.sd-anim-ready, one frame after first paint) the
+   attribute decides the starting state; after that the script's own toggle wins. The
+   Quick Look panel has no outline, so these rules are inert there. */
+html[data-sd-outline="closed"].sd-has-toc:not(.sd-anim-ready) nav#TOC {
+  transform: translateX(-100%); opacity: 0; pointer-events: none; visibility: hidden;
+}
+html[data-sd-outline="closed"].sd-has-toc:not(.sd-anim-ready) body { padding-left: 26px; }
+html[data-sd-outline="open"].sd-has-toc.sd-toc-collapsed:not(.sd-anim-ready) nav#TOC {
+  transform: none; opacity: 1; pointer-events: auto; visibility: visible;
+}
+html[data-sd-outline="open"].sd-has-toc.sd-toc-collapsed:not(.sd-anim-ready) body { padding-left: 280px; }
