@@ -306,7 +306,8 @@
     });
   }
 
-  function mdToHtml(src) {
+  // cfg: optional settings object (see SD.config below); plugins get it validated.
+  function mdToHtml(src, cfg) {
     var fm = splitFrontmatter(String(src == null ? "" : src));
     var co = renderCallouts(fm.rest);
     var m = renderMath(co.src);
@@ -325,8 +326,195 @@
     html = calloutHTML(html, co.outs);
     html = tightColumns(html);
     html = html.replace(/<li>(\s*)<input /g, '<li class="task-list-item">$1<input ');
-    return QL_EXTRA_CSS + "\n" + (fm.html ? fm.html + "\n" + html : html);
+    html = runTransforms(fm.html ? fm.html + "\n" + html : html, config(cfg));
+    return QL_EXTRA_CSS + "\n" + html;
   }
 
+  // ---- Plug-in registry and settings (frozen contract: docs/contract-r1.md) ----
+  // A feature that is not core rendering (X-ray, Present) lives in its own file, loaded
+  // after this one, and calls SD.register. Two kinds of hook:
+  //   render time, DOM-free, return strings: transform, css, controls, toolbar. These run
+  //     everywhere the core runs (JavaScriptCore in the appex, node, osascript).
+  //   page time, need a live DOM: init, key, print, reset. They run only where the page
+  //     executes scripts, through SD.boot(document, cfg). The Quick Look panel does not.
+  // A hook that throws is skipped and logged to SD.errors; it never breaks the render.
+
+  // Settings: keys, types and defaults. The app writes these to the App Group defaults
+  // suite; SpacedownSettings.swift mirrors this table and the quicklook smoke section
+  // fails when the two drift.
+  var DEFAULTS = {
+    theme: "ia",
+    appearance: "system",
+    textSize: 18,
+    outlineDefault: "auto",
+    xrayEnabled: false,
+    xrayDashes: true,
+    xrayLongSentences: true,
+    xraySentenceWords: 25,
+    xrayFillers: true,
+    xrayFillerWords: ["very", "really", "just", "actually", "basically", "simply", "quite",
+      "rather", "somewhat", "literally", "obviously", "clearly", "of course", "in order to"],
+    xrayTicketIds: true
+  };
+  var ENUMS = {
+    theme: ["ia", "tm", "paper", "read", "mono"],
+    appearance: ["system", "light", "dark"],
+    outlineDefault: ["auto", "open", "closed"]
+  };
+  var RANGES = { textSize: [12, 32], xraySentenceWords: [8, 80] };
+  var SURFACES = ["quicklook", "cli", "app", "test"];
+
+  function copyValue(v) { return Array.isArray(v) ? v.slice() : v; }
+
+  // One validated value for key k, or undefined when v does not fit the key's type.
+  function validValue(k, v) {
+    var d = DEFAULTS[k];
+    if (Array.isArray(d)) {
+      if (!Array.isArray(v)) return undefined;
+      return v.filter(function (x) { return typeof x === "string" && x.trim() !== ""; })
+        .map(function (x) { return x.trim(); });
+    }
+    if (typeof d === "boolean") {
+      if (typeof v === "boolean") return v;
+      if (v === 0 || v === 1) return v === 1; // NSNumber bools can bridge as 0/1
+      return undefined;
+    }
+    if (typeof d === "number") {
+      if (typeof v !== "number" || !isFinite(v)) return undefined;
+      var r = RANGES[k];
+      return Math.min(r[1], Math.max(r[0], Math.round(v)));
+    }
+    if (typeof v !== "string") return undefined;
+    return ENUMS[k] && ENUMS[k].indexOf(v) < 0 ? undefined : v;
+  }
+
+  // Full settings object: DEFAULTS overlaid with every valid key of `partial`. Unknown
+  // keys and wrong types are dropped. `surface` says which host renders.
+  function config(partial) {
+    var out = {}, k;
+    for (k in DEFAULTS) out[k] = copyValue(DEFAULTS[k]);
+    out.surface = "quicklook";
+    if (!partial || typeof partial !== "object") return out;
+    for (k in DEFAULTS) {
+      if (!Object.prototype.hasOwnProperty.call(partial, k)) continue;
+      var v = validValue(k, partial[k]);
+      if (v !== undefined) out[k] = v;
+    }
+    if (SURFACES.indexOf(partial.surface) >= 0) out.surface = partial.surface;
+    return out;
+  }
+
+  var plugins = [];
+  var errors = [];
+
+  function register(plugin) {
+    if (!plugin || typeof plugin.id !== "string" || plugin.id === "") {
+      throw new Error("SD.register: a plugin needs a string id");
+    }
+    plugins = plugins.filter(function (p) { return p.id !== plugin.id; });
+    plugins.push(plugin);
+    // Lower order runs first; equal order keeps registration order (stable sort).
+    plugins.sort(function (a, b) { return (a.order || 100) - (b.order || 100); });
+    return plugin;
+  }
+
+  // Call hook on every plugin that has it; fn(plugin) does the call. Errors are logged.
+  function each(hook, fn) {
+    plugins.slice().forEach(function (p) {
+      if (typeof p[hook] !== "function") return;
+      try { fn(p); } catch (e) { errors.push(p.id + "." + hook + ": " + (e && e.message || e)); }
+    });
+  }
+
+  function runTransforms(html, cfg) {
+    each("transform", function (p) {
+      var out = p.transform(html, cfg);
+      if (typeof out === "string") html = out;
+    });
+    return html;
+  }
+
+  function collect(hook, cfg) {
+    var parts = [];
+    each(hook, function (p) {
+      var s = p[hook](cfg);
+      if (typeof s === "string" && s !== "") parts.push(s);
+    });
+    return parts.join("\n");
+  }
+
+  // The shared toolbar: fixed top right, hidden in print. Plugins only add items to it.
+  var TOOLBAR_CSS = ".sd-ql-toolbar{position:fixed;top:10px;right:12px;z-index:10;display:flex;" +
+    "gap:4px;font:12px -apple-system,sans-serif}@media print{.sd-ql-toolbar{display:none}}";
+
+  // The page's top-of-body chrome: every plugin's controls (body-level, before the
+  // content, so a CSS sibling selector can reach the document), then the toolbar.
+  function chrome(cfg, items) {
+    var bar = items ? '<div class="sd-ql-toolbar" role="toolbar" aria-label="Preview tools">' +
+      items + "</div>" : "";
+    var controls = collect("controls", cfg);
+    return controls && bar ? controls + "\n" + bar : controls + bar;
+  }
+
+  // Attributes for the <html> element: settings the page CSS keys off.
+  function htmlAttrs(cfg) {
+    return 'data-sd-theme="' + escapeText(cfg.theme) + '" data-sd-appearance="' +
+      escapeText(cfg.appearance) + '" data-sd-outline="' + escapeText(cfg.outlineDefault) +
+      '" style="--ql-size:' + cfg.textSize + 'px"';
+  }
+
+  // Everything a host needs to build the page, DOM-free.
+  function render(src, partial) {
+    var cfg = config(partial);
+    var items = collect("toolbar", cfg);
+    var css = collect("css", cfg);
+    return {
+      body: mdToHtml(src, cfg),
+      css: items ? TOOLBAR_CSS + (css ? "\n" + css : "") : css,
+      chrome: chrome(cfg, items),
+      attrs: htmlAttrs(cfg),
+      config: cfg
+    };
+  }
+
+  // Page time: call init, route keys, run print. Only in a page that runs scripts.
+  function boot(doc, partial) {
+    var cfg = config(partial);
+    each("init", function (p) { p.init(doc, cfg); });
+    doc.addEventListener("keydown", function (ev) {
+      if (ev.defaultPrevented || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      var t = ev.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ""))) return;
+      var handled = false;
+      each("key", function (p) { if (!handled && p.key(ev, cfg) === true) handled = true; });
+      if (handled && ev.preventDefault) ev.preventDefault();
+    });
+    var win = doc.defaultView;
+    if (win && win.addEventListener) {
+      win.addEventListener("beforeprint", function () { each("print", function (p) { p.print(doc, cfg); }); });
+    }
+    return cfg;
+  }
+
+  // Back to the plain reading page: every plugin undoes its page state.
+  function reset(doc, partial) {
+    var cfg = config(partial);
+    each("reset", function (p) { p.reset(doc, cfg); });
+  }
+
+  global.SD = {
+    contract: 1,
+    DEFAULTS: DEFAULTS,
+    ENUMS: ENUMS,
+    RANGES: RANGES,
+    config: config,
+    register: register,
+    plugins: function () { return plugins.map(function (p) { return p.id; }); },
+    plugin: function (id) { return plugins.filter(function (p) { return p.id === id; })[0] || null; },
+    errors: errors,
+    render: render,
+    boot: boot,
+    reset: reset
+  };
   global.mdToHtml = mdToHtml;
 })(typeof globalThis !== "undefined" ? globalThis : this);

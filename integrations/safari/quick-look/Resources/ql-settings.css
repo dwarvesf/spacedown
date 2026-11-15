@@ -1,0 +1,4 @@
+/* ql-settings.css: Quick Look CSS that applies the user's settings, keyed off the
+   attributes on <html> (data-sd-theme, data-sd-appearance, data-sd-outline, and the
+   --ql-size custom property). Injected last, after ql-reading.css. Contract:
+   docs/contract-r1.md. Empty until the settings node fills it. */

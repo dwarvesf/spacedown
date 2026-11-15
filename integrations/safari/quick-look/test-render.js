@@ -5,15 +5,10 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { loadCore } = require("./load-core");
 
 const dir = path.join(__dirname, "Resources");
-const ctx = {};
-// Make the UMD bundles take their global-assignment branch (no module/exports here).
-ctx.self = ctx; ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
-vm.createContext(ctx);
-for (const f of ["marked.min.js", "katex.min.js", "highlight.min.js", "ql-render.js"]) {
-  vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), ctx, { filename: f });
-}
+const ctx = loadCore(dir);
 
 let fail = 0;
 function check(name, cond) {

@@ -25,12 +25,19 @@ final class MarkdownRenderer {
             NSLog("SpacedownQL JS error: \(String(describing: exc))")
         }
         let bundle = Bundle(for: MarkdownRenderer.self)
-        loadScript(ctx, bundle, "marked.min", "js", nil)
-        loadScript(ctx, bundle, "katex.min", "js", nil)
-        // Before ql-render, which reads global.hljs at parse time and degrades to
-        // unhighlighted code if it is absent.
-        loadScript(ctx, bundle, "highlight.min", "js", nil)
-        loadScript(ctx, bundle, "ql-render", "js", nil)
+        // load-order.txt is the one list every host loads (node: load-core.js; CLI:
+        // osascript): vendor libraries, highlight before ql-render (it reads global.hljs
+        // at parse time), then ql-render, then the plug-ins that register with SD.
+        guard let list = bundle.url(forResource: "load-order", withExtension: "txt"),
+              let order = try? String(contentsOf: list, encoding: .utf8) else {
+            NSLog("SpacedownQL: missing resource load-order.txt")
+            return
+        }
+        for line in order.split(separator: "\n") {
+            let file = line.trimmingCharacters(in: .whitespaces)
+            guard file.hasSuffix(".js"), !file.hasPrefix("#") else { continue }
+            loadScript(ctx, bundle, String(file.dropLast(3)), "js", nil)
+        }
     }
 
     private func loadScript(_ ctx: JSContext, _ b: Bundle, _ name: String, _ ext: String, _ sub: String?) {
@@ -42,13 +49,28 @@ final class MarkdownRenderer {
         ctx.evaluateScript(js)
     }
 
-    /// Rendered <body> HTML for the given markdown. Falls back to escaped plain text.
-    func renderBody(_ md: String) -> String {
-        guard let ctx = ctx else { return "<pre>\(escape(md))</pre>" }
+    /// The page parts SD.render returns (docs/contract-r1.md). Falls back to escaped
+    /// plain text with no chrome when the core is missing or fails.
+    struct Page {
+        var body: String
+        var css = ""
+        var chrome = ""
+        var attrs = ""
+    }
+
+    func render(_ md: String, settings: [String: Any]) -> Page {
+        let fallback = Page(body: "<pre>\(escape(md))</pre>")
+        guard let ctx = ctx else { return fallback }
+        var cfg = settings
+        cfg["surface"] = "quicklook"
         ctx.setObject(md, forKeyedSubscript: "SD_SRC" as NSString)
-        let result = ctx.evaluateScript("mdToHtml(SD_SRC)")
-        if let html = result?.toString(), !html.isEmpty { return html }
-        return "<pre>\(escape(md))</pre>"
+        ctx.setObject(cfg, forKeyedSubscript: "SD_CFG" as NSString)
+        guard let out = ctx.evaluateScript("SD.render(SD_SRC, SD_CFG)")?.toDictionary(),
+              let body = out["body"] as? String, !body.isEmpty else { return fallback }
+        return Page(body: body,
+                    css: out["css"] as? String ?? "",
+                    chrome: out["chrome"] as? String ?? "",
+                    attrs: out["attrs"] as? String ?? "")
     }
 
     /// Shared CSS for the page head: KaTeX stylesheet + the spacedown VS Code look.
@@ -76,6 +98,11 @@ final class MarkdownRenderer {
         // QL-only; the browser preview keeps the upstream VS Code look.
         if let r = b.url(forResource: "ql-reading", withExtension: "css"),
            let css = try? String(contentsOf: r, encoding: .utf8) {
+            head += "<style>\(css)</style>\n"
+        }
+        // Settings CSS (theme, appearance), keyed off the <html> attributes SD.render sets.
+        if let s = b.url(forResource: "ql-settings", withExtension: "css"),
+           let css = try? String(contentsOf: s, encoding: .utf8) {
             head += "<style>\(css)</style>\n"
         }
         return head
@@ -138,13 +165,16 @@ func inlineLocalImages(_ html: String, relativeTo docURL: URL) -> String {
 }
 
 /// Wrap rendered body + shared CSS into a self-contained HTML page.
-func buildPreviewHTML(_ md: String, fileURL: URL? = nil) -> Data {
-    var body = MarkdownRenderer.shared.renderBody(md)
+func buildPreviewHTML(_ md: String, fileURL: URL? = nil,
+                      settings: [String: Any] = SpacedownSettings.stored()) -> Data {
+    let page = MarkdownRenderer.shared.render(md, settings: settings)
+    var body = page.body
     if let fileURL = fileURL { body = inlineLocalImages(body, relativeTo: fileURL) }
-    let head = MarkdownRenderer.shared.headCSS()
-    let page = """
+    var head = MarkdownRenderer.shared.headCSS()
+    if !page.css.isEmpty { head += "<style>\(page.css)</style>\n" }
+    let html = """
     <!doctype html>
-    <html lang="en"><head><meta charset="utf-8">
+    <html lang="en" \(page.attrs)><head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- marked passes raw HTML through, so a hostile document can put <script> or a
          remote <img> into the panel. Styles are inline and local images arrive as
@@ -156,9 +186,9 @@ func buildPreviewHTML(_ md: String, fileURL: URL? = nil) -> Data {
          beat ql-reading.css's centered column and outdented the whole page. -->
     <style>body { margin: 0; padding: 16px 22px; }</style>
     \(head)
-    </head><body>\(body)</body></html>
+    </head><body>\(page.chrome)\(body)</body></html>
     """
-    return Data(page.utf8)
+    return Data(html.utf8)
 }
 
 // QLPreviewingController conformance is load-bearing: Quick Look's host checks the
