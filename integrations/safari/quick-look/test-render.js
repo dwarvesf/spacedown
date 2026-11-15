@@ -55,6 +55,23 @@ check("callout body survives", co.includes("candidate set"));
 check("unknown callout type -> note styling", ctx.mdToHtml("> [!zebra] Hm\n> body\n").includes("sd-callout-note"));
 check("plain blockquote untouched", !ctx.mdToHtml("> just a quote\n").includes('<blockquote class="sd-callout'));
 
+// Code is literal: a $ or a "> [!x]" inside a code span or a fence is neither math nor a
+// callout, so a shell snippet renders as written in the panel.
+const sh = ctx.mdToHtml("Run `echo $HOME` and `cd $(git rev-parse --show-toplevel)`, then `$HOME` and `$USER`.\n");
+check("code span keeps $HOME and $(cmd) literal", sh.includes("<code>echo $HOME</code>") &&
+  sh.includes("<code>cd $(git rev-parse --show-toplevel)</code>") && sh.includes("<code>$USER</code>") && !sh.includes("katex"));
+const shFence = ctx.mdToHtml("```sh\nexport P=$HOME/bin:$PATH\necho \"$(date)\" $USER\n```\n");
+check("fence keeps $VAR and $(cmd) literal", !shFence.includes("katex") && shFence.includes("HOME") && shFence.includes("$(date)"));
+const coFence = ctx.mdToHtml("```md\n> [!note] Not a callout\n> body\n```\n");
+check("fenced > [!note] stays code", !coFence.includes("sd-callout") && coFence.includes("[!note]"));
+const quotedFence = ctx.mdToHtml("> ```sh\n> echo $HOME $(pwd)\n> ```\n");
+check("fence inside a blockquote keeps $ literal", !quotedFence.includes("katex") && quotedFence.includes("$HOME"));
+check("escaped \\$ stays a dollar", ((s) => !s.includes("katex") && s.includes("$A and $B"))(ctx.mdToHtml("Swap \\$A and \\$B today.\n")));
+const mixed = ctx.mdToHtml("> [!tip] Real\n> Math $a^2$ next to `$b$`.\n\n```\n$c$\n```\n\n$$x^2$$\n");
+check("real callout beside code still a callout", mixed.includes("sd-callout-tip"));
+check("real inline and display math beside code still render",
+  (mixed.match(/class="katex"/g) || []).length === 2 && mixed.includes("katex-display") && mixed.includes("<code>$b$</code>"));
+
 // Short table columns get sd-tight so auto layout cannot collapse them to their
 // longest word; the prose column that competes for the width stays wrappable.
 const tt = ctx.mdToHtml("| Date | Event |\n|---|---|\n| 1960s to 1970s | Phototypesetting replaced hot metal across the trade, and the craft went with it |\n");

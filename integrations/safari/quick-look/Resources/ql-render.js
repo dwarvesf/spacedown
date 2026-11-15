@@ -6,9 +6,8 @@
 //
 // Math handling: extract $$...$$ (display) and $...$ (inline) BEFORE marked so it does
 // not mangle the TeX, render each with katex.renderToString, swap back after parse via a
-// plain alphanumeric placeholder marked leaves untouched. Known limitation: a literal $
-// inside a code span/block is still treated as math (the appex preview is best-effort;
-// the pandoc/browser path is the source of truth for tricky docs).
+// plain alphanumeric placeholder marked leaves untouched. Code spans, fences and an
+// escaped \$ are shielded first (shieldCode), so a $ there stays literal.
 (function (global) {
   "use strict";
 
@@ -124,6 +123,67 @@
     try { table = fmTable(block); } catch (e) { table = null; }
     if (table !== null) return { html: table, rest: rest };
     return { html: global.marked.parse(["```yaml"].concat(block, "```").join("\n")), rest: rest };
+  }
+
+  // Code is literal. Before the callout and math passes, swap every fenced line (also
+  // inside a blockquote or a list), every inline code span and every escaped \$ for a
+  // placeholder, and put the text back before marked parses, so `$HOME` or a fenced
+  // "> [!note]" stays as written. Line based: a span never crosses a line.
+  var FENCE_RE = /^((?:[ \t]*>[ \t]?)*)[ \t]*(`{3,}|~{3,})(.*)$/;
+
+  function shieldCode(src) {
+    var saved = [];
+    function stash(text) {
+      saved.push(text);
+      return "SDCODEPLACEHOLDER" + (saved.length - 1) + "ENDSD";
+    }
+    function spans(line) {
+      var out = "", i = 0;
+      while (i < line.length) {
+        var c = line.charAt(i);
+        if (c === "\\" && (line.charAt(i + 1) === "$" || line.charAt(i + 1) === "`")) {
+          out += line.charAt(i + 1) === "$" ? stash("\\$") : "\\`";
+          i += 2;
+          continue;
+        }
+        if (c !== "`") { out += c; i++; continue; }
+        var open = i;
+        while (line.charAt(i) === "`") i++;
+        var n = i - open, k = i, close = -1;
+        while (k < line.length) {
+          if (line.charAt(k) !== "`") { k++; continue; }
+          var run = k;
+          while (line.charAt(k) === "`") k++;
+          if (k - run === n) { close = run; break; }
+        }
+        if (close < 0) { out += line.slice(open, i); continue; }
+        out += stash(line.slice(open, close + n));
+        i = close + n;
+      }
+      return out;
+    }
+    var fence = null;
+    var lines = src.split("\n").map(function (line) {
+      var m = FENCE_RE.exec(line);
+      var prefix = m ? m[1] : (/^((?:[ \t]*>[ \t]?)*)/.exec(line) || ["", ""])[1];
+      if (fence === null) {
+        if (m && !(m[2].charAt(0) === "`" && m[3].indexOf("`") >= 0)) {
+          fence = m[2];
+          return prefix + stash(line.slice(prefix.length));
+        }
+        return spans(line);
+      }
+      if (m && m[2].charAt(0) === fence.charAt(0) && m[2].length >= fence.length && !m[3].trim()) fence = null;
+      return prefix + stash(line.slice(prefix.length));
+    });
+    return { src: lines.join("\n"), saved: saved };
+  }
+
+  function unshieldCode(src, saved) {
+    return src.replace(/SDCODEPLACEHOLDER(\d+)ENDSD/g, function (whole, i) {
+      var t = saved[+i];
+      return t == null ? whole : t;
+    });
   }
 
   function renderMath(src) {
@@ -309,12 +369,13 @@
   // cfg: optional settings object (see SD.config below); plugins get it validated.
   function mdToHtml(src, cfg) {
     var fm = splitFrontmatter(String(src == null ? "" : src));
-    var co = renderCallouts(fm.rest);
+    var code = shieldCode(fm.rest);
+    var co = renderCallouts(code.src);
     var m = renderMath(co.src);
     // breaks:true = Obsidian's default (single newline -> <br>), so multi-line
     // blockquotes/callouts keep their authored line structure instead of joining
     // into one paragraph. Matches the pandoc path's +hard_line_breaks.
-    var html = global.marked.parse(m.src, { breaks: true });
+    var html = global.marked.parse(unshieldCode(m.src, code.saved), { breaks: true });
     // Highlight BEFORE math is substituted back. The other order let hljs unescape and
     // re-escape whole KaTeX spans that sat inside a fence, filling the code block with
     // tag soup: `$x$` in a js fence became about 1.5KB of escaped markup.
