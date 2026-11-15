@@ -853,8 +853,8 @@ printf '# T\n\nHello *world*.\n' > "${TMP}/fonts.md"
 "$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-ia.html" --no-open >/dev/null 2>&1 || true
 SPACEDOWN_EMBED_FONTS=0 "$SPACEDOWN" "${TMP}/fonts.md" --out "${TMP}/fonts-off.html" --no-open >/dev/null 2>&1 || true
 "$SPACEDOWN" "${TMP}/fonts.md" --font-mode tm --out "${TMP}/fonts-tm.html" --no-open >/dev/null 2>&1 || true
-ia_faces=$(grep -o 'url(data:font/ttf;base64,' "${TMP}/fonts-ia.html" 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$ia_faces" -eq 4 ]] && ! grep -q 'url(data:font/ttf' "${TMP}/fonts-off.html" && ! grep -q 'url(data:font/ttf' "${TMP}/fonts-tm.html"; then
+ia_faces=$(grep -oE 'url[(]data:font/(ttf|woff2);base64,' "${TMP}/fonts-ia.html" 2>/dev/null | wc -l | tr -d ' ')
+if [[ "$ia_faces" -eq 4 ]] && ! grep -qE 'url[(]data:font/(ttf|woff2)' "${TMP}/fonts-off.html" && ! grep -qE 'url[(]data:font/(ttf|woff2)' "${TMP}/fonts-tm.html"; then
   ok "4 embedded faces in ia, none with SPACEDOWN_EMBED_FONTS=0 or tm"
 else
   no "font embedding wrong (ia faces=${ia_faces})"
@@ -908,7 +908,7 @@ fi
 echo "[42] build-ql-skin embeds the four iA fonts"
 skin="$("${SCRIPT_DIR}/scripts/build-ql-skin" "${TMP}/skin.css" 2>/dev/null || true)"
 if [[ "$skin" == "${TMP}/skin.css" ]] \
-   && [[ $(grep -o 'src: url(data:font/ttf;base64,' "${TMP}/skin.css" | wc -l | tr -d ' ') -eq 4 ]] \
+   && [[ $(grep -oE 'src: url[(]data:font/(ttf|woff2);base64,' "${TMP}/skin.css" | wc -l | tr -d ' ') -eq 4 ]] \
    && grep -q -- '--ql-body-font: "iA Writer Quattro V"' "${TMP}/skin.css" \
    && ! grep -q 'data:font' "${SCRIPT_DIR}/integrations/safari/quick-look/Resources/ql-reading.css"; then
   ok "exactly 4 font data URIs in the built skin; the committed source stays readable"
