@@ -17,7 +17,7 @@ Only a maintainer cuts a release, by hand on a Mac. Nothing in CI signs, notariz
 
 ## Versioning
 
-The version is `MAJOR.MINOR.PATCH`. One version lives in several files, and `release.sh` refuses to run until they all match:
+The version is `MAJOR.MINOR.PATCH`. One version lives in several files. Bump all of them. `release.sh` reads the version from `project.yml` and refuses to run until `bin/spacedown` and both extension manifests match it; it does not check the Xcode project, so check that one by eye.
 
 | File | Field |
 |---|---|

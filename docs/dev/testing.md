@@ -31,11 +31,11 @@ A section skips (with a `skip:` line, not a failure) when its tool is missing:
 
 | Missing | Skipped |
 |---|---|
-| node | the render core tests, the Skim parity check, the plug-in tests, the MCP session |
+| node | the render core suites, the Skim parity check and the MCP session (but see below) |
 | a Chromium-family browser | the headless checks: reading-mode behavior, `--shot`, the KaTeX font load. `SPACEDOWN_TEST_BROWSER=<binary>` picks one |
 | entr or python3 | the `--watch` check |
 
-pandoc does not skip: without it the `docx` section fails, because the iA-look `.docx` needs pandoc. Install it, or run `--only` without `docx`.
+Two tools fail instead of skipping. Without pandoc the `docx` section fails, because the iA-look `.docx` needs pandoc. Without node the box-drawing, X-ray and Present plug-in checks fail. Install both.
 
 CI installs all of them, so nothing skips there. Check your own run for `skip:` lines before you call it green.
 

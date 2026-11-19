@@ -11,13 +11,13 @@ Spacedown builds and runs on macOS only: the CLI renders through `osascript` and
 | macOS 13 or later | running the app (the app target's deployment target is 13.0) | `sw_vers -productVersion` |
 | Xcode, with its command line tools | building the app (`xcodebuild`, `swiftc`). CI builds with the newest Xcode on the `macos-26` runner image | `xcodebuild -version` |
 | [XcodeGen](https://github.com/yonaskolb/XcodeGen) | generating the Quick Look project from `project.yml` (`brew install xcodegen`) | `xcodegen --version` |
-| Node | the render core tests, the MCP test and the Skim parity check. Without it those sections skip. Tested with Node 22 | `node --version` |
+| Node | the render core tests, the plug-in tests, the MCP test and the Skim parity check. The suite fails without it. CI uses Node 24 | `node --version` |
 | Python 3 | the reading-mode checks and the `--watch` reload server (`/usr/bin/python3` is enough) | `python3 --version` |
 | A Chromium-family browser: Google Chrome, Helium, Brave, Edge or Chromium | the headless checks (`--shot`, reading modes, KaTeX fonts). Without one they skip. `SPACEDOWN_TEST_BROWSER=<binary>` picks one | any of them in `/Applications` |
 | pandoc | `spacedown docx` in the iA look. The test suite's `docx` section fails without it (`brew install pandoc`). Users of the CLI need it only for `docx` | `pandoc --version` |
 | entr (optional) | the `--watch` check (`brew install entr`) | `command -v entr` |
 
-The test suite skips a section when node, a browser, entr or python3 is missing, and says so with a `skip:` line. To run what CI runs, install all of them:
+The test suite skips a check when a browser, entr or python3 is missing, and says so with a `skip:` line. Without node or pandoc it fails. To run what CI runs, install all of them:
 
 ```bash
 brew install xcodegen pandoc entr node
