@@ -1,9 +1,8 @@
-# .kit.toml -- this PROJECT's override of the kit-root defaults.
-# Only the keys you set here matter; every key you omit inherits the kit-root
-# default at ~/.claude/dwarves-kit/kit.toml (lib/config/kit-config.sh: project keys WIN).
-# Re-run `bash ~/.claude/dwarves-kit/lib/adopt.sh --refresh <this repo>` (or /kit:adopt) after
-# editing [modules] to re-wire this project's .claude/settings.json to match --
-# adopt reads [modules] at adopt time. [gate] is read when a hook fires: set a key to
+# .kit.toml: this project's settings for the optional agent kit. Nothing here is needed
+# to build, test or contribute. Only the keys set here matter; every key left out follows
+# the installed kit's defaults, and project keys win. After editing [modules], re-run the
+# kit's adopt step with --refresh so .claude/settings.json matches: adopt reads [modules]
+# at adopt time. [gate] is read when a hook fires: set a key to
 # true, commit, and that quality gate is on for this project (false keeps it off).
 
 [modules]
@@ -19,7 +18,7 @@ bridge = false
 
 [gate]   # quality gates, OPT-IN except board_row_gate (on by default). true turns one on for this
          # repo, false keeps it off (a false counts once this file is committed). The values
-         # below are what resolved at adopt time (operator ~/.config/dwarves-kit/kit.toml, else the
+         # below are what resolved at adopt time (the operator's kit settings, else the
          # kit default false); delete a line to follow the operator setting again. Detail: the
          # installed kit's lib/gate/README.md, 'Turning a gate on'. Safety gates have no key.
          #   proof_of_done      ship-gate: a load-bearing diff needs a proof-of-done record

@@ -121,7 +121,7 @@ xcodebuild -project "$PROJ/SpacedownDrop.xcodeproj" \
   "${STRIP_SETTINGS[@]}" \
   -derivedDataPath "$PROJ/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
-  INFOPLIST_KEY_NSHumanReadableCopyright="© 2026 Dwarves Foundation" \
+  INFOPLIST_KEY_NSHumanReadableCopyright="© 2026 Console Labs" \
   build >/dev/null
 APP="$PROJ/build/Build/Products/Release/${APP_NAME}"
 [[ -d "$APP" ]] || { echo "build-safari: app build produced nothing" >&2; exit 1; }

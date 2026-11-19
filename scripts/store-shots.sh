@@ -1,7 +1,7 @@
 #!/bin/bash
 # Re-compose Mac App Store screenshots 1 and 2 (2880x1800) from the real Quick Look
 # render, in the fonts a typical user sees (system faces: the iA Writer faces only apply
-# when installed). Screenshot 3 (app window) is kept as is.
+# when installed), and screenshot 3 from the app window page (the Main.html the app shows).
 set -euo pipefail
 S="$(cd "$(dirname "$0")" && pwd)"
 REPO="${REPO:-$(cd "$S/.." && pwd)}"
@@ -46,4 +46,26 @@ shot() { "$B" --headless=new --disable-gpu --hide-scrollbars --force-device-scal
   --window-size=1440,900 --screenshot="$OUT/$1.png" "file://$S/store/$1.html" >/dev/null 2>&1; }
 shot 1-light ""
 shot 2-dark "--force-dark-mode"
+
+# Screenshot 3: the app window page at the size ViewController sets (460x500), as a card.
+WRES="$REPO/integrations/safari/SpacedownDrop/SpacedownDrop/Resources"
+mkdir -p "$S/store/win/Base.lproj"
+cp -f "$WRES/Style.css" "$WRES/Script.js" "$S/store/win/"
+cp -f "$WRES/Base.lproj/Main.html" "$S/store/win/Base.lproj/app.html"
+cat > "$S/store/3-app.html" <<'HTML'
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%}
+body{width:1440px;height:900px;overflow:hidden;font-family:-apple-system,"SF Pro Display",system-ui,sans-serif;
+  background:radial-gradient(120% 90% at 50% 0%,#6d6bf5 0%,#4f46e5 45%,#2e2896 100%);color:#fff;
+  display:flex;flex-direction:column;align-items:center}
+h1{margin:64px 0 0;font-size:54px;font-weight:700;letter-spacing:-1px}
+p{margin:12px 0 0;font-size:22px;opacity:.85}
+.card{margin-top:44px;width:460px;height:500px;border-radius:12px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(10,8,60,.55),0 0 0 1px rgba(255,255,255,.15)}
+iframe{border:0;width:460px;height:500px;display:block}
+</style></head><body><h1>Open once. Then just press space.</h1><p>Everything renders on your Mac. No network, no tracking.</p>
+<div class="card"><iframe src="win/Base.lproj/app.html"></iframe></div>
+</body></html>
+HTML
+shot 3-app ""
 for f in "$OUT"/*.png; do echo "$(basename "$f"): $(sips -g pixelWidth -g pixelHeight "$f" | awk '/pixel/{printf "%s ", $2}')"; done

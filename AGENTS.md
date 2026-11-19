@@ -76,6 +76,6 @@ Run each command from the repo root.
 - `docs/verification/`: proof files, one per PR. `docs/images/`: README screenshots. `docs/app-store/`: store listing data.
 - Fix any doc your change makes wrong in the same PR, and add a new doc to the index.
 
-## If dwarves-kit is installed (optional)
+## If the agent kit is installed (optional)
 
-Nothing above needs it. Its contract lives at `~/.claude/dwarves-kit/AGENTS.md` and https://github.com/dwarvesf/dwarves-kit/blob/master/AGENTS.md, and its gates read `.kit.toml`. Where the kit's generic rules differ from the rules above, this file wins.
+Nothing above needs it. Some maintainers run an agent kit whose gates read `.kit.toml` and `.claude/settings.json`. Where the kit's generic rules differ from the rules above, this file wins.

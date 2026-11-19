@@ -10,4 +10,4 @@ The optional Safari drop extension and the command-line tool, available when you
 
 Questions: open an issue at https://github.com/consolelabs/spacedown/issues.
 
-Dwarves Foundation, 2026.
+[Console Labs](https://console.so), 2026.

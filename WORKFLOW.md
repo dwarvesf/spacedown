@@ -1,5 +1,3 @@
 # WORKFLOW.md (pointer)
 
-This repo is adopted into the dwarves-kit. The canonical lanes and the lane x phase gate matrix
-live in the installed kit: `~/.claude/dwarves-kit/WORKFLOW.md`. Read that for the lanes and the gate at each
-phase boundary. The gate machinery (gate-ledger, ship-gate) parses that copy, not this file.
+This repo can be used with an optional agent kit. When the kit is installed, its own WORKFLOW.md holds the canonical lanes and the gate at each phase boundary, and its gate machinery parses that copy, not this file. Without the kit, the rules in [AGENTS.md](AGENTS.md) are the whole workflow.

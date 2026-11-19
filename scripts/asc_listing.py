@@ -1,22 +1,54 @@
 # Fill Spacedown's App Store listing through the App Store Connect API, idempotently:
 # categories, subtitle + privacy URL, version copyright + description/keywords/URLs,
 # age rating (all none), content rights, free price, all territories, review details
-# (contact copied from Hacker Bar), screenshots (APP_DESKTOP), and the build once processed.
-# Never submits for review. Prints only non-secret facts.
-# Usage: uv run --with pyjwt --with cryptography python asc_listing.py <metadata.json> <screenshot.png>...
+# (contact copied from another app of the team), screenshots (APP_DESKTOP), and the build once
+# processed. Never submits for review. Prints only non-secret facts.
+# Usage: uv run --with pyjwt --with cryptography python asc_listing.py [--dry-run] <metadata.json> <screenshot.png>...
+#   --dry-run  check the arguments, the metadata file and the settings below, then stop:
+#              no 1Password read, no App Store Connect call.
+# Env (required, no defaults):
+#   OP_VAULT               the 1Password vault that holds the App Store Connect API key item
+#   ASC_OP_ITEM            the API key item's title, or the end of it
+#   REVIEW_CONTACT_BUNDLE  bundle id of a team app whose latest review contact is copied
 import hashlib, json, os, subprocess, sys, time, urllib.error, urllib.request
-import jwt
 
-VAULT = "dfoundation-prod"
+
+def need(name, what):
+    v = os.environ.get(name, "")
+    if not v:
+        sys.exit(f"asc_listing: {name} unset: {what}")
+    return v
+
+
+args = sys.argv[1:]
+DRY_RUN = bool(args) and args[0] == "--dry-run"
+if DRY_RUN:
+    args = args[1:]
+if not args:
+    sys.exit("usage: asc_listing.py [--dry-run] <metadata.json> <screenshot.png>...")
+VAULT = need("OP_VAULT", "name the 1Password vault that holds the App Store Connect API key")
+ASC_ITEM = need("ASC_OP_ITEM", "name the 1Password item (title or its end) that holds the API key")
+CONTACT_BUNDLE = need("REVIEW_CONTACT_BUNDLE", "give the bundle id of the team app whose review contact is copied")
 BUNDLE = "dfoundation.spacedown"
 VERSION = "1.1.0"
-HACKER_BAR = "dfoundation.hacker-bar"
 
-meta = json.load(open(sys.argv[1]))
-shots = sys.argv[2:]
+meta = json.load(open(args[0]))
+shots = args[1:]
+missing = [p for p in shots if not os.path.isfile(p)]
+if missing:
+    sys.exit(f"asc_listing: screenshot not found: {', '.join(missing)}")
+if DRY_RUN:
+    print(f"dry run: {BUNDLE} {VERSION}, metadata {args[0]} ({len(meta)} keys), {len(shots)} screenshot(s)")
+    print(f"dry run: API key item ending {ASC_ITEM!r} in vault {VAULT!r}; review contact from {CONTACT_BUNDLE}")
+    print("dry run: stopping; nothing read or uploaded")
+    sys.exit(0)
+
+import jwt
 
 items = json.loads(subprocess.check_output(["op", "item", "list", "--vault", VAULT, "--format", "json"]))
-kid_item = next(i["id"] for i in items if i["title"].endswith("Hacker Bar Release"))
+kid_item = next((i["id"] for i in items if i["title"].endswith(ASC_ITEM)), None)
+if not kid_item:
+    sys.exit(f"asc_listing: no item ending {ASC_ITEM!r} in vault {VAULT!r}")
 f = {x["label"]: x.get("value") for x in json.loads(subprocess.check_output(
     ["op", "item", "get", kid_item, "--vault", VAULT, "--format", "json"]))["fields"]}
 KID, ISS, P8 = f["Key ID"], f["Issuer ID"], f["Private Key (.p8 PEM)"]
@@ -104,8 +136,8 @@ ok("versionLocalization", *call("PATCH", f"/v1/appStoreVersionLocalizations/{VLO
    "description": meta["description"], "keywords": meta["keywords"], "promotionalText": meta["promotionalText"],
    "supportUrl": meta["supportUrl"], "marketingUrl": meta["marketingUrl"]}}}))
 
-# review details: contact copied from Hacker Bar's latest version
-HB = app_id(HACKER_BAR)
+# review details: contact copied from the other app's latest version
+HB = app_id(CONTACT_BUNDLE)
 s, d = call("GET", f"/v1/apps/{HB}/appStoreVersions?limit=5")
 contact = None
 for v in d.get("data", []):
@@ -117,7 +149,7 @@ for v in d.get("data", []):
 attrs = {"demoAccountRequired": False, "notes": meta["reviewNotes"]}
 if contact and all(contact.values()):
     attrs.update(contact)
-print("review contact from Hacker Bar:", "yes" if contact and all(contact.values()) else "no")
+print(f"review contact from {CONTACT_BUNDLE}:", "yes" if contact and all(contact.values()) else "no")
 s, d = call("GET", f"/v1/appStoreVersions/{VER}/appStoreReviewDetail")
 if s == 200 and d.get("data"):
     RD = d["data"]["id"]

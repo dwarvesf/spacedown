@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/consolelabs/spacedown?label=release)](https://github.com/consolelabs/spacedown/releases/latest)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](#download)
-[![Homebrew](https://img.shields.io/badge/Homebrew-dwarvesf%2Ftools%2Fspacedown-FBB040?logo=homebrew&logoColor=white)](https://github.com/dwarvesf/homebrew-tools)
+[![Homebrew](https://img.shields.io/badge/Homebrew-consolelabs%2Ftap%2Fspacedown-FBB040?logo=homebrew&logoColor=white)](https://github.com/consolelabs/homebrew-tap)
 [![Notarized](https://img.shields.io/badge/notarized-Developer%20ID-4f46e5)](https://github.com/consolelabs/spacedown/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/consolelabs/spacedown)](LICENSE)
 
@@ -18,7 +18,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 
 ## Download
 
-Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/consolelabs/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`. The CLI is not linked by the cask yet; see below to set it up.
+Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/consolelabs/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask consolelabs/tap/spacedown`. The CLI is not linked by the cask yet; see below to set it up.
 
 ## Screenshots
 
@@ -245,4 +245,4 @@ Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PART
 
 ## License
 
-Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by Dwarves Foundation. MIT licensed, see [LICENSE](LICENSE). Copyright (c) 2026 Dwarves Foundation.
+Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by [Console Labs](https://console.so). MIT licensed, see [LICENSE](LICENSE). Copyright (c) 2026 Console Labs.

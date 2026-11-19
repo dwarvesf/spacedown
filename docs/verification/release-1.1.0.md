@@ -1,6 +1,6 @@
 # Proof of Done, release 1.1.0
 
-Version bump to 1.1.0 for the ia/tm modes, spacedown-docx, embedded iA fonts and local images, the reading-view polish and the iA table fix. `scripts/release.sh` gains App Store Connect API key notarization (`NOTARY_KEY`, `NOTARY_KEY_ID`, `NOTARY_ISSUER`), so a release runs on a host without the `DWARVES_NOTARY` keychain profile; every notarytool call goes through one auth array.
+Version bump to 1.1.0 for the ia/tm modes, spacedown-docx, embedded iA fonts and local images, the reading-view polish and the iA table fix. `scripts/release.sh` gains App Store Connect API key notarization (`NOTARY_KEY`, `NOTARY_KEY_ID`, `NOTARY_ISSUER`), so a release runs on a host without a notarytool keychain profile; every notarytool call goes through one auth array.
 
 **Date:** 2026-10-16 · **Lane:** normal · **Host:** Mac-mini-2 · **Branch:** `chore/release-1.1.0`
 

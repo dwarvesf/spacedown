@@ -10,8 +10,10 @@
 #
 # Env (defaults shown):
 #   TEAM_ID=W777S7V8TN
-#   SIGN_ID="Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)"
-#   NOTARY_PROFILE=DWARVES_NOTARY   or NOTARY_KEY=<.p8 path> NOTARY_KEY_ID NOTARY_ISSUER (API key, headless)
+#   SIGN_ID                 default: the one "Developer ID Application: <name> (TEAM_ID)"
+#                           identity in the keychain, found by TEAM_ID
+#   NOTARY_PROFILE          a notarytool keychain profile name (no default), or
+#   NOTARY_KEY=<.p8 path> NOTARY_KEY_ID NOTARY_ISSUER   an API key (headless)
 #   REPO=consolelabs/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
@@ -24,8 +26,8 @@
 # Mac App Store mode (--mas): builds the Quick Look-only app, signs it with Apple
 # Distribution plus the Mac App Store provisioning profiles, packages a signed .pkg,
 # and (UPLOAD=1) uploads it to App Store Connect. Extra preconditions and env:
-#   MAS_SIGN_ID="Apple Distribution: Dwarves Foundation Company Limited ($TEAM_ID)"
-#   INSTALLER_ID="3rd Party Mac Developer Installer: Dwarves Foundation Company Limited ($TEAM_ID)"
+#   MAS_SIGN_ID             default: the "Apple Distribution: <name> (TEAM_ID)" identity in the keychain
+#   INSTALLER_ID            default: the "3rd Party Mac Developer Installer: <name> (TEAM_ID)" identity
 #   PROFILE_DIR=~/.local/share/spacedown-signing   holds <bundle id>.provisionprofile
 #                                                   for the app and the Quick Look extension
 #   BUILD_NUMBER=<yyyymmddHHMM>   CFBundleVersion; must grow with every upload
@@ -34,22 +36,35 @@
 # The store build drops the Quick Look extension's read-only home exception, so images
 # next to a previewed file do not render there; the direct download keeps them.
 #
-# Usage: scripts/release.sh [--mas] [x.y.z]   (default: MARKETING_VERSION in quick-look/project.yml)
+# Usage: scripts/release.sh [--mas] [--dry-run] [x.y.z]   (default: MARKETING_VERSION in quick-look/project.yml)
+#   --dry-run  run every precondition check (versions, identities, profiles, notary
+#              credentials), print what would be used, then stop: no build, no signing,
+#              no upload, no release.
 set -euo pipefail
 
 MAS=0
-if [[ "${1:-}" == "--mas" ]]; then MAS=1; shift; fi
+DRY_RUN=0
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --mas) MAS=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    *) echo "usage: scripts/release.sh [--mas] [--dry-run] [x.y.z]" >&2; exit 64 ;;
+  esac
+  shift
+done
 
 TEAM_ID="${TEAM_ID:-W777S7V8TN}"
-SIGN_ID="${SIGN_ID:-Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)}"
-NOTARY_PROFILE="${NOTARY_PROFILE:-DWARVES_NOTARY}"
+SIGN_ID="${SIGN_ID:-}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 # Notary auth: an App Store Connect API key when NOTARY_KEY (a .p8 path), NOTARY_KEY_ID and
 # NOTARY_ISSUER are set, else the keychain profile. The key works headless; a keychain
 # profile cannot be stored without a GUI session on some hosts.
 if [[ -n "${NOTARY_KEY:-}" ]]; then
   NOTARY_AUTH=( --key "$NOTARY_KEY" --key-id "${NOTARY_KEY_ID:?NOTARY_KEY_ID unset}" --issuer "${NOTARY_ISSUER:?NOTARY_ISSUER unset}" )
-else
+elif [[ -n "$NOTARY_PROFILE" ]]; then
   NOTARY_AUTH=( --keychain-profile "$NOTARY_PROFILE" )
+else
+  NOTARY_AUTH=()
 fi
 REPO="${REPO:-consolelabs/spacedown}"
 DRAFT="${DRAFT:-0}"
@@ -67,6 +82,16 @@ die() { echo "release: $*" >&2; exit 1; }
 # Capture, then match: `cmd | grep -q` under pipefail fails when grep exits early and
 # the writer takes SIGPIPE, which reads as a failed check on a passing result.
 has() { printf '%s' "$1" | grep -qF -- "$2"; }
+# find_identity <kind> [find-identity flags]: the first keychain identity named
+# "<kind>: <name> (TEAM_ID)", so no legal name is hardcoded here. Empty when there is none.
+find_identity() {
+  local kind="$1"; shift
+  security find-identity -v "$@" | awk -v want="$kind: " -v team="($TEAM_ID)\"" '
+    found { next }
+    { q = index($0, "\""); if (!q) next; name = substr($0, q + 1)
+      if (index(name, want) == 1 && substr(name, length(name) - length(team) + 1) == team) {
+        print substr(name, 1, length(name) - 1); found = 1 } }'
+}
 
 # The browser extensions and the CLI carry their own version strings; a release
 # that skips them ships stale labels, so refuse until every one matches.
@@ -82,8 +107,8 @@ v="$(awk -F'"' '/^VERSION=/ {print $2; exit}' "$ROOT/bin/spacedown")"
 
 # --- Mac App Store ---------------------------------------------------------------
 if [[ $MAS -eq 1 ]]; then
-  MAS_SIGN_ID="${MAS_SIGN_ID:-Apple Distribution: Dwarves Foundation Company Limited ($TEAM_ID)}"
-  INSTALLER_ID="${INSTALLER_ID:-3rd Party Mac Developer Installer: Dwarves Foundation Company Limited ($TEAM_ID)}"
+  MAS_SIGN_ID="${MAS_SIGN_ID:-$(find_identity "Apple Distribution" || true)}"
+  INSTALLER_ID="${INSTALLER_ID:-$(find_identity "3rd Party Mac Developer Installer" || true)}"
   PROFILE_DIR="${PROFILE_DIR:-$HOME/.local/share/spacedown-signing}"
   BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d%H%M)}"
   UPLOAD="${UPLOAD:-0}"
@@ -95,6 +120,8 @@ if [[ $MAS -eq 1 ]]; then
   QL_ENT_SRC="$ROOT/integrations/safari/quick-look/SpacedownQL.entitlements"
 
   [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
+  [[ -n "$MAS_SIGN_ID" ]] || die "no Apple Distribution identity for team $TEAM_ID in the keychain (or set MAS_SIGN_ID)"
+  [[ -n "$INSTALLER_ID" ]] || die "no 3rd Party Mac Developer Installer identity for team $TEAM_ID in the keychain (or set INSTALLER_ID)"
   idents="$(security find-identity -v)"
   has "$idents" "\"$MAS_SIGN_ID\"" || die "signing identity missing: $MAS_SIGN_ID"
   has "$idents" "\"$INSTALLER_ID\"" || die "installer identity missing: $INSTALLER_ID"
@@ -102,6 +129,11 @@ if [[ $MAS -eq 1 ]]; then
     [[ -f "$PROFILE_DIR/$id.provisionprofile" ]] || die "profile missing: $PROFILE_DIR/$id.provisionprofile"
   done
   [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || die "dirty tree; commit first"
+  if [[ $DRY_RUN -eq 1 ]]; then
+    echo "dry run: $VERSION ($BUILD_NUMBER), sign: $MAS_SIGN_ID, installer: $INSTALLER_ID, profiles in $PROFILE_DIR"
+    echo "dry run: stopping before the build; nothing signed or uploaded"
+    exit 0
+  fi
 
   echo "== build (Quick Look only)"
   # BUNDLE_CLI=0: the store app is sandboxed and Homebrew never links it, so no CLI inside.
@@ -170,11 +202,20 @@ fi
 
 # --- preconditions ------------------------------------------------------------
 [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
+[[ -n "$SIGN_ID" ]] || SIGN_ID="$(find_identity "Developer ID Application" -p codesigning || true)"
+[[ -n "$SIGN_ID" ]] || die "no Developer ID Application identity for team $TEAM_ID in the keychain (or set SIGN_ID)"
 has "$(security find-identity -v -p codesigning)" "\"$SIGN_ID\"" \
   || die "signing identity missing: $SIGN_ID"
+[[ ${#NOTARY_AUTH[@]} -gt 0 ]] \
+  || die "no notary credentials: set NOTARY_PROFILE to a notarytool keychain profile (xcrun notarytool store-credentials <name>), or NOTARY_KEY, NOTARY_KEY_ID and NOTARY_ISSUER"
 xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1 \
-  || die "notary credentials rejected: set NOTARY_KEY, NOTARY_KEY_ID and NOTARY_ISSUER, or run: xcrun notarytool store-credentials $NOTARY_PROFILE"
+  || die "notary credentials rejected: check NOTARY_PROFILE, or NOTARY_KEY, NOTARY_KEY_ID and NOTARY_ISSUER"
 [[ -z "$(git -C "$ROOT" status --porcelain)" ]] || die "dirty tree; commit first"
+if [[ $DRY_RUN -eq 1 ]]; then
+  echo "dry run: $TAG, sign: $SIGN_ID, notary: ${NOTARY_AUTH[0]} (credentials accepted), repo: $REPO"
+  echo "dry run: stopping before the build; nothing signed, notarized or published"
+  exit 0
+fi
 
 # --- build + sign ---------------------------------------------------------------
 echo "== build + sign ($SIGN_ID)"
