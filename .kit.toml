@@ -28,7 +28,14 @@ bridge = false
          #   commit_format      commit-subject lint (conventional type, <=72 chars)
          #   board_row_gate     a commit adding a new board row needs a board-row-ok: line
 proof_of_done = true
-lane_gates = true
+# Off on purpose: reversible work merges on green checks, and the full lane asked for a
+# recorded phase per CI or config edit. The proof gate stays on and is the check that binds.
+lane_gates = false
 understanding_gate = true
 commit_format = true
 board_row_gate = true
+
+# AGENTS.md is the one instruction file: CLAUDE.md only imports it, and adopt never
+# creates or edits CLAUDE.md.
+[adopt]
+agents_only = true

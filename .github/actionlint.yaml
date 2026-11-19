@@ -1,0 +1,5 @@
+# actionlint config. Every job runs on a GitHub-hosted runner, so there are no
+# self-hosted labels to declare. Keep this list empty: this repo is public and
+# a self-hosted runner would run code from fork PRs.
+self-hosted-runner:
+  labels: []

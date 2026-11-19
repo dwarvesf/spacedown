@@ -1,0 +1,28 @@
+name: Feature or task
+description: A new feature, an improvement, or a piece of work to do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One or two sentences. What is true when this is done, and who is it for?
+    validations:
+      required: true
+  - type: textarea
+    id: done_when
+    attributes:
+      label: Done when
+      description: One check a machine or a person can run, for example a command and its expected output, or a file that renders a certain way.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Optional. What is in, what is out, files or links.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional. Context, options you considered, a blocker.

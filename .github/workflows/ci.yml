@@ -1,0 +1,113 @@
+name: CI
+
+# This repo is public, so GitHub-hosted macOS runners are free here. Never move
+# these jobs to a self-hosted runner: a fork PR would run on that machine.
+# What runs here and what stays local: docs/dev/testing.md.
+#
+# Docs-only changes skip the run. README.md is NOT ignored: the MCP test reads it.
+on:
+  pull_request:
+    paths-ignore: &docs_only
+      - "docs/**"
+      - "site/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+  push:
+    branches: [main]
+    paths-ignore: *docs_only
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Cancel a superseded PR run, never a run on main.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Tests (smoke suite and unit tests)
+    # Explicit image, never *-latest.
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pandoc drives the `spacedown docx` checks, entr the --watch check. The image
+      # already has node, python3 and Google Chrome (the headless browser checks).
+      - name: Install test tools
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: brew install pandoc entr
+
+      - name: Tool versions
+        run: |
+          sw_vers -productVersion
+          node --version
+          python3 --version
+          pandoc --version | head -1
+
+      # Stock /bin/bash (3.2) on purpose: it is what a fresh Mac runs. A parse error
+      # under 3.2 once ended the suite early with exit 0, so the step also requires
+      # the summary line that only a complete run prints.
+      - name: Smoke suite
+        run: |
+          set -o pipefail
+          for f in tests/*.sh; do /bin/bash -n "$f"; done
+          /bin/bash tests/smoke.sh | tee "$RUNNER_TEMP/smoke.log"
+          grep -Eq '^smoke: all [0-9]+ passed$' "$RUNNER_TEMP/smoke.log"
+
+      - name: Unit tests outside the smoke suite
+        run: |
+          /bin/bash tests/katex-one-test.sh
+          /bin/bash tests/size-budget-test.sh
+          node tests/hljs-bundle-test.js
+
+  build:
+    name: Build the app (unsigned, not installed)
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select newest Xcode
+        run: |
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' | grep -E '/Xcode_[0-9]+\.[0-9]+(\.[0-9]+)?\.app$' | sort -V | tail -1)
+          echo "Selecting $newest"
+          sudo xcode-select -s "$newest/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: brew install xcodegen
+
+      # NO_INSTALL=1 stops after the ad hoc signature: nothing is installed,
+      # registered or launched.
+      - name: Build
+        env:
+          NO_INSTALL: "1"
+        run: integrations/build-safari.sh --with-safari
+
+  actionlint:
+    name: Lint workflows
+    # Public repo: a hosted Linux runner is free.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color

@@ -1,0 +1,69 @@
+name: Bug report
+description: Something renders wrong, crashes, or does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A security problem does not go here: see "Issues" in CONTRIBUTING.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest Markdown file that shows the problem helps most. Paste it, or attach it.
+      placeholder: |
+        1. Save this as test.md: ...
+        2. Select it in Finder and press space
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - Quick Look panel
+        - spacedown CLI (browser page)
+        - spacedown docx
+        - spacedown mcp
+        - Safari drop extension
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Spacedown version
+      description: "`spacedown --version`, or the app's About box."
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      description: "`sw_vers -productVersion`"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How you installed it
+      options:
+        - Release download (dmg or zip)
+        - Homebrew cask
+        - Mac App Store
+        - Built from source
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, console output, what you already tried.
