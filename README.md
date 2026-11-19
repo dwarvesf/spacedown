@@ -224,43 +224,16 @@ The Safari extension must be App-Sandboxed to load, and a sandboxed extension ca
 
 `integrations/install.sh` sets up two more entry points: a Finder "Open With" app and a native-messaging host for a Chromium drop extension. See [integrations/README.md](integrations/README.md).
 
-## Development
-
-```bash
-bash tests/smoke.sh                                   # CLI and spacedown docx suite, also runs the Quick Look tests
-node scripts/skim-parity.mjs                          # Skim engine against the skimgram goldens (also part of smoke.sh); add --upstream <clone> to run skimgram live
-node integrations/safari/quick-look/test-render.js    # Quick Look render core only
-spacedown tests/fixture/fixture.md                   # synthetic document that exercises every feature
-```
-
-`bash tests/smoke.sh --list` prints the section names (`cli`, `chrome`, `docx`, `reading`, `parity`, `shot`, `mcp`, ...); `bash tests/smoke.sh --only docx,parity` runs just those, and an unknown name exits 64. With no flag the whole suite runs, as before.
-
-`assets/REFRESH.md` explains where the vendored VS Code stylesheet and highlight.js come from and how to refresh them.
-
-### Releasing
-
-The Releases page carries one release: each new version replaces the previous one.
-
-1. Bump the version in `integrations/safari/quick-look/project.yml` (`MARKETING_VERSION`), the Xcode project (`MARKETING_VERSION`) and `bin/spacedown` (`VERSION`). Merge.
-2. `scripts/release.sh` on a clean `main`: builds the Quick Look app, signs it with the Dwarves Foundation Developer ID, notarizes and staples it, builds the `.zip` and a notarized `.dmg`, and publishes the GitHub release. It then deletes the older releases and their tags. `KEEP_OLD_RELEASES=1` skips that step. It needs the Developer ID identity in the keychain and a `notarytool` keychain profile (default `DWARVES_NOTARY`); the script header lists every setting.
-3. Bump `Casks/spacedown.rb` in [dwarvesf/homebrew-tools](https://github.com/dwarvesf/homebrew-tools) to the new version and the zip's sha256.
-4. Mac App Store: `scripts/release.sh --mas` builds the signed store package; upload it to App Store Connect, attach the build to a new version and submit it for review.
-5. App Store Connect listing and screenshots. These are separate one-off or per-release scripts, not called by `release.sh`.
-   - `scripts/asc_setup.py`: one-time App Store Connect setup. Registers the app and Quick Look extension bundle ids, creates and imports the Apple Distribution and Mac Installer Distribution certificates, and saves the Mac App Store provisioning profiles. Needs the `dfoundation-prod` 1Password vault's "...Hacker Bar Release" item (Key ID, Issuer ID, private key) and `openssl`.
-   - `scripts/asc_listing.py`: fills the App Store Connect listing through the API: categories, subtitle, description, keywords, age rating, price, territories, screenshots, and the processed build. Never submits for review. Needs the same 1Password item plus a metadata JSON file and screenshot PNGs as arguments.
-   - `scripts/mas-altool.sh`: runs `altool` validate or upload for the signed `.pkg`, reading the API key from the same 1Password item at call time. Usage: `mas-altool.sh validate|upload <pkg>`.
-   - `scripts/store-shots.sh`: renders the two App Store screenshots from the real Quick Look preview through headless Brave. Needs Brave Browser and Node. Renders the fixtures `scripts/launch.md` (light) and `scripts/showcase.md` (dark).
-   - `scripts/readme-shots.sh`: renders the test fixture through the same Quick Look pipeline and screenshots it into `docs/images/` for this README. Needs Brave Browser and Node.
-   - `scripts/layout-check`: renders a markdown file with `bin/spacedown`, measures the layout in a private headless Helium at 390, 768, 1470 and 1728px (overflow, content edges, side gaps, right edges, optional Skim marked-word share, optional dark palette), screenshots each width, and exits 1 when any width scrolls sideways. Needs Helium; `BROWSER` overrides it.
-   - `scripts/window-shots.sh`: screenshots the app window page, Quick Look only and with Safari, light and dark, at the sizes `ViewController` sets. Needs Brave Browser.
-   - `scripts/qlwrap.js`: wraps a Quick Look render body the way `MarkdownPreviewProvider.buildPreviewHTML` does. Used by `store-shots.sh` and `readme-shots.sh`. Needs Node.
-
 ## Limitations
 
 - The CLI renders with `osascript` and opens pages with `open(1)`, so it is macOS only.
 - The HTML path reads GitHub-flavored Markdown (marked), not pandoc Markdown: pandoc-only syntax such as definition lists, grid tables, citations and `{#id .class}` attributes shows as written.
 - The input is Markdown only.
 - Release downloads are notarized. A build from source is signed ad hoc, so Gatekeeper and Safari treat it as unsigned.
+
+## Contributing
+
+Bug reports, fixes and features are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) takes you from a fresh clone to a green test run (`bash tests/smoke.sh`) and covers commits, PRs and issues. The rules every change follows are in [AGENTS.md](AGENTS.md), and [docs/README.md](docs/README.md) indexes the developer docs: [development](docs/dev/development.md), [testing](docs/dev/testing.md) and [releasing](docs/dev/release.md).
 
 ## Credits
 
