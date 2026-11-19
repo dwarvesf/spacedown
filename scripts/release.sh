@@ -12,7 +12,7 @@
 #   TEAM_ID=W777S7V8TN
 #   SIGN_ID="Developer ID Application: Dwarves Foundation Company Limited ($TEAM_ID)"
 #   NOTARY_PROFILE=DWARVES_NOTARY   or NOTARY_KEY=<.p8 path> NOTARY_KEY_ID NOTARY_ISSUER (API key, headless)
-#   REPO=dwarvesf/spacedown
+#   REPO=consolelabs/spacedown
 #   DRAFT=0                 1 = create the release as a draft
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
 #   APP_BUDGET_BYTES / DMG_BUDGET_BYTES   override the size budget in scripts/size-budget, which
@@ -51,7 +51,7 @@ if [[ -n "${NOTARY_KEY:-}" ]]; then
 else
   NOTARY_AUTH=( --keychain-profile "$NOTARY_PROFILE" )
 fi
-REPO="${REPO:-dwarvesf/spacedown}"
+REPO="${REPO:-consolelabs/spacedown}"
 DRAFT="${DRAFT:-0}"
 PUBLISH="${PUBLISH:-1}"
 

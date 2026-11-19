@@ -8,6 +8,6 @@ Spacedown collects no data.
 
 The optional Safari drop extension and the command-line tool, available when you build from source, also run locally. The command-line tool's browser output loads KaTeX from a public CDN to render math; no document content is sent.
 
-Questions: open an issue at https://github.com/dwarvesf/spacedown/issues.
+Questions: open an issue at https://github.com/consolelabs/spacedown/issues.
 
 Dwarves Foundation, 2026.

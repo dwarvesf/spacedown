@@ -1,10 +1,10 @@
 # Spacedown
 
-[![Release](https://img.shields.io/github/v/release/dwarvesf/spacedown?label=release)](https://github.com/dwarvesf/spacedown/releases/latest)
+[![Release](https://img.shields.io/github/v/release/consolelabs/spacedown?label=release)](https://github.com/consolelabs/spacedown/releases/latest)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](#download)
 [![Homebrew](https://img.shields.io/badge/Homebrew-dwarvesf%2Ftools%2Fspacedown-FBB040?logo=homebrew&logoColor=white)](https://github.com/dwarvesf/homebrew-tools)
-[![Notarized](https://img.shields.io/badge/notarized-Developer%20ID-4f46e5)](https://github.com/dwarvesf/spacedown/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/dwarvesf/spacedown)](LICENSE)
+[![Notarized](https://img.shields.io/badge/notarized-Developer%20ID-4f46e5)](https://github.com/consolelabs/spacedown/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/consolelabs/spacedown)](LICENSE)
 
 Press space on a Markdown file in Finder and read it rendered: headings, tables, code, callouts, frontmatter and LaTeX math, in a calm reading theme that follows light and dark mode.
 
@@ -18,7 +18,7 @@ Spacedown is a macOS Quick Look extension. It renders in-process with bundled co
 
 ## Download
 
-Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/dwarvesf/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`. The CLI is not linked by the cask yet; see below to set it up.
+Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](https://github.com/consolelabs/spacedown/releases/latest). Open it, drag Spacedown to Applications, open it once, then select a `.md` file in Finder and press space. With Homebrew: `brew install --cask dwarvesf/tools/spacedown`. The CLI is not linked by the cask yet; see below to set it up.
 
 ## Screenshots
 
@@ -65,7 +65,7 @@ brew install entr          # optional, only for --watch
 brew install pandoc        # optional, only for `spacedown docx` in the iA look
 # python3 is optional: it powers the --watch page refresh (live reload).
 
-git clone https://github.com/dwarvesf/spacedown.git
+git clone https://github.com/consolelabs/spacedown.git
 cd spacedown
 mkdir -p ~/.local/bin
 ln -sfn "$PWD/bin/spacedown" ~/.local/bin/spacedown
@@ -272,4 +272,4 @@ Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PART
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Dwarves Foundation.
+Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by Dwarves Foundation. MIT licensed, see [LICENSE](LICENSE). Copyright (c) 2026 Dwarves Foundation.
