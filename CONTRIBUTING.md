@@ -75,7 +75,7 @@ The PR title becomes the commit subject on `main` (squash merge), so write it as
 
 - Bug: use the **Bug report** form. Include your macOS version, the Spacedown version (`spacedown --version` or the app's About box), how you installed it, and a small Markdown file that shows the problem.
 - Feature or task: use the **Feature or task** form. Say what should be true when it is done, and one check that shows it.
-- Security problem: never put the details in a public issue. Open an issue titled "Security contact" with no details, and a maintainer will reply with a private channel.
+- Security problem: never put the details in a public issue. Report it privately with GitHub's "Report a vulnerability" button: https://github.com/consolelabs/spacedown/security/advisories/new
 
 ## Releases
 
