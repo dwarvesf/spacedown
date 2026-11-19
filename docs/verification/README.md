@@ -42,4 +42,4 @@ Commit before the negative control so the restore is a clean checkout.
 
 ## Tooling
 
-The dwarves-kit ship gate (optional, `.kit.toml`) reads this folder: the presence of this README opts the repo into its proof-of-done check. Nothing here needs the kit.
+The optional agent kit's ship gate (`.kit.toml`) reads this folder: the presence of this README opts the repo into its proof-of-done check. Nothing here needs the kit.

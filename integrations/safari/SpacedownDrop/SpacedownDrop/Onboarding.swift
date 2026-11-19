@@ -40,7 +40,7 @@ private enum Links {
     static let extensionsSettings = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences")!
     static let safariExtensionID = "dfoundation.spacedown.Extension"
     static let quickLookExtensionID = "dfoundation.spacedown.quicklook"
-    static let brewCommand = "brew install --cask dwarvesf/tools/spacedown"
+    static let brewCommand = "brew install --cask consolelabs/tap/spacedown"
     static let resetCommand = "qlmanage -r && qlmanage -r cache"
     static let seenKey = "onboarding.seen"
     static let confirmedKey = "onboarding.quickLookConfirmed"

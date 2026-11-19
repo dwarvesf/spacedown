@@ -12,7 +12,7 @@ settings:
     MARKETING_VERSION: "1.1.0"
     CURRENT_PROJECT_VERSION: "1"
     PRODUCT_NAME: SpacedownQL
-    INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Dwarves Foundation"
+    INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Console Labs"
 targets:
   SpacedownQL:
     type: app-extension

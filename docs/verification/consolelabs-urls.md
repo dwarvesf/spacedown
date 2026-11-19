@@ -1,6 +1,6 @@
 # Proof of Done, consolelabs-urls
 
-The repo moved to `consolelabs/spacedown`. Every live repo URL now names consolelabs. The only source change is the `REPO` default in `scripts/release.sh` (a string; no logic changed). The Homebrew tap `dwarvesf/tools/spacedown` stays as is.
+The repo moved to `consolelabs/spacedown`. Every live repo URL now names consolelabs. The only source change is the `REPO` default in `scripts/release.sh` (a string; no logic changed). The Homebrew tap install string stays as is.
 
 ## Green run
 

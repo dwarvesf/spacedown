@@ -5,18 +5,60 @@
 #     1Password (one item: p12 file + passphrase), then remove the local key material
 #  3. create MAC_APP_STORE provisioning profiles and save them to PROFILE_DIR
 # Prints only non-secret facts. The API key and the private key never reach stdout.
-import base64, json, os, secrets, subprocess, sys, tempfile, time, urllib.request, urllib.error
-import jwt
+# Usage: uv run --with pyjwt --with cryptography python asc_setup.py [--dry-run]
+#   --dry-run  check the settings below and look up the keychain identities, then stop:
+#              no 1Password read, no App Store Connect call, nothing created.
+# Env (required, no defaults):
+#   OP_VAULT          the 1Password vault for the API key item and the p12 backup
+#   ASC_OP_ITEM       the API key item's title, or the end of it ("Key ID", "Issuer ID",
+#                     "Private Key (.p8 PEM)" fields)
+#   MAS_P12_OP_TITLE  the title of the 1Password item the new p12 backup is saved as
+#   CSR_SUBJECT       the openssl subject for the certificate request, e.g. /emailAddress=<you>/CN=<team name>/C=<country>
+# Optional: TEAM_ID (default W777S7V8TN).
+import base64, json, os, re, secrets, subprocess, sys, tempfile, time, urllib.request, urllib.error
 
-VAULT = "dfoundation-prod"
-TEAM = "W777S7V8TN"
+
+def need(name, what):
+    v = os.environ.get(name, "")
+    if not v:
+        sys.exit(f"asc_setup: {name} unset: {what}")
+    return v
+
+
+DRY_RUN = sys.argv[1:] == ["--dry-run"]
+if sys.argv[1:] and not DRY_RUN:
+    sys.exit("usage: asc_setup.py [--dry-run]")
+VAULT = need("OP_VAULT", "name the 1Password vault that holds the App Store Connect API key")
+ASC_ITEM = need("ASC_OP_ITEM", "name the 1Password item (title or its end) that holds the API key")
+BACKUP_TITLE = need("MAS_P12_OP_TITLE", "name the 1Password item to save the p12 backup as")
+CSR_SUBJECT = need("CSR_SUBJECT", "give the certificate request subject, e.g. /emailAddress=<you>/CN=<team name>/C=<country>")
+TEAM = os.environ.get("TEAM_ID", "W777S7V8TN")
 IDS = {"dfoundation.spacedown": "Spacedown", "dfoundation.spacedown.quicklook": "Spacedown Quick Look"}
 PROFILE_DIR = os.path.expanduser("~/.local/share/spacedown-signing")
-BACKUP_TITLE = "Mac App Store signing - Dwarves (W777S7V8TN) p12"
 OPENSSL = "/opt/homebrew/bin/openssl"
 
+# The identities this script needs, found in the keychain by kind and team, so no legal
+# name is hardcoded here. A kind with no identity yet gets a new certificate below.
+KINDS = {"DISTRIBUTION": "Apple Distribution", "MAC_INSTALLER_DISTRIBUTION": "3rd Party Mac Developer Installer"}
+idents = subprocess.run(["security", "find-identity", "-v"], capture_output=True, text=True).stdout
+def keychain_identity(kind):
+    m = re.search(r'"(' + re.escape(kind) + r': [^"]+ \(' + re.escape(TEAM) + r'\))"', idents)
+    return m.group(1) if m else None
+want = {ctype: keychain_identity(kind) for ctype, kind in KINDS.items()}
+
+if DRY_RUN:
+    for ctype, name in want.items():
+        print(f"dry run: {ctype}: {name or 'not in the keychain, would create a certificate'}")
+    print(f"dry run: API key item ending {ASC_ITEM!r} in vault {VAULT!r}; p12 backup title {BACKUP_TITLE!r}")
+    print("dry run: stopping; nothing read, created or uploaded")
+    sys.exit(0)
+
+import jwt
+
 items = json.loads(subprocess.check_output(["op", "item", "list", "--vault", VAULT, "--format", "json"]))
-key_item = next(i["id"] for i in items if i["title"].endswith("Hacker Bar Release"))
+key_item = next((i["id"] for i in items if i["title"].endswith(ASC_ITEM)), None)
+if not key_item:
+    sys.exit(f"asc_setup: no item ending {ASC_ITEM!r} in vault {VAULT!r}")
 f = {x["label"]: x.get("value") for x in json.loads(subprocess.check_output(
     ["op", "item", "get", key_item, "--vault", VAULT, "--format", "json"]))["fields"]}
 KID, ISS, P8 = f["Key ID"], f["Issuer ID"], f["Private Key (.p8 PEM)"]
@@ -49,15 +91,12 @@ for ident, name in IDS.items():
         bundle[ident] = d["data"]["id"]; print(f"bundleId {ident}: created")
 
 # 2. certificates: reuse ones whose identity is already in this keychain
-idents = subprocess.run(["security", "find-identity", "-v"], capture_output=True, text=True).stdout
-want = {"DISTRIBUTION": "Apple Distribution: Dwarves Foundation Company Limited",
-        "MAC_INSTALLER_DISTRIBUTION": "3rd Party Mac Developer Installer: Dwarves Foundation Company Limited"}
 cert_ids = {}
 s, d = call("GET", "/v1/certificates?limit=200&fields[certificates]=certificateType,serialNumber,displayName")
 existing = d.get("data", [])
 missing = []
 for ctype, cname in want.items():
-    if cname in idents:
+    if cname:
         serials = subprocess.run(["security", "find-certificate", "-a", "-c", cname, "-Z", "-p"],
                                  capture_output=True, text=True).stdout
         cert_ids[ctype] = next((c["id"] for c in existing if c["attributes"]["certificateType"] == ctype), None)
@@ -71,7 +110,7 @@ if missing:
         key = os.path.join(work, "key.pem"); csr = os.path.join(work, "req.csr")
         subprocess.check_call([OPENSSL, "genrsa", "-out", key, "2048"], stderr=subprocess.DEVNULL)
         subprocess.check_call([OPENSSL, "req", "-new", "-key", key, "-out", csr, "-subj",
-                               "/emailAddress=dev@d.foundation/CN=Dwarves Foundation/C=VN"])
+                               CSR_SUBJECT])
         csr_body = "".join(l for l in open(csr).read().splitlines() if "CERTIFICATE REQUEST" not in l)
         passphrase = secrets.token_urlsafe(24)
         p12s = []
@@ -83,6 +122,9 @@ if missing:
             der = os.path.join(work, f"{ctype}.cer"); pem = os.path.join(work, f"{ctype}.pem")
             open(der, "wb").write(base64.b64decode(d["data"]["attributes"]["certificateContent"]))
             subprocess.check_call([OPENSSL, "x509", "-inform", "DER", "-in", der, "-out", pem])
+            subj = subprocess.check_output([OPENSSL, "x509", "-noout", "-subject", "-nameopt", "RFC2253", "-in", pem], text=True)
+            m = re.search(r"CN=((?:[^,\\]|\\.)*)", subj)
+            want[ctype] = m.group(1).replace("\\", "") if m else f"{KINDS[ctype]} ({TEAM})"
             p12 = os.path.join(work, f"{ctype}.p12")
             subprocess.check_call([OPENSSL, "pkcs12", "-export", "-legacy", "-in", pem, "-inkey", key,
                                    "-name", want[ctype], "-passout", "pass:" + passphrase, "-out", p12])

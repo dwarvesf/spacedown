@@ -1086,7 +1086,7 @@ fi  # docx
 
 if want polish; then
 # ---- reading-view polish: outline, tables, images, links, print, toolbar ----
-printf '# Polish\n\n## Section\n\nSee https://d.foundation and [Dwarves](https://dwarves.foundation).\n\n- one\n- two\n' > "${TMP}/polish.md"
+printf '# Polish\n\n## Section\n\nSee https://example.com and [Example](https://example.org).\n\n- one\n- two\n' > "${TMP}/polish.md"
 "$SPACEDOWN" "${TMP}/polish.md" --out "${TMP}/polish.html" --no-open >/dev/null 2>&1
 
 echo "[polish-1] dash bullets are scoped to the article, never nav#TOC"
@@ -1127,7 +1127,7 @@ else
 fi
 
 echo "[polish-4] a bare URL becomes a link; the ia theme styles links as links"
-if grep -q '<a href="https://d.foundation"' "${TMP}/polish.html" \
+if grep -q '<a href="https://example.com"' "${TMP}/polish.html" \
    && grep -q -- '--ia-link: #1d5fd1' "${TMP}/polish.html" \
    && grep -q -- '--ia-link: #7aa7ff' "${TMP}/polish.html" \
    && grep -q 'a:focus-visible' "${TMP}/polish.html"; then

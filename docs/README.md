@@ -49,4 +49,4 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 | `../.github/pull_request_template.md` | The PR body: What, Demo, Proof, Notes |
 | `../.github/ISSUE_TEMPLATE/` | The bug report and the feature or task forms |
 | `../tests/known-failures.txt` | Checks that are red on purpose, with the reason; empty means all must pass |
-| `../.kit.toml` | Settings for the optional dwarves-kit gates |
+| `../.kit.toml` | Settings for the optional agent kit |
