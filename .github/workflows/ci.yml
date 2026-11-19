@@ -55,13 +55,20 @@ jobs:
           python3 --version
           pandoc --version | head -1
 
+      # Stock /bin/bash (3.2) on purpose: it is what a fresh Mac runs. A parse error
+      # under 3.2 once ended the suite early with exit 0, so the step also requires
+      # the summary line that only a complete run prints.
       - name: Smoke suite
-        run: bash tests/smoke.sh
+        run: |
+          set -o pipefail
+          for f in tests/*.sh; do /bin/bash -n "$f"; done
+          /bin/bash tests/smoke.sh | tee "$RUNNER_TEMP/smoke.log"
+          grep -Eq '^smoke: all [0-9]+ passed$' "$RUNNER_TEMP/smoke.log"
 
       - name: Unit tests outside the smoke suite
         run: |
-          bash tests/katex-one-test.sh
-          bash tests/size-budget-test.sh
+          /bin/bash tests/katex-one-test.sh
+          /bin/bash tests/size-budget-test.sh
           node tests/hljs-bundle-test.js
 
   build:

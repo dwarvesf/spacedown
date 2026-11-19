@@ -779,7 +779,9 @@ fi
 # 39c. The same core and plug-ins render under osascript JavaScript (the CLI's engine),
 #      loaded in Resources/load-order.txt order, with no DOM.
 echo "[39c] render core under osascript"
-osa_out=$(osascript -l JavaScript - "${SCRIPT_DIR}/integrations/safari/quick-look/Resources" 2>&1 <<'JXA' || true
+# The script goes to a file first: bash 3.2 (macOS /bin/bash) misparses a heredoc inside $( ),
+# which silently cut the suite short at this section.
+cat > "${TMP}/core-osa.js" <<'JXA'
 ObjC.import("Foundation");
 function run(argv) {
   function read(f) { return $.NSString.stringWithContentsOfFileEncodingError(argv[0] + "/" + f, $.NSUTF8StringEncoding, null).js; }
@@ -791,7 +793,7 @@ function run(argv) {
   return [SD.plugins().join(","), /<h1/.test(p.body), /class="katex/.test(p.body), SD.errors.length].join(" ");
 }
 JXA
-)
+osa_out=$(osascript -l JavaScript "${TMP}/core-osa.js" "${SCRIPT_DIR}/integrations/safari/quick-look/Resources" 2>&1 || true)
 if [[ "$osa_out" == "boxdraw,xray,present true true 0" ]]; then ok "osascript renders with every plug-in"; else no "osascript render: $osa_out"; fi
 
 # 39d. scripts/sd-settings: the app's stored settings as JSON, {} when there are none.
