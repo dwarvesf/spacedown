@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. A security problem does not go here: see "Issues" in CONTRIBUTING.md.
+        Thanks for the report. A security problem does not go here: report it privately at https://github.com/consolelabs/spacedown/security/advisories/new
   - type: textarea
     id: what
     attributes:
