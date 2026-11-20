@@ -27,9 +27,9 @@ Nothing is gated yet, and no paid feature exists in the code at this ADR's date.
 
   | State | What the user sees | Actions |
   |---|---|---|
-  | No license | "<feature> is a Pro feature" and one line on what it does | Buy a license, Add a license file |
+  | No license | "{feature} is a Pro feature" and one line on what it does | Buy a license, Add a license file |
   | Invalid license (bad signature, damaged file, another product) | "This license file is not valid" and the reason | Add a license file, Contact support |
-  | Expired license (past its end date) | "Your license ended on <date>" | Renew, Add a license file |
+  | Expired license (past its end date) | "Your license ended on {date}" | Renew, Add a license file |
   | The check could not run (file unreadable, shared store not reachable, the verifier failed) | "Could not check your license" and the error | Try again |
 
   A check that cannot run never asks a paying user to buy: that row has no Buy button and no Pro pitch. In the app a gated command shows the notice in an alert; a gated pane shows it in place. In the Quick Look panel the notice is plain text in place of the feature that says to open Spacedown, because the panel runs no scripts and cannot act. The CLI prints the notice on stderr and exits non-zero.
