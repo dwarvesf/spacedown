@@ -5,13 +5,15 @@
 //   node scripts/skim-parity.mjs --upstream <clone>   port against upstream run live from a skimgram clone
 //   node scripts/skim-parity.mjs --upstream <clone> --write-golden
 //                                                     same, then rewrite tests/fixtures/skim/golden/*.json
-//   --freq-dir <dir>   directory whose node_modules holds most-common-words-by-language and hanzi
-//                      (default: the clone itself). Needed with --upstream for the word lists.
+//   --cache <dir>      where scripts/skim-lists.mjs keeps the source texts it fetches. With --upstream,
+//                      upstream gets the word lists rebuilt from those sources, the port keeps its own.
 //
 // Every file in tests/fixtures/skim is scored by both sides under each basis (auto, surprisal, gain)
 // and each intensity (0, 25, 50, 100). Per token it compares key, kind, offsets, level, the raw
 // score and the smoothed score (scores to 1e-9). It also compares the page flattening, including
-// the 400k character cap, and the two word lists. Exit 0 only when every mismatch count is 0.
+// the 400k character cap, and the two word lists, and checks that every source the lists are built
+// from is credited in THIRD_PARTY_NOTICES.md (a missing credit counts as a word list difference).
+// Exit 0 only when every mismatch count is 0.
 //
 // Upstream is read, never built: the pure core files (src/core/*.ts, src/dom/walker.ts) are copied
 // to a temp directory with their import paths rewritten, and run with node --experimental-strip-types.
@@ -25,6 +27,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import vm from "node:vm";
+import { buildLists, checkNotices } from "./skim-lists.mjs";
 
 const PINNED = "4ebb78a";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -38,15 +41,15 @@ const KIND_CODE = { cjk: "c", word: "w", number: "n", punct: "p", space: "s" };
 const CODE_KIND = Object.fromEntries(Object.entries(KIND_CODE).map(([k, v]) => [v, k]));
 
 function usage(code) {
-  console.log("Usage: skim-parity.mjs [--upstream <skimgram clone>] [--freq-dir <dir>] [--write-golden]");
+  console.log("Usage: skim-parity.mjs [--upstream <skimgram clone>] [--cache <dir>] [--write-golden]");
   process.exit(code);
 }
 
-const args = { upstream: "", freqDir: "", writeGolden: false };
+const args = { upstream: "", cache: "", writeGolden: false };
 for (let i = 2; i < process.argv.length; i++) {
   const a = process.argv[i];
   if (a === "--upstream") args.upstream = process.argv[++i] ?? usage(2);
-  else if (a === "--freq-dir") args.freqDir = process.argv[++i] ?? usage(2);
+  else if (a === "--cache") args.cache = process.argv[++i] ?? usage(2);
   else if (a === "--write-golden") args.writeGolden = true;
   else if (a === "-h" || a === "--help") usage(0);
   else usage(2);
@@ -84,35 +87,6 @@ function loadPort() {
 }
 
 // ---- upstream, staged from a clone ----
-function buildLists(freqDir) {
-  const nm = path.join(freqDir, "node_modules");
-  const enPkg = path.join(nm, "most-common-words-by-language");
-  const zhPkg = path.join(nm, "hanzi");
-  if (!existsSync(enPkg) || !existsSync(zhPkg)) {
-    throw new Error(`word lists not found: ${enPkg} and ${zhPkg} are needed (npm pack most-common-words-by-language@3.0.14 hanzi@3.2.0, unpack under <dir>/node_modules/<name>/, then pass --freq-dir <dir>)`);
-  }
-  // The same two reads and filters as upstream scripts/frequency-plugin.ts.
-  const EN_ALLOWED = /^[a-z0-9'-]+$/;
-  const en = [];
-  for (const line of readFileSync(path.join(enPkg, "build/resources/english.txt"), "utf8").split("\n")) {
-    const word = line.trim();
-    if (!word || word.length > 20 || !EN_ALLOWED.test(word)) continue;
-    en.push(word);
-    if (en.length >= 3000) break;
-  }
-  const zhText = createRequire(import.meta.url)(path.join(zhPkg, "lib/data/frequencyjunda.txt.js"));
-  const body = zhText.replace(/^module\.exports\s*=\s*`/, "").replace(/`;?\s*$/, "");
-  const zh = [];
-  for (const line of body.split("\n")) {
-    const char = line.split("\t")[1]?.trim() ?? "";
-    if ([...char].length !== 1) continue;
-    zh.push(char);
-    if (zh.length >= 2000) break;
-  }
-  const version = (dir) => JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8")).version;
-  return { en: en.join(" "), cjk: zh.join(""), versions: { enPkg: version(enPkg), zhPkg: version(zhPkg) } };
-}
-
 function fakeRoot(strings) {
   const nodes = strings.map((s) => ({ nodeValue: s, parentElement: { tagName: "P", closest: () => null } }));
   return {
@@ -133,13 +107,13 @@ function fakeRoot(strings) {
   };
 }
 
-async function loadUpstream(clone, freqDir) {
+async function loadUpstream(clone, cache) {
   const head = spawnSync("git", ["-C", clone, "rev-parse", "--short", "HEAD"], { encoding: "utf8" });
   const sha7 = head.stdout.trim();
   if (head.status !== 0 || sha7 !== PINNED) {
     throw new Error(`upstream clone is at ${sha7 || "unknown"}, the port is pinned to ${PINNED}`);
   }
-  const lists = buildLists(freqDir || clone);
+  const lists = await buildLists(cache ? { cache } : {});
   const tmp = mkdtempSync(path.join(tmpdir(), "skim-parity-"));
   for (const d of ["core", "dom"]) mkdirSync(path.join(tmp, d));
   writeFileSync(path.join(tmp, "package.json"), '{"type":"module"}\n');
@@ -328,8 +302,8 @@ const longText = readFileSync(path.join(FIXTURES, "en-long.txt"), "utf8");
 let ref;
 let source;
 if (args.upstream) {
-  const up = await loadUpstream(path.resolve(args.upstream), args.freqDir ? path.resolve(args.freqDir) : "");
-  source = `upstream skimgram ${PINNED}, run live (word lists: most-common-words-by-language ${up.lists.versions.enPkg}, hanzi ${up.lists.versions.zhPkg})`;
+  const up = await loadUpstream(path.resolve(args.upstream), args.cache ? path.resolve(args.cache) : "");
+  source = `upstream skimgram ${PINNED}, run live (word lists rebuilt from scripts/skim-lists/sources.tsv)`;
   ref = { views: {}, cap: buildCap(up, longText), lists: { en: up.lists.en, cjk: up.lists.cjk } };
   for (const f of files) ref.views[f] = buildView(up, readFileSync(path.join(FIXTURES, f), "utf8"));
   if (args.writeGolden) {
@@ -398,6 +372,10 @@ if (!enOk) listBad++;
 if (!zhOk) listBad++;
 console.log(`word list EN_WORDS ${enGot.split(" ").length} entries ${enOk ? "same as upstream" : "DIFFERS from upstream"}`);
 console.log(`word list CJK_CHARS ${[...zhGot].length} entries ${zhOk ? "same as upstream" : "DIFFERS from upstream"}`);
+const provenance = checkNotices();
+for (const p of provenance.problems) console.log(`    ${p}`);
+if (provenance.problems.length) listBad++;
+console.log(`word list sources ${provenance.sources} in scripts/skim-lists/sources.tsv ${provenance.problems.length ? "NOT all credited" : "all credited"} in THIRD_PARTY_NOTICES.md`);
 
 const total = rows.reduce((s, x) => s + x.r.flagged, 0);
 console.log("");
