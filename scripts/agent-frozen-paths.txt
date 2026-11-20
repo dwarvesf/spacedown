@@ -1,0 +1,24 @@
+# Files docs/contract-r1.md marks "Shared and frozen". scripts/agent-guard.sh refuses an
+# edit or a commit that touches one unless the branch is named contract/<slug>.
+# One shell glob per line, relative to the repo root. A # starts a comment.
+# scripts/test-agent-guard.sh checks every line still matches a file and that the
+# contract still names it, so a rename or a new frozen file fails a test.
+integrations/safari/quick-look/Resources/ql-render.js
+integrations/safari/quick-look/Resources/load-order.txt
+integrations/safari/quick-look/Resources/ql-reading.css
+integrations/safari/quick-look/Sources/MarkdownPreviewProvider.swift
+integrations/safari/quick-look/load-core.js
+integrations/safari/quick-look/test-contract.js
+integrations/safari/quick-look/test-render.js
+integrations/safari/quick-look/render-file.js
+integrations/safari/quick-look/preview-skin.sh
+integrations/safari/quick-look/project.yml
+integrations/safari/quick-look/Info.plist
+integrations/safari/shared/SpacedownSettings.swift
+integrations/safari/SpacedownDrop/SpacedownDrop/AppDelegate.swift
+integrations/safari/SpacedownDrop/SpacedownDrop.xcodeproj/project.pbxproj
+*.entitlements
+scripts/sd-settings
+tests/smoke.sh
+assets/vscode-preview-head.html
+docs/contract-r1.md

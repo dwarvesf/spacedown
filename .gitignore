@@ -31,3 +31,7 @@ __pycache__/
 
 # The landing site pages are source, not render output.
 !site/*.html
+
+# Agent worktrees and personal agent settings.
+.claude/worktrees/
+.claude/settings.local.json
