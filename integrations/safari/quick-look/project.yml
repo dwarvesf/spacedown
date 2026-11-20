@@ -2,7 +2,7 @@ name: SpacedownQL
 options:
   bundleIdPrefix: dfoundation.spacedown
   deploymentTarget:
-    macOS: "12.0"
+    macOS: "13.0"
   createIntermediateGroups: true
 settings:
   base:

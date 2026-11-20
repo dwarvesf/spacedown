@@ -196,7 +196,6 @@ func buildPreviewHTML(_ md: String, fileURL: URL? = nil,
 // QLPreviewingController conformance is load-bearing: Quick Look's host checks the
 // principal object for it and rejects the extension without it (Apple's data-based
 // sample declares both). QLIsDataBasedPreview must also be true in Info.plist.
-@available(macOS 12.0, *)
 class MarkdownPreviewProvider: QLPreviewProvider, QLPreviewingController {
     func providePreview(for request: QLFilePreviewRequest) async throws -> QLPreviewReply {
         let md = (try? String(contentsOf: request.fileURL, encoding: .utf8)) ?? ""

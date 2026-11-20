@@ -126,10 +126,30 @@
   }
 
   // Code is literal. Before the callout and math passes, swap every fenced line (also
-  // inside a blockquote or a list), every inline code span and every escaped \$ for a
-  // placeholder, and put the text back before marked parses, so `$HOME` or a fenced
-  // "> [!note]" stays as written. Line based: a span never crosses a line.
+  // inside a blockquote or a list), every indented code line, every inline code span and
+  // every escaped \$ for a placeholder, and put the text back before marked parses, so
+  // `$HOME` or a fenced "> [!note]" stays as written. A code span may cross line breaks
+  // inside one paragraph, never a blank line or the start of another block. Where the
+  // block structure is unclear the text is left unshielded: a missed shield shows a
+  // formula, a wrong one would hide real math.
   var FENCE_RE = /^((?:[ \t]*>[ \t]?)*)[ \t]*(`{3,}|~{3,})(.*)$/;
+  // A blockquote marker has at most three spaces before it; more is indented code.
+  var QUOTE_RE = /^((?: {0,3}>[ \t]?)*)/;
+  var LIST_RE = /^([ \t]*)([-*+]|\d{1,9}[.)])([ \t]+|$)/;
+  var HEADING_RE = /^ {0,3}#{1,6}([ \t]|$)/;
+  var HR_RE = /^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/;
+
+  // Columns of leading space; a tab moves to the next multiple of four.
+  function indentWidth(s) {
+    var w = 0;
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i);
+      if (c === " ") w++;
+      else if (c === "\t") w += 4 - (w % 4);
+      else break;
+    }
+    return w;
+  }
 
   function shieldCode(src) {
     var saved = [];
@@ -137,16 +157,24 @@
       saved.push(text);
       return "SDCODEPLACEHOLDER" + (saved.length - 1) + "ENDSD";
     }
-    function spans(line) {
-      var out = "", i = 0;
+    // One line in pieces: code spans that close on the line, escaped dollars, plain text,
+    // and backtick runs left open ("tick").
+    function linePieces(line) {
+      var pieces = [], plain = "", i = 0;
+      function push(type, s) {
+        if (plain) pieces.push({ type: "text", s: plain });
+        plain = "";
+        pieces.push({ type: type, s: s });
+      }
       while (i < line.length) {
         var c = line.charAt(i);
         if (c === "\\" && (line.charAt(i + 1) === "$" || line.charAt(i + 1) === "`")) {
-          out += line.charAt(i + 1) === "$" ? stash("\\$") : "\\`";
+          if (line.charAt(i + 1) === "$") push("code", "\\$");
+          else plain += "\\`";
           i += 2;
           continue;
         }
-        if (c !== "`") { out += c; i++; continue; }
+        if (c !== "`") { plain += c; i++; continue; }
         var open = i;
         while (line.charAt(i) === "`") i++;
         var n = i - open, k = i, close = -1;
@@ -156,27 +184,118 @@
           while (line.charAt(k) === "`") k++;
           if (k - run === n) { close = run; break; }
         }
-        if (close < 0) { out += line.slice(open, i); continue; }
-        out += stash(line.slice(open, close + n));
+        if (close < 0) { push("tick", line.slice(open, i)); continue; }
+        push("code", line.slice(open, close + n));
         i = close + n;
+      }
+      if (plain) pieces.push({ type: "text", s: plain });
+      return pieces;
+    }
+
+    // text: one line, or the lines of one paragraph joined by "\n". A span closes on its own
+    // line first; a run left open there pairs with the next open run of the same length on a
+    // later line, and everything between is code. One placeholder per line keeps the line
+    // breaks, so the math pass ($...$ within one line) cannot pair a $ before the span with
+    // one after it.
+    function spans(text) {
+      var pieces = [];
+      text.split("\n").forEach(function (line, n) {
+        if (n) pieces.push({ type: "nl", s: "\n" });
+        pieces = pieces.concat(linePieces(line));
+      });
+      var out = "";
+      for (var p = 0; p < pieces.length; p++) {
+        var piece = pieces[p];
+        if (piece.type === "tick") {
+          var q = p + 1;
+          while (q < pieces.length && !(pieces[q].type === "tick" && pieces[q].s.length === piece.s.length)) q++;
+          if (q < pieces.length) {
+            var raw = pieces.slice(p, q + 1).map(function (x) { return x.s; }).join("");
+            out += raw.split("\n").map(stash).join("\n");
+            p = q;
+            continue;
+          }
+        }
+        out += piece.type === "code" ? stash(piece.s) : piece.s;
       }
       return out;
     }
+    var out = [], para = [];
+    function flush() {
+      if (para.length) out.push(spans(para.join("\n")));
+      para = [];
+    }
     var fence = null;
-    var lines = src.split("\n").map(function (line) {
+    // prev: what the last line was, for the indented code rule (start, blank, code, heading, text).
+    // items: content columns of the open list items, innermost last, for one quote depth.
+    var prev = "start", depth = 0, items = [];
+    src.split("\n").forEach(function (line) {
       var m = FENCE_RE.exec(line);
-      var prefix = m ? m[1] : (/^((?:[ \t]*>[ \t]?)*)/.exec(line) || ["", ""])[1];
-      if (fence === null) {
-        if (m && !(m[2].charAt(0) === "`" && m[3].indexOf("`") >= 0)) {
-          fence = m[2];
-          return prefix + stash(line.slice(prefix.length));
-        }
-        return spans(line);
+      if (fence !== null) {
+        var fprefix = m ? m[1] : (/^((?:[ \t]*>[ \t]?)*)/.exec(line) || ["", ""])[1];
+        if (m && m[2].charAt(0) === fence.charAt(0) && m[2].length >= fence.length && !m[3].trim()) fence = null;
+        out.push(fprefix + stash(line.slice(fprefix.length)));
+        prev = "code";
+        return;
       }
-      if (m && m[2].charAt(0) === fence.charAt(0) && m[2].length >= fence.length && !m[3].trim()) fence = null;
-      return prefix + stash(line.slice(prefix.length));
+      var prefix = QUOTE_RE.exec(line)[1];
+      var rest = line.slice(prefix.length);
+      var d = (prefix.match(/>/g) || []).length;
+      if (d !== depth) {
+        // A deeper quote starts a new block; a shallower line can be a lazy continuation.
+        if (d > depth) flush();
+        depth = d;
+        items = [];
+        if (prev !== "start") prev = "text";
+      }
+      if (!rest.trim()) {
+        flush();
+        out.push(line);
+        if (prev !== "start") prev = "blank";
+        return;
+      }
+      var w = indentWidth(rest);
+      if (prev === "blank" || prev === "start" || prev === "heading") {
+        while (items.length && items[items.length - 1] > w) items.pop();
+      }
+      var base = items.length ? items[items.length - 1] : 0;
+      var codeOk = prev === "blank" || prev === "start" || prev === "heading" || prev === "indented";
+      if (codeOk && w >= base + 4) {
+        flush();
+        out.push(prefix + stash(rest));
+        prev = "indented";
+        return;
+      }
+      if (m && !(m[2].charAt(0) === "`" && m[3].indexOf("`") >= 0)) {
+        flush();
+        fence = m[2];
+        out.push(m[1] + stash(line.slice(m[1].length)));
+        prev = "code";
+        return;
+      }
+      var hr = HR_RE.test(rest);
+      var li = hr ? null : LIST_RE.exec(rest);
+      var heading = HEADING_RE.test(rest);
+      if (li || heading || hr || /^[ \t]*\|/.test(rest)) {
+        flush();
+        if (li) {
+          var marker = indentWidth(li[1]);
+          var gap = li[3] ? indentWidth(li[3]) : 1;
+          while (items.length && items[items.length - 1] > marker) items.pop();
+          items.push(marker + li[2].length + (gap > 4 ? 1 : gap));
+          para.push(line);
+          prev = "text";
+          return;
+        }
+        out.push(spans(line));
+        prev = heading ? "heading" : "text";
+        return;
+      }
+      para.push(line);
+      prev = "text";
     });
-    return { src: lines.join("\n"), saved: saved };
+    flush();
+    return { src: out.join("\n"), saved: saved };
   }
 
   function unshieldCode(src, saved) {

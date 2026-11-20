@@ -9,7 +9,8 @@
 //   css        marks look plain until the checkbox is checked: #sd-xray:checked ~ * .sd-xr-RULE
 //              (a long sentence's last piece carries data-sd-words; its ::after is the "27w" tag,
 //              so the tag adds no text to the DOM that copy, Skim or BeeLine could see)
-// No :has() (macOS 12.0 target) and no regex lookbehind (JavaScriptCore on macOS 12).
+// No :has(): the sibling selector above is enough. No regex lookbehind: JavaScriptCore has it
+// only from macOS 13.3, and the deployment target is 13.0.
 (function (global) {
   "use strict";
   if (!global.SD) return;
