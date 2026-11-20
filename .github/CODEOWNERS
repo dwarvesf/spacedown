@@ -22,6 +22,10 @@
 /assets/tables-blankline.py @tieubao
 
 # scripts/
+/scripts/agent-frozen-paths.txt @tieubao
+/scripts/agent-guard.sh @tieubao
+/scripts/agent-kit-hook.sh @tieubao
+/scripts/agent-lessons.sh @tieubao
 /scripts/asc_listing.py @tieubao
 /scripts/asc_setup.py @tieubao
 /scripts/build-docx-reference.py @tieubao
@@ -29,6 +33,7 @@
 /scripts/build-ql-skin @tieubao
 /scripts/bundle-cli @tieubao
 /scripts/check-owners.sh @tieubao
+/scripts/check.sh @tieubao
 /scripts/hljs-build @tieubao
 /scripts/ia-fontface-css @tieubao
 /scripts/layout-check @tieubao
@@ -42,6 +47,9 @@
 /scripts/size-budget @tieubao
 /scripts/skim-parity.mjs @tieubao
 /scripts/store-shots.sh @tieubao
+/scripts/test-agent-guard.sh @tieubao
+/scripts/test-agent-kit-hook.sh @tieubao
+/scripts/test-check.sh @tieubao
 /scripts/window-shots.sh @tieubao
 
 # Tests

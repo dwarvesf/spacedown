@@ -65,4 +65,3 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 | `../scripts/check.sh` | The one local command before a push: syntax check, smoke suite, unit tests, agent harness tests, `actionlint` ([dev/testing.md](dev/testing.md)) |
 | `../.claude/skills/` | Agent playbooks: `ship-pr` (issue to green PR) and `ui-change` (what the panel or a page shows) |
 | `../.claude/memory/MEMORY.md` | The lesson index agents read at session start; how to add one is in [AGENTS.md](../AGENTS.md), "Lessons" |
-| `implementation-notes/` | One note per change, only what differs from the brief: decisions, tradeoffs, open questions |

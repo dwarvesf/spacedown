@@ -15,11 +15,13 @@
 # Known gaps. It reads command text, with quote characters removed and a quoted string
 # that holds a space folded to one word, and judges only commands whose first word is
 # git. A determined agent gets past it: bash -c or eval, a script or variable that runs
-# git, config includes (include.path, includeIf), GIT_CONFIG_* or GIT_DIR set in front
+# git, crafted quoting that hides arguments (the quote fold can span two quote pairs),
+# config includes (include.path, includeIf), GIT_CONFIG_* or GIT_DIR set in front
 # of git or exported, a sed -i on a frozen file (the commit-time check still catches
 # it). A switch earlier in the same command is not followed, so the guard sees the
-# branch you are on now: switch in one call, commit in the next. It guards Claude Code only. The real control is the server-side ruleset
-# on main: a required PR, required checks, no force push. Review is the second line.
+# branch you are on now: switch in one call, commit in the next. It guards Claude Code
+# only. The real control is the server-side ruleset on main: a required PR, required
+# checks, no force push. Review is the second line.
 set -f
 ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
 command -v jq >/dev/null 2>&1 || { echo "agent-guard needs jq; macOS 15+ ships /usr/bin/jq, or brew install jq" >&2; exit 2; }
