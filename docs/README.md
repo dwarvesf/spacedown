@@ -7,6 +7,7 @@ The root [README.md](../README.md) is the user guide: install, use, the CLI, the
 | Folder | Who reads it | What is in it |
 |---|---|---|
 | [dev/](dev/) | Contributors and agents | How to build, test and release |
+| [decisions/](decisions/) | Maintainers and contributors | Decision records (ADRs): what was decided, why, and what was ruled out. Numbered, one per decision |
 | [verification/](verification/) | Anyone tracing a change | Proof files, one per PR. Dated records: add, never rewrite |
 | [images/](images/) | The README | Screenshots |
 | [app-store/](app-store/) | Maintainers | The App Store listing data and screenshots |
@@ -31,6 +32,7 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 | [../AGENTS.md](../AGENTS.md) | The rules every change follows: size the work, branch and PR, proof of done, when to stop and ask |
 | [dev/development.md](dev/development.md) | How the parts fit, build commands, project layout, vendored code |
 | [dev/testing.md](dev/testing.md) | Test tiers, what CI runs and what stays local, skips, bash 3.2, known failures |
+| [decisions/0001-agpl-and-paid-feature-gate.md](decisions/0001-agpl-and-paid-feature-gate.md) | ADR 0001: AGPL, the one paid-feature gate, the offline Ed25519 license file, the license ask |
 | [contract-r1.md](contract-r1.md) | The release 1 contract: the render core's hooks and settings, which files are frozen, which part owns which section |
 | [verification/README.md](verification/README.md) | How to write a proof file |
 | [../assets/REFRESH.md](../assets/REFRESH.md) | Where the vendored stylesheet and highlight.js come from and how to refresh them |
