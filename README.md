@@ -246,3 +246,5 @@ Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PART
 ## License
 
 Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by [Console Labs](https://console.so). MIT licensed, see [LICENSE](LICENSE). Copyright (c) 2026 Console Labs.
+
+The MIT license covers the code, not the Spacedown name or icon. You may build, change and share the code. A build you publish, on an app store or anywhere else, must use a different name and icon.
