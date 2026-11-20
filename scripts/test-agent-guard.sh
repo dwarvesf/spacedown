@@ -96,7 +96,7 @@ case_edit() { # case_edit <label> <block|allow> <cwd> <path> [needle] [tool]
 FEAT="$T/on-feat"
 MAIN="$T/on-main"
 CONTRACT="$T/on-contract"
-PUSH_FIX="open a PR from a branch"
+PUSH_FIX="gh pr create"
 FORCE_FIX="merge origin/main into the branch"
 VERIFY_FIX="without the flag"
 COMMIT_FIX="git switch -c"
@@ -111,8 +111,6 @@ case_run "git -C <dir> push origin main" block "$T/not-a-repo" "git -C $FEAT pus
 case_run "bare git push on main" block "$MAIN" "git push" "$PUSH_FIX"
 case_run "git push origin on main" block "$MAIN" "git push origin" "$PUSH_FIX"
 case_run "push HEAD while on main" block "$MAIN" "git push origin HEAD" "$PUSH_FIX"
-case_run "cd <main repo> && git push" block "$T/not-a-repo" "cd $MAIN && git push" "$PUSH_FIX"
-case_run "push to main inside bash -c" block "$FEAT" "bash -c \"git push origin main\"" "$PUSH_FIX"
 case_run "push to main after env assignment" block "$FEAT" "GIT_SSH_COMMAND=ssh git push origin main" "$PUSH_FIX"
 case_run "push feature branch" allow "$FEAT" "git push origin feat/x"
 case_run "push -u feature branch" allow "$FEAT" "git push -u origin feat/x"
@@ -130,7 +128,6 @@ case_run "push --force-with-lease=ref" block "$FEAT" "git push --force-with-leas
 case_run "push --force-if-includes" block "$FEAT" "git push --force-if-includes origin feat/x" "$FORCE_FIX"
 case_run "push +branch" block "$FEAT" "git push origin +feat/x" "$FORCE_FIX"
 case_run "push +HEAD:branch" block "$FEAT" "git push origin +HEAD:feat/x" "$FORCE_FIX"
-case_run "force push inside bash -c" block "$FEAT" "bash -c 'git push --force origin feat/x'" "$FORCE_FIX"
 case_run "force push after &&" block "$FEAT" "git fetch origin && git push --force origin feat/x" "$FORCE_FIX"
 case_run "force push dry run" allow "$FEAT" "git push --force --dry-run origin feat/x"
 case_run "push with a push option named -o" allow "$FEAT" "git push -o ci.skip origin feat/x"
@@ -145,7 +142,6 @@ case_run "commit -nm" block "$FEAT" "git commit -nm x" "$VERIFY_FIX"
 case_run "commit -an" block "$FEAT" "git commit -an" "$VERIFY_FIX"
 case_run "git -C <dir> commit --no-verify" block "$T/not-a-repo" "git -C $FEAT commit --no-verify -m x" "$VERIFY_FIX"
 case_run "commit message mentions --no-verify" allow "$FEAT" "git commit -m \"docs: never use --no-verify\""
-case_run "commit message value is -n" allow "$FEAT" "git commit -m -n"
 case_run "commit -am" allow "$FEAT" "git commit -am \"fix: x\""
 case_run "commit -F file" allow "$FEAT" "git commit -F msg.txt"
 case_run "rg mentions --no-verify" allow "$FEAT" "rg -n -- '--no-verify' docs"
@@ -155,15 +151,7 @@ case_run "rg mentions git push origin main" allow "$FEAT" "rg 'git push origin m
 case_run "git log --grep mentions push" allow "$FEAT" "git log --grep \"git push origin main\""
 
 # commit on main
-case_run "commit on main" block "$MAIN" "git commit -m x" "$COMMIT_FIX"
-case_run "add and commit with message file on main" block "$MAIN" "git add a && git commit -F msg.txt" "$COMMIT_FIX"
-case_run "git -C <main repo> commit" block "$T/not-a-repo" "git -C $MAIN commit -m x" "$COMMIT_FIX"
 case_run "commit on a feature branch" allow "$FEAT" "git commit -m \"docs: mention git push origin main\""
-case_run "commit message from heredoc names a blocked command" allow "$FEAT" "git commit -F - <<EOF
-docs: say git push --force is blocked
-git push --force origin x
-EOF"
-case_run "switch to a branch, then commit, from main" allow "$MAIN" "git switch -c feat/y && git commit -m x"
 case_run "commit outside a repo" allow "$T/not-a-repo" "git commit -m x"
 case_run "git status on main" allow "$MAIN" "git status"
 case_run "plain command" allow "$FEAT" "ls -la"
@@ -224,12 +212,23 @@ echo '{}' >"$T/clone/.claude/settings.json"
 git -C "$T/clone" add .claude/settings.json
 case_run "settings.json staged: commit blocked" block "$T/clone" "git commit -m x" "$FROZEN_FIX"
 
+# a local branch named origin/main must not shadow the real remote ref
+blob="$(git -C "$T/clone" hash-object -w scripts/agent-frozen-paths.txt)"
+sub="$(printf '100644 blob %s\tagent-frozen-paths.txt\n' "$blob" | git -C "$T/clone" mktree)"
+tree="$(printf '040000 tree %s\tscripts\n' "$sub" | git -C "$T/clone" mktree)"
+shadow="$(git -C "$T/clone" -c user.name=t -c user.email=t@t commit-tree "$tree" -m "chore: shadow")"
+git -C "$T/clone" update-ref refs/heads/origin/main "$shadow"
+git -C "$T/clone" show-ref --verify -q refs/heads/origin/main || bad "the shadow branch origin/main was not created"
+case_edit "a local branch named origin/main does not shadow the list" block "$T/clone" "$T/clone/tests/smoke.sh" "$FROZEN_FIX"
+
 # 2. git accepts any unambiguous prefix of a long option
 case_run "push --forc" block "$FEAT" "git push --forc origin feat/x" "$FORCE_FIX"
 case_run "push --force-w" block "$FEAT" "git push --force-w origin feat/x" "$FORCE_FIX"
 case_run "push --force-if" block "$FEAT" "git push --force-if origin feat/x" "$FORCE_FIX"
 case_run "push --force-with-lease abbreviated with a value" block "$FEAT" "git push --force-with origin feat/x" "$FORCE_FIX"
 case_run "push --mirror" block "$FEAT" "git push --mirror origin" "overwrites every ref"
+case_run "push --m" block "$FEAT" "git push --m origin" "overwrites every ref"
+case_run "push --mi" block "$FEAT" "git push --mi origin" "overwrites every ref"
 case_run "push --mirr" block "$FEAT" "git push --mirr origin" "overwrites every ref"
 case_run "commit --no-ver" block "$FEAT" "git commit --no-ver -m x" "$VERIFY_FIX"
 case_run "commit --no-v" block "$FEAT" "git commit --no-v -m x" "$VERIFY_FIX"
@@ -240,9 +239,8 @@ case_run "commit --no-edit" allow "$FEAT" "git commit --no-edit"
 case_run "commit --no-gpg-sign" allow "$FEAT" "git commit --no-gpg-sign -m x"
 case_run "push --set-upstream" allow "$FEAT" "git push --set-upstream origin feat/x"
 
-# 3. hook switches in config, and git env in front of git
+# 3. hook switches in config
 HOOKS_FIX="leave core.hooksPath alone"
-ENV_FIX="run git without them"
 case_run "-c core.hooksPath" block "$FEAT" "git -c core.hooksPath=/dev/null commit -m x" "$HOOKS_FIX"
 case_run "-c core.hookspath (lower case)" block "$FEAT" "git -c core.hookspath=/x push origin feat/x" "$HOOKS_FIX"
 case_run "-ccore.hooksPath attached" block "$FEAT" "git -ccore.hooksPath=/x commit -m x" "$HOOKS_FIX"
@@ -250,36 +248,15 @@ case_run "--config-env=core.hooksPath" block "$FEAT" "git --config-env=core.hook
 case_run "--config-env core.hooksPath" block "$FEAT" "git --config-env core.hooksPath=HP commit -m x" "$HOOKS_FIX"
 case_run "git config core.hooksPath" block "$FEAT" "git config core.hooksPath /dev/null" "$HOOKS_FIX"
 case_run "git config --local core.hooksPath" block "$FEAT" "git config --local core.hooksPath /dev/null" "$HOOKS_FIX"
-case_run "GIT_CONFIG_COUNT in front of git" block "$FEAT" "GIT_CONFIG_COUNT=1 git commit -m x" "$ENV_FIX"
-case_run "GIT_CONFIG_KEY_0 in front of git" block "$FEAT" "GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/x git push origin feat/x" "$ENV_FIX"
-case_run "GIT_CONFIG_GLOBAL in front of git" block "$FEAT" "GIT_CONFIG_GLOBAL=/x git commit -m x" "$ENV_FIX"
-case_run "GIT_DIR in front of git" block "$FEAT" "GIT_DIR=/x/.git git status" "$ENV_FIX"
-case_run "env GIT_DIR git" block "$FEAT" "env GIT_DIR=/x/.git git status" "$ENV_FIX"
-case_run "export GIT_CONFIG_PARAMETERS" block "$FEAT" "export GIT_CONFIG_PARAMETERS=x; git commit -m y" "$ENV_FIX"
 case_run "git -c user.name is fine" allow "$FEAT" "git -c user.name=x commit -m y"
 case_run "git -c color.ui is fine" allow "$FEAT" "git -c color.ui=never status"
-case_run "GIT_AUTHOR_NAME in front of git is fine" allow "$FEAT" "GIT_AUTHOR_NAME=x git commit -m y"
 case_run "git config user.name is fine" allow "$FEAT" "git config user.name x"
 
-# 4. a switch earlier in the command counts only when it can have worked
+# 5. push destinations that mean main
 mkrepo "$T/multi" main
 echo x >"$T/multi/a.txt"
 git -C "$T/multi" add a.txt
 git -C "$T/multi" -c user.name=t -c user.email=t@t commit -q -m seed
-git -C "$T/multi" branch feat/ok
-M="$T/multi"
-case_run "switch -c then commit, from main" allow "$M" "git switch -c feat/new && git commit -m x"
-case_run "checkout -b then commit, from main" allow "$M" "git checkout -b feat/new && git commit -m x"
-case_run "switch to an existing branch then commit" allow "$M" "git switch feat/ok && git commit -m x"
-case_run "switch to a missing branch then commit" block "$M" "git switch feat/missing && git commit -m x" "$COMMIT_FIX"
-case_run "path checkout does not change the branch" block "$M" "git checkout feat/ok -- a.txt && git commit -m x" "$COMMIT_FIX"
-case_run "path checkout after -- does not change the branch" block "$M" "git checkout -- feat/ok && git commit -m x" "$COMMIT_FIX"
-case_run "a plain checkout is not trusted" block "$M" "git checkout feat/ok && git commit -m x" "$COMMIT_FIX"
-case_run "switch -c main then commit" block "$M" "git switch -C main && git commit -m x" "$COMMIT_FIX"
-case_run "switch to main then commit" block "$M" "git switch main && git commit -m x" "$COMMIT_FIX"
-case_run "a failed switch does not hide main" block "$M" "git switch feat/missing; git commit -m x" "$COMMIT_FIX"
-
-# 5. push destinations that mean main
 mkrepo "$T/prev" main
 echo x >"$T/prev/a.txt"
 git -C "$T/prev" add a.txt
@@ -288,8 +265,8 @@ git -C "$T/prev" branch feat/ok
 git -C "$T/prev" switch -q feat/ok
 git -C "$T/prev" switch -q main
 git -C "$T/prev" switch -q feat/ok
-case_run "push @ while on main" block "$M" "git push origin @" "$PUSH_FIX"
-case_run "push HEAD:@ while on main" block "$M" "git push origin HEAD:@" "$PUSH_FIX"
+case_run "push @ while on main" block "$T/multi" "git push origin @" "$PUSH_FIX"
+case_run "push HEAD:@ while on main" block "$T/multi" "git push origin HEAD:@" "$PUSH_FIX"
 case_run "push HEAD:@{-1}, which is main" block "$T/prev" "git push origin HEAD:@{-1}" "$PUSH_FIX"
 case_run "push HEAD:heads/main" block "$FEAT" "git push origin HEAD:heads/main" "$PUSH_FIX"
 case_run "push @ while on a feature branch" allow "$T/prev" "git push origin @"
@@ -303,34 +280,12 @@ if [ "$rc" -eq 0 ]; then ok "empty input: allowed (exit 0)"; else bad "empty inp
 run_raw '{"tool_name":"Bash","tool_input":{}}'
 if [ "$rc" -eq 0 ]; then ok "no command field: allowed (exit 0)"; else bad "no command field: expected exit 0, got $rc"; fi
 
-# Parser fallbacks: a PATH with only the tools the guard and git need.
-mkbin() { # mkbin <dir> <tool>...
-    local d="$1" t p
-    shift
-    mkdir -p "$d"
-    for t in "$@"; do
-        p="$(command -v "$t" 2>/dev/null || true)"
-        [ -z "$p" ] || ln -sf "$p" "$d/$t"
-    done
-}
-BLOCK_JSON="$(mkjson Bash "$FEAT" "git push origin main")"
-mkbin "$T/bin-py" bash cat awk tr sed git dirname basename env python3
-if PATH="$T/bin-py" python3 -c 'import json' >/dev/null 2>&1; then
-    rc=0
-    printf '%s' "$BLOCK_JSON" | PATH="$T/bin-py" bash "$GUARD" >"$T/out" 2>"$T/err" || rc=$?
-    if [ "$rc" -eq 2 ] && grep -Fq "$PUSH_FIX" "$T/err"; then ok "python3 only: blocks and names the fix"; else bad "python3 only: rc $rc"; fi
-    EDIT_JSON="$(mkjson Edit "$FEAT" "$FEAT/$FROZEN_REL")"
-    rc=0
-    printf '%s' "$EDIT_JSON" | PATH="$T/bin-py" bash "$GUARD" >"$T/out" 2>"$T/err" || rc=$?
-    if [ "$rc" -eq 2 ] && grep -Fq "$FROZEN_FIX" "$T/err"; then ok "python3 only: blocks a frozen edit"; else bad "python3 only frozen edit: rc $rc"; fi
-else
-    echo "skip  python3 does not run from a bare PATH here"
-fi
-
-mkbin "$T/bin-none" bash cat awk tr sed git dirname basename env
+# No jq: the guard is off, with a note.
+mkdir -p "$T/bin-none"
+for t in bash cat tr sed git dirname basename; do ln -sf "$(command -v "$t")" "$T/bin-none/$t"; done
 rc=0
-printf '%s' "$BLOCK_JSON" | PATH="$T/bin-none" bash "$GUARD" >"$T/out" 2>"$T/err" || rc=$?
-if [ "$rc" -eq 0 ] && grep -Fq "neither jq nor python3" "$T/err"; then ok "no parser: allowed with a note"; else bad "no parser: rc $rc"; fi
+printf '%s' "$(mkjson Bash "$FEAT" "git push origin main")" | PATH="$T/bin-none" bash "$GUARD" >"$T/out" 2>"$T/err" || rc=$?
+if [ "$rc" -eq 0 ] && grep -Fq "jq is not installed" "$T/err"; then ok "no jq: allowed with a note"; else bad "no jq: rc $rc"; fi
 
 # The frozen list agrees with the contract.
 total=0

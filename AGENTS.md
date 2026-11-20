@@ -95,8 +95,8 @@ Add a lesson when your PR paid for one. One note per lesson, in the same PR: a f
 ## Playbooks and hooks
 
 - Playbooks (commands only; the rules stay here): [.claude/skills/ship-pr/SKILL.md](.claude/skills/ship-pr/SKILL.md) takes a change to a green PR, and [.claude/skills/ui-change/SKILL.md](.claude/skills/ui-change/SKILL.md) covers what the panel or a page shows.
-- `.claude/settings.json` wires `scripts/agent-guard.sh` (Claude Code only). It refuses a push to `main`, a force push, `--no-verify`, a commit on `main`, and an edit or commit of a contract-frozen file off a `contract/` branch. The guard, its list and `.claude/settings.json` are always frozen, and the list is read as committed on `origin/main`. It matches command text: [the lesson](.claude/memory/guards-match-command-text.md).
-- The guard is a seatbelt for agents; the server-side ruleset on `main` is the real control.
+- `.claude/settings.json` wires `scripts/agent-guard.sh` (Claude Code only). It refuses a push to `main`, a force push or `--mirror`, `--no-verify`, setting `core.hooksPath`, and an edit or commit of a contract-frozen file off a `contract/` branch. The guard, its list and `.claude/settings.json` are always frozen, and the list is read as committed on `origin/main`.
+- Known gaps: the guard is a best-effort seatbelt against accidents, not a security boundary. It reads command text with the quoted strings dropped and judges only commands that start with `git`, so a determined agent can get past it: a quoted config value, `bash -c` or `eval`, a script or variable that runs git, config includes (`include.path`, `includeIf`), exported `GIT_CONFIG_*` or `GIT_DIR`, a chain that switches branch first. The real control is the server-side ruleset on `main`: a required PR, required checks, no force push. [The lesson](.claude/memory/guards-match-command-text.md).
 - The same file runs the optional kit's hooks through `scripts/agent-kit-hook.sh`, which does nothing when the kit is not installed.
 
 ## Where docs live

@@ -5,16 +5,17 @@ Delta from the brief only.
 ## Decisions
 
 - Kit hooks go through one wrapper, `scripts/agent-kit-hook.sh <hook> [args]`. It exits 0 when the kit or the named hook is missing, and otherwise execs the kit's `anchor-root.sh` with the same arguments. One tested script beats ten copies of an inline `test -f`. `DWARVES_KIT_DIR` overrides the kit path, used by the tests.
-- The guard is one script for two tool kinds: `Bash` (push, force, `--no-verify`, commit on main, frozen files staged at commit time) and `Edit|Write|MultiEdit|NotebookEdit` (frozen file edits). Editing at tool time gives the early message; the commit-time check catches a `sed -i` or `cp` that the edit hook never saw.
+- The guard is one script for two tool kinds: `Bash` (push, force, `--no-verify`, `core.hooksPath`, frozen files staged at commit time) and `Edit|Write|MultiEdit|NotebookEdit` (frozen file edits). The commit-time check catches a `sed -i` or `cp` that the edit hook never saw.
 - The frozen list lives in `scripts/agent-frozen-paths.txt`, not parsed out of `docs/contract-r1.md` (prose with `QL` and `APP` shorthands). `scripts/test-agent-guard.sh` checks that every entry still exists and that the contract still names its file, so a rename or a new frozen file fails a test instead of silently opening a hole.
 - A frozen file may change only on a branch named `contract/<slug>`. There is no environment bypass: a bypass the agent can set is not a guard. The second line is review and CI.
 - Force pushes are blocked on every branch, not only main. Fix text: push a new commit or merge `main` in.
 - `check.sh` runs the commands AGENTS.md lists and `docs/dev/testing.md` marks as run by CI. It does not run the app build, the live panel or any release script. A missing `actionlint` is a note, not a failure (the brief says "if installed"). A missing `node` fails, as the smoke suite does.
 - The guard does not block a bare `gh pr merge`: this repo has no merge script to point at, and a maintainer merges. The door table in AGENTS.md is prose; the guard enforces the frozen-file row only, from `scripts/agent-frozen-paths.txt`.
 - Lessons seeded in `.claude/memory/` restate pitfalls the existing docs already name (bash 3.2, the panel runs no scripts, `build-safari.sh` installs). No new incident is claimed.
-- Quoted strings with a space are folded to one word before the guard reads git flags, so `git commit -m "never use --no-verify"` passes.
-- Review round: the guard, its list and `.claude/settings.json` are always frozen; the list is read from `origin/main` (the working tree copy only when the repo has no `origin/main`; an `origin/main` without the list leaves only the three built-in paths). Long options match by abbreviation (four characters or more), `--mirror`, `core.hooksPath` in `-c`, `--config-env` and `git config`, and `GIT_CONFIG_*`, `GIT_DIR`, `GIT_WORK_TREE` in front of git are blocked. A switch earlier in a command counts only when it creates the branch or the branch exists. A push destination is resolved with `git rev-parse --symbolic-full-name`.
-- A plain `git checkout <branch> && git commit` from main is now blocked (a plain checkout may name a file); use `git switch`.
+- The guard drops quoted strings before it reads flags, so `git commit -m "never use --no-verify"` passes.
+- Review rescope: a client-side command denylist cannot be complete, so the guard was cut back to the core cases (push to main, force push and `--mirror`, `--no-verify`, `core.hooksPath`, frozen paths) and its gaps are written down in its header and in AGENTS.md. Dropped on purpose: commit-on-main, branch-switch tracking, `bash -c` and `eval` recursion, `cd` tracking, `GIT_*` env checks, the python3 fallback (no jq means no guard). The server-side ruleset on `main` is the control that binds.
+- The guard, its list and `.claude/settings.json` are always frozen; the list is read from `refs/remotes/origin/main` (the working tree copy only when the repo has no origin/main; an origin/main without the list leaves only the three built-in paths).
+- A frozen file is judged by the real branch at the time of the call, so `git switch -c contract/x && git add` in one command is judged on the old branch. Run the two steps separately.
 
 ## Tradeoffs
 
