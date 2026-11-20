@@ -22,3 +22,5 @@ Only the decisions the brief did not make. The brief: a `pr-shape` check on ever
 
 - Should pr-shape also reject em and en dashes in added lines? AGENTS.md bans them; no check enforces it.
 - Should the issue check ask the API that the number is an issue, not a PR?
+
+Throwaway line: a negative control for the ruleset. This PR is never merged.
