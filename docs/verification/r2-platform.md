@@ -37,20 +37,20 @@ Before this change (main, same commands): the appex was `minos 12.0` and `LSMini
 
 ## 3. Size
 
-Measured as `scripts/release.sh` builds it: Developer ID signed, `SKIN_CSS=` blank, CLI bundled, DMG made with `hdiutil create -volname Spacedown -srcfolder <stage with app + /Applications> -fs HFS+ -format UDZO`, then signed. Not notarized.
+Measured as `scripts/release.sh` builds it: Developer ID signed, `SKIN_CSS=` blank, CLI bundled, DMG made with `hdiutil create -volname Spacedown -srcfolder <stage with app + /Applications> -fs HFS+ -format UDZO`, then signed. Not notarized. Measured on this branch rebased over #95 and #99.
 
 | Number | Before (r1-size-final, arm64) | After (universal) |
 |---|---|---|
-| App | 2,208,095 | 2,712,573 |
-| DMG | 1,233,954 | 1,419,168 |
+| App | 2,208,095 | 2,732,097 |
+| DMG | 1,233,954 | 1,428,054 |
 | Budget | app 2,300,000, dmg 1,300,000 | app 2,800,000, dmg 1,500,000 (measured, rounded up to the next 0.1 MB) |
 
 ```
 Command: bash scripts/size-budget <release app> <release dmg>
 Exit: 0
 Output:
-  size-budget: app 2712573 bytes (budget 2800000)
-  size-budget: dmg 1419168 bytes (budget 1500000)
+  size-budget: app 2732097 bytes (budget 2800000)
+  size-budget: dmg 1428054 bytes (budget 1500000)
   size-budget: ok
 Verdict: PASS
 ```
@@ -78,6 +78,8 @@ Output (new checks):
   ok: a stray backtick does not reach past a blank line
   ok: a span never joins two list items
   ok: a span never crosses a heading line
+  ok: a balanced span after a stray backtick stays code
+  ok: no math pairs a $ before a two-line span with one after it
 ql-render: PASS
 Verdict: PASS
 ```
@@ -87,7 +89,9 @@ Before and after on the same fixture as check 6, through the CLI, which renders 
 ![Before, main's core](r2-platform/before-cli-main.png)
 ![After, this branch](r2-platform/after-cli.png)
 
-A corpus check, old core against new on 13,888 Markdown files from local checkouts: 13,878 render byte for byte the same. The 10 that differ all lose KaTeX that sat inside code (13 formulas in all), and 3 of them also lose a leaked `SDCODEPLACEHOLDER` string. No file gains a formula. A first version that paired spans across lines strictly by position made three files gain formulas in prose; the per-line-first pairing above removed that.
+A corpus check, old core against new on 13,888 Markdown files from local checkouts: 13,878 render byte for byte the same. The 10 that differ all lose KaTeX that sat inside code (13 formulas in all), and 3 of them also lose a leaked `SDCODEPLACEHOLDER` string. No file gains a formula. A first version that paired spans across lines strictly by position made three files gain formulas in prose; the per-line-first pairing above removed that, and the last two checks above pin both rules.
+
+Speed, old core against new (node, one run each): a 50,000-line paragraph 5,161 ms and 5,064 ms; a 20,000-line paragraph with a stray backtick on every line 340 ms and 339 ms; a 50,000-line indented block 35 ms and 30 ms.
 
 ## 5. Suites
 
@@ -101,7 +105,7 @@ A corpus check, old core against new on 13,888 Markdown files from local checkou
 
 ## 6. Debug and Release side by side in the live panel
 
-On a macOS 27.2.1 test VM, every launch and keystroke inside the VM. Both apps were Developer ID signed (not notarized) and copied into `/Applications`; an older install was moved aside, not deleted.
+On a macOS 27.2.1 test VM, every launch and keystroke inside the VM. Both apps were Developer ID signed (not notarized) and copied into `/Applications`; an older install was moved aside, not deleted, and put back after the check.
 
 ```
 Command: pluginkit -mAvvv -i <id> for both ids; lipo and the CDHash of each installed appex
@@ -162,8 +166,8 @@ Verdict: RED as expected
 Command: APP_BUDGET_BYTES=2300000 DMG_BUDGET_BYTES=1300000 bash scripts/size-budget <release app> <release dmg>
 Exit: 1
 Output:
-  size-budget: FAIL app is 412573 bytes over budget; largest files: ...
-  size-budget: FAIL dmg is 119168 bytes over budget
+  size-budget: FAIL app is 432097 bytes over budget; largest files: ...
+  size-budget: FAIL dmg is 128054 bytes over budget
 Verdict: RED as expected: the old budget refuses the universal build
 ```
 

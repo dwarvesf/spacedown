@@ -201,7 +201,7 @@
       var pieces = [];
       text.split("\n").forEach(function (line, n) {
         if (n) pieces.push({ type: "nl", s: "\n" });
-        pieces = pieces.concat(linePieces(line));
+        Array.prototype.push.apply(pieces, linePieces(line));
       });
       var out = "";
       for (var p = 0; p < pieces.length; p++) {

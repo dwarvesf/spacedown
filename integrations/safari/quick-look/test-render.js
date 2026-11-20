@@ -102,6 +102,13 @@ const strayList = ctx.mdToHtml("- one ` tick\n- two $a^2$ and ` tick\n");
 check("a span never joins two list items", katexCount(strayList) === 1);
 const strayHead = ctx.mdToHtml("# Head ` tick\nThen $a^2$ ` here.\n");
 check("a span never crosses a heading line", katexCount(strayHead) === 1);
+// A span closes on its own line first: a stray backtick above must not shift the pairing.
+const strayAbove = ctx.mdToHtml("A stray ` tick here.\nThen `$A/$B` is code and $x$ is math.\n");
+check("a balanced span after a stray backtick stays code", katexCount(strayAbove) === 1 &&
+  strayAbove.includes("$A/$B") && !strayAbove.includes("SDCODE"));
+// A multi-line span is stashed line by line, so no $ pair forms across it.
+const across = ctx.mdToHtml("Pay $A and `x\ny` then B$ now.\n");
+check("no math pairs a $ before a two-line span with one after it", katexCount(across) === 0 && !across.includes("SDCODE"));
 
 // Short table columns get sd-tight so auto layout cannot collapse them to their
 // longest word; the prose column that competes for the width stays wrappable.

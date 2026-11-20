@@ -7,7 +7,7 @@
 # MB means 1,000,000 bytes (what Finder shows). Override with APP_BUDGET_BYTES / DMG_BUDGET_BYTES.
 # Set from the release build as scripts/release.sh ships it (universal arm64 + x86_64, Developer
 # ID signed, CLI bundled, stripped, DMG as release.sh makes it), rounded up to the next 0.1 MB:
-#   app 2,712,573 bytes, dmg 1,419,168 bytes (docs/verification/r2-platform.md). The rounding is
+#   app 2,732,097 bytes, dmg 1,428,054 bytes (docs/verification/r2-platform.md). The rounding is
 #   the room for the notarization ticket. scripts/release.sh runs this check.
 # Prints both sizes and the biggest files in the app, and exits 1 when a budget is blown.
 set -euo pipefail
