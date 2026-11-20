@@ -4,7 +4,7 @@
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple)](#download)
 [![Homebrew](https://img.shields.io/badge/Homebrew-consolelabs%2Ftap%2Fspacedown-FBB040?logo=homebrew&logoColor=white)](https://github.com/consolelabs/homebrew-tap)
 [![Notarized](https://img.shields.io/badge/notarized-Developer%20ID-4f46e5)](https://github.com/consolelabs/spacedown/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/consolelabs/spacedown)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 Press space on a Markdown file in Finder and read it rendered: headings, tables, code, callouts, frontmatter and LaTeX math, in a calm reading theme that follows light and dark mode.
 
@@ -51,6 +51,10 @@ Get the notarized `Spacedown-<version>.dmg` (or the `.zip`) from [Releases](http
 - **Folder mode.** `spacedown <dir>` renders every top-level Markdown file and writes an index page.
 - **Live reload.** `--watch` re-renders on save and refreshes the open page.
 - **Editor fonts.** Font settings from VS Code or VSCodium carry over to the page (see below).
+
+## Free and paid
+
+The viewer is free: the Quick Look preview, the `spacedown` CLI and the MCP server, with no trial period or time limit. A Pro license will add paid features to the app later. Which features, and what they cost, are not decided yet.
 
 ## Install the spacedown CLI
 
@@ -245,6 +249,8 @@ Licenses for bundled third-party code are in [THIRD_PARTY_NOTICES.md](THIRD_PART
 
 ## License
 
-Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by [Console Labs](https://console.so). MIT licensed, see [LICENSE](LICENSE). Copyright (c) 2026 Console Labs.
+Spacedown lives at [consolelabs/spacedown](https://github.com/consolelabs/spacedown). Maintained by [Console Labs](https://console.so). Copyright (c) 2026 Console Labs.
 
-The MIT license covers the code, not the Spacedown name or icon. What you can do with them is in [TRADEMARKS.md](TRADEMARKS.md).
+Spacedown is licensed under the [GNU Affero General Public License v3.0 only (AGPL-3.0-only)](LICENSE). Release v1.1.0 and every release before it, and every commit before the AGPL change, were published under the MIT license and stay MIT. Later versions are AGPL-3.0-only. See [NOTICE](NOTICE).
+
+The license covers the code, not the Spacedown name or icon. What you can do with them is in [TRADEMARKS.md](TRADEMARKS.md). Contributions come in under the MIT license and ship under the AGPL; [CONTRIBUTING.md](CONTRIBUTING.md#license-of-contributions) says why.

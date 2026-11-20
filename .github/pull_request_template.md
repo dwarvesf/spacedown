@@ -9,3 +9,6 @@
 
 ## Notes
 <!-- Optional: what you did not test and why, follow-ups, anything a reviewer should look at first. A change that AGENTS.md says needs a maintainer's yes says so here. -->
+
+## License
+- [ ] I contribute this change under the MIT license, so Console Labs can ship it in every build, including the Mac App Store (CONTRIBUTING.md, "License of contributions").

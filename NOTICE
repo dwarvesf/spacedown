@@ -1,0 +1,12 @@
+Spacedown
+Copyright (c) 2026 Console Labs
+
+Spacedown is licensed under the GNU Affero General Public License, version 3 only (AGPL-3.0-only). The full text is in LICENSE.
+
+License history: release v1.1.0 and every release before it, and every commit before the one that added this file, were published under the MIT license. Those stay MIT. Later commits and releases are AGPL-3.0-only.
+
+The license covers the code, not the Spacedown name or icon. Section 7(e) of the AGPL lets a project keep those out of the license; TRADEMARKS.md says what you can do with them.
+
+Contributions are accepted under the MIT license (inbound) and ship under the AGPL (outbound). See CONTRIBUTING.md.
+
+Bundled third-party works keep their own licenses: THIRD_PARTY_NOTICES.md.

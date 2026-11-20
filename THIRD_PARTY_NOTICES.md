@@ -1,6 +1,6 @@
 # Third-party notices
 
-Spacedown and the spacedown CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts.
+Spacedown and the spacedown CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts. Spacedown's own code is AGPL-3.0-only ([NOTICE](NOTICE)); the licenses of the bundled code and fonts below (MIT, BSD-3-Clause, SIL OFL 1.1) are compatible with it.
 
 ## Bundled code
 
