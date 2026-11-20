@@ -8,8 +8,11 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-21
+
 ### Added
 
+- Spacedown runs on Intel Macs too: the app and its Quick Look extension are universal (arm64 and x86_64) (#100).
 - Writing X-ray lens in the Quick Look panel (#68).
 - Present mode: slides from H2 headings and `---` breaks (#65).
 - Read menu with Skim, Bionic, BeeLine and RSVP reading modes (#34, #37, #38, #40).
@@ -23,6 +26,8 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 
 ### Changed
 
+- macOS 13 is the minimum for the whole app; the Quick Look extension asked for macOS 12 before (#100).
+- The Skim word lists are built from public-domain texts (#95).
 - The code is AGPL-3.0-only from this version. The Spacedown name and icon are outside the license; see [TRADEMARKS.md](TRADEMARKS.md) (#84, #85, #86).
 - Contributions are accepted under the MIT license (inbound) and ship under the AGPL (outbound) (#86).
 - The command-line tool renders HTML through the same core as Quick Look, so the two match (#71).
@@ -35,6 +40,8 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 
 ### Fixed
 
+- Indented code blocks, and code spans that run over a line break, stay literal, never math or a callout (#100).
+- The welcome window fits on a small screen (#99).
 - Code spans and fences stay literal, never math or a callout (#72).
 - Box-drawing diagrams stay aligned in the panel, with a fallback font so lines join (#28, #58, #79).
 - A table right under a line of text renders as a table, in HTML and in Word (#47, #48).
@@ -50,6 +57,11 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 - Release 1 contract: the plug-in registry, the settings store and the test sections (#62).
 - The repo is ready for outside developers: `AGENTS.md`, `CONTRIBUTING.md`, issue and PR templates, proof files (#81).
 - ADR 0001 records the AGPL decision, the paid-feature gate and the license ask (#87).
+- Security policy, code of conduct and this changelog (#88); a PR shape check, a CI summary and code owners for every script (#89, #94).
+- The agent harness works for any contributor, with a guard that keeps frozen files on `contract/` branches (#98).
+- `CONFIG=Debug integrations/build-safari.sh` makes a test build whose ids, App Group and helper carry `.dev`, so it installs beside a release (#100).
+- The size budget is 2.8 MB for the app and 1.5 MB for the dmg, measured on the universal build; the unused `Icon.png` stub is gone (#100).
+- Release notes come from this file (`scripts/release-notes.sh`), and `scripts/release.sh` keeps older releases unless `PRUNE_OLD_RELEASES=1` (#RP).
 - Size budget test, and a build that refuses a release with stale extension versions (#45, #66, #74).
 - The build can notarize with an App Store Connect API key (#43).
 - A deterministic smoke baseline, `--only` subset runs and a `layout-check` script (#35, #61, #64).
@@ -63,5 +75,6 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 
 This release and every release before it are MIT licensed.
 
-[Unreleased]: https://github.com/consolelabs/spacedown/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/consolelabs/spacedown/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/consolelabs/spacedown/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/consolelabs/spacedown/releases/tag/v1.1.0

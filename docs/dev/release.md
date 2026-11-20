@@ -1,16 +1,17 @@
 # Releasing
 
-Only a maintainer cuts a release, by hand on a Mac. Nothing in CI signs, notarizes or publishes. Contributors never run `scripts/release.sh`: it publishes a GitHub release and deletes the older ones.
+Only a maintainer cuts a release, by hand on a Mac. Nothing in CI signs, notarizes or publishes. Contributors never run `scripts/release.sh`: it publishes a GitHub release.
 
 ```
- bump versions ──► PR, merge ──► scripts/release.sh on a clean main
+ bump versions, CHANGELOG ──► PR, merge ──► scripts/release.sh on a clean main
                                    │
-                                   ├─ build (Quick Look only) + Developer ID signature
+                                   ├─ notes = CHANGELOG section (scripts/release-notes.sh)
+                                   ├─ build (Quick Look only, universal) + Developer ID signature
                                    ├─ size budget check
                                    ├─ notarize + staple the app, Gatekeeper check
                                    ├─ zip + dmg, notarize the dmg, Gatekeeper check
-                                   ├─ GitHub release vX.Y.Z with both files and the sha256
-                                   └─ delete older releases and tags (KEEP_OLD_RELEASES=1 keeps them)
+                                   ├─ GitHub release vX.Y.Z: both files, the notes, the sha256
+                                   └─ older releases and tags stay (PRUNE_OLD_RELEASES=1 deletes them)
                                  ──► bump the Homebrew cask
                                  ──► Mac App Store build (scripts/release.sh --mas), separate
 ```
@@ -26,12 +27,16 @@ The version is `MAJOR.MINOR.PATCH`. One version lives in several files. Bump all
 | `bin/spacedown` | `VERSION` |
 | `integrations/extension/manifest.json` and the Safari extension's `manifest.json` | `version` |
 
-The Releases page carries one release: each new version replaces the previous one.
+Every release stays on the Releases page; `PRUNE_OLD_RELEASES=1` deletes the older releases and their tags after publishing.
+
+## Release notes
+
+The notes are the version's section of [CHANGELOG.md](../../CHANGELOG.md): everything under `## [X.Y.Z] - <date>` up to the next heading, followed by the zip's sha256. `scripts/release-notes.sh X.Y.Z` prints them, and `release.sh` stops before the build when the section is missing or empty. To cut a release, move the `## [Unreleased]` entries under a new `## [X.Y.Z] - <date>` heading and add its link at the bottom of the file.
 
 ## Steps
 
-1. Bump the version in every file above in one PR. Merge it.
-2. On a clean `main`, run `scripts/release.sh --dry-run` first: it runs every precondition check, prints the identity and notary credentials it would use, and stops before the build. Then run `scripts/release.sh`. It checks the same preconditions and stops on the first one that fails.
+1. Bump the version in every file above and move the CHANGELOG entries under the new version, in one PR. Merge it.
+2. On a clean `main`, run `scripts/release.sh --dry-run` first: it prints the release notes and whether older releases would be kept, runs every precondition check, prints the identity and notary credentials it would use, and stops before the build. Then run `scripts/release.sh`. It checks the same preconditions and stops on the first one that fails.
 3. Bump `Casks/spacedown.rb` in [consolelabs/homebrew-tap](https://github.com/consolelabs/homebrew-tap) to the new version and the zip's sha256 (the release notes carry it).
 4. Mac App Store: `scripts/release.sh --mas` builds the signed store package. Upload it to App Store Connect, attach the build to a new version, and submit it for review.
 
@@ -48,7 +53,7 @@ The values live with the maintainers, never in this repo. The script header list
 | An App Store Connect API key: `ASC_KEY_ID`, `ASC_ISSUER_ID` and the key file for `UPLOAD=1`; for the three store scripts, a password manager item named by `OP_VAULT` and `ASC_OP_ITEM`. `asc_setup.py` also needs `MAS_P12_OP_TITLE` and `CSR_SUBJECT`, `asc_listing.py` needs `REVIEW_CONTACT_BUNDLE`. None has a default; each script names the one that is missing | `UPLOAD=1`, `scripts/mas-altool.sh`, `scripts/asc_setup.py`, `scripts/asc_listing.py` | the App Store Connect admin |
 | Push access to the Homebrew tap | the cask bump | a tap maintainer |
 
-Useful switches: `--dry-run` checks and stops, `DRAFT=1` makes a draft release, `PUBLISH=0` stops after the notarized zip with no GitHub release, `KEEP_OLD_RELEASES=1` keeps the older releases.
+Useful switches: `--dry-run` checks and stops, `DRAFT=1` makes a draft release, `PUBLISH=0` stops after the notarized zip with no GitHub release, `PRUNE_OLD_RELEASES=1` deletes the older releases and their tags.
 
 ## Store listing and screenshots
 
@@ -72,6 +77,7 @@ These are separate scripts, not called by `release.sh`. Each of `asc_setup.py`, 
 |---|---|
 | `version X not set in: ...` | bump the listed files and merge |
 | `dirty tree; commit first` | commit or stash, run again |
+| `no release notes for X: add a "## [X]" section to CHANGELOG.md` | move the entries under `## [X] - <date>` in CHANGELOG.md and merge |
 | `signing identity missing` | install the identity in the login keychain |
 | `no notary credentials` or `notary credentials rejected` | set `NOTARY_PROFILE` to a profile stored with `xcrun notarytool store-credentials <name>`, or set the API key variables |
 | `no Developer ID Application identity for team ...` | install the identity in the login keychain, or set `SIGN_ID` |

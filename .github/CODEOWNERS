@@ -42,6 +42,7 @@
 /scripts/pr-shape.sh @tieubao
 /scripts/qlwrap.js @tieubao
 /scripts/readme-shots.sh @tieubao
+/scripts/release-notes.sh @tieubao
 /scripts/release.sh @tieubao
 /scripts/sd-settings @tieubao
 /scripts/size-budget @tieubao
@@ -56,5 +57,6 @@
 
 # Tests
 /tests/katex-one-test.sh @tieubao
+/tests/release-notes-test.sh @tieubao
 /tests/size-budget-test.sh @tieubao
 /tests/smoke.sh @tieubao
