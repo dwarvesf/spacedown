@@ -139,6 +139,61 @@ jobs:
           NO_INSTALL: "1"
         run: integrations/build-safari.sh --with-safari
 
+  # The release build is universal, but every other job runs on Apple silicon. This one
+  # builds on a GitHub-hosted Intel runner (free on a public repo), checks every Mach-O
+  # carries both slices, renders through the bundled CLI under `arch -x86_64`, then runs
+  # the smoke suite there. `macos-26-intel` is the Intel label of the macos-26 image.
+  intel:
+    name: Intel Mac (x86_64 slice)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: macos-26-intel
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select newest Xcode
+        run: |
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' | grep -E '/Xcode_[0-9]+\.[0-9]+(\.[0-9]+)?\.app$' | sort -V | tail -1)
+          echo "Selecting $newest"
+          sudo xcode-select -s "$newest/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install build and test tools
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: brew install xcodegen pandoc entr
+
+      - name: Machine
+        run: |
+          uname -m
+          sysctl -n machdep.cpu.brand_string
+          sw_vers -productVersion
+
+      - name: Build the universal app (unsigned, not installed)
+        env:
+          NO_INSTALL: "1"
+        run: |
+          set -o pipefail
+          integrations/build-safari.sh --with-safari | tee "$RUNNER_TEMP/build.log"
+          app="$(tail -n 1 "$RUNNER_TEMP/build.log")"
+          [ -d "$app/Contents" ]
+          echo "APP=$app" >> "$GITHUB_ENV"
+
+      - name: Both slices are there and the x86_64 one renders
+        env:
+          REQUIRE_INTEL: "1"
+        run: /bin/bash tests/intel-slice-test.sh "$APP"
+
+      - name: Smoke suite on Intel
+        run: |
+          set -o pipefail
+          /bin/bash tests/smoke.sh | tee "$RUNNER_TEMP/smoke.log"
+          grep -Eq '^smoke: all [0-9]+ passed$' "$RUNNER_TEMP/smoke.log"
+
   actionlint:
     name: Lint workflows
     # Public repo: a hosted Linux runner is free.

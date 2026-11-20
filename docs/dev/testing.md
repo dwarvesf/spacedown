@@ -22,6 +22,7 @@ It runs the smoke suite under `/bin/bash`, the three unit tests, `/bin/bash -n` 
 | highlight.js | `node tests/hljs-bundle-test.js` | The custom highlight.js build knows every language the preview promises and stays small | yes |
 | Render core | `node integrations/safari/quick-look/test-render.js` (and `test-contract.js`, `test-boxdraw.js`, `test-xray.js`, `test-present.js`) | One part of the render core, fast; the smoke suite runs all of them | through smoke |
 | App build | `NO_INSTALL=1 integrations/build-safari.sh --with-safari` | The app, both extensions and the render helper compile and sign ad hoc | yes |
+| Intel slice | `NO_INSTALL=1 integrations/build-safari.sh --with-safari`, then `bash tests/intel-slice-test.sh <built Spacedown.app>` | Every Mach-O in the app has arm64 and x86_64, and the bundled CLI renders under `arch -x86_64`; CI runs it, with the smoke suite, on a hosted Intel runner (`REQUIRE_INTEL=1` fails on any other host) | yes, the `Intel Mac (x86_64 slice)` job |
 | Workflow lint | `actionlint` | `.github/workflows/` | yes |
 | Owners | `bash scripts/check-owners.sh` | Every script and workflow has its own line in `.github/CODEOWNERS` | yes |
 | PR shape | `bash scripts/pr-shape-test.sh`; one PR by hand: `PR_TITLE=... PR_BODY=... BASE_SHA=... HEAD_SHA=... bash scripts/pr-shape.sh` | The PR title, the proof file or `no-proof:` line, the issue link | yes, on every PR |

@@ -56,6 +56,7 @@
 /scripts/window-shots.sh @tieubao
 
 # Tests
+/tests/intel-slice-test.sh @tieubao
 /tests/katex-one-test.sh @tieubao
 /tests/release-notes-test.sh @tieubao
 /tests/size-budget-test.sh @tieubao
