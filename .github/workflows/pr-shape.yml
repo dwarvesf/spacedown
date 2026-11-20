@@ -41,12 +41,9 @@ jobs:
           path: base
           persist-credentials: false
 
-      # The PR's own copy of the script must pass its tests, so a change to the
-      # gate is tested before it becomes the base.
-      - name: The gate script passes its tests (the PR's copy)
-        run: bash pr/scripts/pr-shape-test.sh pr/scripts/pr-shape.sh
-
-      # The base copy judges the PR. Only the PR that adds the script finds no
+      # This job runs no code from the PR: a PR script that ran here first could
+      # rewrite base/ or $GITHUB_ENV. The PR's copy of the gate is tested in
+      # ci.yml instead. The base copy judges the PR. Only the PR that adds the script finds no
       # base copy; it falls back to its own, with a notice.
       - name: PR shape (the base's copy)
         working-directory: pr
@@ -56,9 +53,18 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          gate="$GITHUB_WORKSPACE/base/scripts/pr-shape.sh"
-          if [ ! -f "$gate" ]; then
+          base="$GITHUB_WORKSPACE/base"
+          gate="$base/scripts/pr-shape.sh"
+          if ! git -C "$base" cat-file -e HEAD:scripts/pr-shape.sh 2>/dev/null; then
             echo "::notice::the base has no scripts/pr-shape.sh yet; using the PR's copy"
             gate="$GITHUB_WORKSPACE/pr/scripts/pr-shape.sh"
+          else
+            # Fail closed if the file on disk is not the committed base blob.
+            want="$(git -C "$base" rev-parse HEAD:scripts/pr-shape.sh)"
+            have="$(git -C "$base" hash-object scripts/pr-shape.sh)"
+            if [ "$want" != "$have" ]; then
+              echo "::error::base/scripts/pr-shape.sh is not the base commit's copy ($have, want $want)"
+              exit 1
+            fi
           fi
           bash "$gate"

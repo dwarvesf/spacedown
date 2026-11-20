@@ -56,7 +56,7 @@ A ruleset on `main` requires a PR, squash merge only, and two checks; it blocks 
 
 A docs-only change (`docs/`, `site/`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `LICENSE`, the issue and PR templates) skips the test and build jobs, and `CI summary` still reports. `README.md` is not docs-only here: the MCP test reads it.
 
-`PR shape` runs the script from the base branch, so a PR cannot change the rules it is judged by. A change to `scripts/pr-shape.sh` takes effect for the PRs after it merges.
+`PR shape` runs `scripts/pr-shape.sh` from the base branch and runs no code from the PR, so a PR cannot change the script that judges it. A change to `scripts/pr-shape.sh` is tested in CI (`Owners and changed paths`) and takes effect for the PRs after it merges. The workflow file itself still comes from the PR; the maintainer reviews any change to it.
 
 ## Known failures
 
