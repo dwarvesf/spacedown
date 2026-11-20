@@ -19,6 +19,7 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 |---|---|
 | [../README.md](../README.md) | Download, features, the CLI, the MCP server, `spacedown docx`, building the app from source |
 | [PRIVACY.md](PRIVACY.md) | The privacy policy: Spacedown collects no data, and what each part loads |
+| [../TRADEMARKS.md](../TRADEMARKS.md) | The Spacedown name and icon: what you can do with them, and when a build needs a different name |
 | [../integrations/README.md](../integrations/README.md) | The Finder "Open With" app and the Chromium drop extension |
 
 ## Contributors
