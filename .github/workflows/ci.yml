@@ -4,21 +4,13 @@ name: CI
 # these jobs to a self-hosted runner: a fork PR would run on that machine.
 # What runs here and what stays local: docs/dev/testing.md.
 #
-# Docs-only changes skip the run. README.md is NOT ignored: the MCP test reads it.
+# Every PR and every push to main starts the run, so the "CI summary" check always
+# reports and a ruleset can require it. A docs-only change skips the macOS jobs:
+# the `changes` job decides, and the summary counts a skipped job as passing.
 on:
   pull_request:
-    paths-ignore: &docs_only
-      - "docs/**"
-      - "site/**"
-      - "AGENTS.md"
-      - "CLAUDE.md"
-      - "CONTRIBUTING.md"
-      - "LICENSE"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/pull_request_template.md"
   push:
     branches: [main]
-    paths-ignore: *docs_only
   workflow_dispatch:
 
 permissions:
@@ -30,11 +22,50 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Owners, then the docs filter. The diff is HEAD^1..HEAD: the PR merge commit
+  # against main, or the squash commit on main. A manual run, or a commit with
+  # no parent, runs everything.
+  changes:
+    name: Owners and changed paths
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Every script and workflow has an owner
+        run: bash scripts/check-owners.sh
+
+      # Docs-only paths. README.md is NOT one: the MCP test reads it.
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          code=false
+          if [ "$EVENT" = workflow_dispatch ] || ! files="$(git diff --name-only HEAD^1 HEAD)"; then
+            code=true
+          else
+            while IFS= read -r f; do
+              case "$f" in
+              "" | docs/* | site/* | AGENTS.md | CLAUDE.md | CONTRIBUTING.md | LICENSE | .github/ISSUE_TEMPLATE/* | .github/pull_request_template.md) ;;
+              *) code=true ;;
+              esac
+            done <<< "$files"
+          fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   test:
     name: Tests (smoke suite and unit tests)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # Explicit image, never *-latest.
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,8 +104,10 @@ jobs:
 
   build:
     name: Build the app (unsigned, not installed)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -104,10 +137,37 @@ jobs:
     name: Lint workflows
     # Public repo: a hosted Linux runner is free.
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+  # The one CI check a ruleset requires. It always runs and fails when the
+  # filter failed or any job failed or was cancelled; a skipped job (a docs-only
+  # change) passes. Without always() a red test would skip this job, and a
+  # skipped required check counts as passing.
+  summary:
+    name: CI summary
+    if: always()
+    needs: [changes, test, build, actionlint]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - env:
+          CHANGES: ${{ needs.changes.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          ACTIONLINT: ${{ needs.actionlint.result }}
+        run: |
+          echo "changes=$CHANGES test=$TEST build=$BUILD actionlint=$ACTIONLINT"
+          [ "$CHANGES" = success ] || { echo "the owners and paths job did not succeed"; exit 1; }
+          for r in "$TEST" "$BUILD" "$ACTIONLINT"; do
+            case "$r" in
+            success | skipped) ;;
+            *) echo "a CI job ended $r"; exit 1 ;;
+            esac
+          done
+          echo "CI summary: pass"

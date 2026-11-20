@@ -1,0 +1,64 @@
+name: PR shape
+
+# Checks the title, the proof and the issue link of every PR (scripts/pr-shape.sh).
+# No paths filter: a docs-only PR gets this check too, so a ruleset can require it.
+#
+# Fork safety: the trigger is pull_request (never pull_request_target), the token
+# can only read, and the gate script runs from the BASE commit against the PR
+# checkout, so a PR cannot edit the script that judges it. The title and body
+# come from the event payload through env, never inlined into a shell line.
+on:
+  pull_request:
+    # edited: a fixed title or body runs the check again. A plain re-run replays
+    # the old payload.
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-shape-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-shape:
+    name: PR shape
+    # Public repo: a hosted Linux runner is free. Never self-hosted.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the PR
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out the base commit (the gate)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+
+      # The PR's own copy of the script must pass its tests, so a change to the
+      # gate is tested before it becomes the base.
+      - name: The gate script passes its tests (the PR's copy)
+        run: bash pr/scripts/pr-shape-test.sh pr/scripts/pr-shape.sh
+
+      # The base copy judges the PR. Only the PR that adds the script finds no
+      # base copy; it falls back to its own, with a notice.
+      - name: PR shape (the base's copy)
+        working-directory: pr
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gate="$GITHUB_WORKSPACE/base/scripts/pr-shape.sh"
+          if [ ! -f "$gate" ]; then
+            echo "::notice::the base has no scripts/pr-shape.sh yet; using the PR's copy"
+            gate="$GITHUB_WORKSPACE/pr/scripts/pr-shape.sh"
+          fi
+          bash "$gate"

@@ -65,9 +65,9 @@ There is no formatter or linter for the shell, JavaScript or Swift code. Match t
 
 1. Fork the repo (or branch, if you have write access) and open a PR against `main`.
 2. Fill in [the PR template](.github/pull_request_template.md): what changed, a demo, the proof file, and the license checkbox ([why](#license-of-contributions)).
-3. A behavior change adds `docs/verification/<slug>.md` with a green run and a negative control ([how](docs/verification/README.md)). A change to what the panel shows adds a before and after screenshot.
+3. A behavior change adds `docs/verification/<slug>.md` with a green run and a negative control ([how](docs/verification/README.md)). A change to what the panel shows adds a before and after screenshot. A docs-only or config-only PR puts a line `no-proof: <reason>` in its body instead.
 4. Fix any doc your change makes wrong in the same PR.
-5. CI runs on every PR that changes more than docs. It must be green before a maintainer merges. A first-time contributor's run waits for a maintainer to approve it.
+5. CI runs on every PR; a docs-only PR skips the test and build jobs. The `PR shape` and `CI summary` checks must be green before a maintainer merges ([merge checks](docs/dev/testing.md#merge-checks)). A first-time contributor's run waits for a maintainer to approve it.
 
 The PR title becomes the commit subject on `main` (squash merge), so write it as a conventional commit.
 

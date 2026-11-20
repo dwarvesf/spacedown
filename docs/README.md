@@ -9,6 +9,7 @@ The root [README.md](../README.md) is the user guide: install, use, the CLI, the
 | [dev/](dev/) | Contributors and agents | How to build, test and release |
 | [decisions/](decisions/) | Maintainers and contributors | Decision records (ADRs): what was decided, why, and what was ruled out. Numbered, one per decision |
 | [verification/](verification/) | Anyone tracing a change | Proof files, one per PR. Dated records: add, never rewrite |
+| [implementation-notes/](implementation-notes/) | Maintainers and contributors | Per change: the decisions the brief did not make, tradeoffs, open questions |
 | [images/](images/) | The README | Screenshots |
 | [app-store/](app-store/) | Maintainers | The App Store listing data and screenshots |
 
@@ -49,7 +50,9 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 
 | File | What it is |
 |---|---|
-| `../.github/workflows/ci.yml` | CI: tests, the app build and the workflow lint on GitHub-hosted runners |
+| `../.github/workflows/ci.yml` | CI: the owner check, tests, the app build, the workflow lint, and the `CI summary` check a merge needs |
+| `../.github/workflows/pr-shape.yml` | The `PR shape` check on every PR: title, proof, issue link ([dev/testing.md](dev/testing.md#merge-checks)) |
+| `../.github/CODEOWNERS` | Who owns what; every script and workflow has its own line (`scripts/check-owners.sh`) |
 | `../.github/pull_request_template.md` | The PR body: What, Demo, Proof, Notes |
 | `../.github/ISSUE_TEMPLATE/` | The bug report and the feature or task forms |
 | `../tests/known-failures.txt` | Checks that are red on purpose, with the reason; empty means all must pass |
