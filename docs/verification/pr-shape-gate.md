@@ -95,3 +95,63 @@ bash scripts/check-owners.sh
 PR_TITLE="$(gh pr view <n> --json title -q .title)" PR_BODY="$(gh pr view <n> --json body -q .body)" \
   BASE_SHA=<base sha> HEAD_SHA=<head sha> bash scripts/pr-shape.sh
 ```
+
+## Ruleset on main (2026-11-21, added after #89 merged)
+
+`main` is green with the new checks: push run 44796250273 on 03730ac (Owners and changed paths, Lint workflows, Build, Tests and CI summary all `success`). Then a repository ruleset, id `27752467`, created with `gh api -X POST repos/consolelabs/spacedown/rulesets`:
+
+| Rule | Setting |
+|---|---|
+| Target | the default branch (`~DEFAULT_BRANCH`), enforcement active |
+| Pull request | required; 0 approvals (one maintainer); merge method squash only |
+| Required checks | `PR shape` and `CI summary`, both from GitHub Actions (integration 15368); up to date with main not required |
+| Force push, deletion | blocked |
+| Bypass | the repository admin role, mode always, so the maintainer is never locked out |
+
+```
+Command: gh api repos/consolelabs/spacedown/rules/branches/main --jq '.[]|[.type,.ruleset_id]|@tsv'
+Exit: 0
+Output:
+deletion                27752467
+non_fast_forward        27752467
+pull_request            27752467
+required_status_checks  27752467
+Verdict: PASS
+```
+
+### Green run: #89
+
+PR #89 (this change) before the ruleset: `PR shape` run 44795678460 passed (it had no base copy yet and used its own, with a notice); CI run 44795678272 passed every job, `CI summary` included.
+
+```
+Command: gh pr checks 89
+Exit: 0
+Output:
+Build the app (unsigned, not installed)  pass
+CI summary                               pass
+Lint workflows                           pass
+Owners and changed paths                 pass
+PR shape                                 pass
+Tests (smoke suite and unit tests)       pass
+Verdict: PASS
+```
+
+### Negative control: #90, a throwaway PR the ruleset must block
+
+A docs-only PR with a title that is not a conventional commit and a valid `no-proof:` line, so only the title check can fail. `PR shape` run 44796773183 ran the base copy (no fallback notice) and failed; CI run 44796773179 skipped the macOS jobs on the docs-only change and `CI summary` still passed. The merge was refused. The PR was then closed unmerged and its branch deleted.
+
+```
+Command: gh pr checks 90; gh pr view 90 --json mergeStateStatus; gh pr merge 90 --squash
+Exit: 1
+Output:
+PR shape                                 fail
+CI summary                               pass
+Build the app (unsigned, not installed)  skipping
+Tests (smoke suite and unit tests)       skipping
+FAIL  title: "Throwaway negative control for the main ruleset" is not type(scope): subject with type feat, fix, refactor, docs, test, chore or ci and 72 characters or less (47 now)
+{"isDraft":false,"mergeStateStatus":"BLOCKED","mergeable":"MERGEABLE"}
+X Pull request consolelabs/spacedown#90 is not mergeable: the base branch policy prohibits the merge.
+Verdict: RED, as expected
+```
+
+The maintainer's token can bypass (`current_user_can_bypass: always`), so the refusal above is the ruleset's verdict shown to a normal merge; `--admin` was never used.
