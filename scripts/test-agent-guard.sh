@@ -156,6 +156,20 @@ case_run "commit outside a repo" allow "$T/not-a-repo" "git commit -m x"
 case_run "git status on main" allow "$MAIN" "git status"
 case_run "plain command" allow "$FEAT" "ls -la"
 
+case_run "commit on main" block "$MAIN" "git commit -m x" "$COMMIT_FIX"
+case_run "add and commit with message file on main" block "$MAIN" "git add a && git commit -F msg.txt" "$COMMIT_FIX"
+case_run "git -C <main repo> commit" block "$T/not-a-repo" "git -C $MAIN commit -m x" "$COMMIT_FIX"
+case_run "commit -m with a quoted message on main" block "$MAIN" "git commit -m \"docs: x\"" "$COMMIT_FIX"
+
+# quoted words are still seen
+case_run "push origin \"main\"" block "$FEAT" "git push origin \"main\"" "$PUSH_FIX"
+case_run "push origin 'main'" block "$FEAT" "git push origin 'main'" "$PUSH_FIX"
+case_run "push origin \"HEAD:main\"" block "$FEAT" "git push origin \"HEAD:main\"" "$PUSH_FIX"
+case_run "push \"--force\"" block "$FEAT" "git push \"--force\" origin feat/x" "$FORCE_FIX"
+case_run "commit \"--no-verify\"" block "$FEAT" "git commit \"--no-verify\" -m x" "$VERIFY_FIX"
+case_run "-c \"core.hooksPath=/x\"" block "$FEAT" "git -c \"core.hooksPath=/x\" commit -m x" "leave core.hooksPath alone"
+case_run "quoted message that names a flag, with a space" allow "$FEAT" "git commit -m 'docs: never push --force or use --no-verify'"
+
 # frozen files at commit time
 case_run "commit with a frozen file staged, feature branch" block "$T/staged-feat" "git commit -m x" "$FROZEN_FIX"
 case_run "frozen file staged, contract branch" allow "$T/staged-contract" "git commit -m x"
@@ -280,12 +294,12 @@ if [ "$rc" -eq 0 ]; then ok "empty input: allowed (exit 0)"; else bad "empty inp
 run_raw '{"tool_name":"Bash","tool_input":{}}'
 if [ "$rc" -eq 0 ]; then ok "no command field: allowed (exit 0)"; else bad "no command field: expected exit 0, got $rc"; fi
 
-# No jq: the guard is off, with a note.
+# No jq: the guard fails closed.
 mkdir -p "$T/bin-none"
 for t in bash cat tr sed git dirname basename; do ln -sf "$(command -v "$t")" "$T/bin-none/$t"; done
 rc=0
 printf '%s' "$(mkjson Bash "$FEAT" "git push origin main")" | PATH="$T/bin-none" bash "$GUARD" >"$T/out" 2>"$T/err" || rc=$?
-if [ "$rc" -eq 0 ] && grep -Fq "jq is not installed" "$T/err"; then ok "no jq: allowed with a note"; else bad "no jq: rc $rc"; fi
+if [ "$rc" -eq 2 ] && grep -Fq "agent-guard needs jq; macOS 15+ ships /usr/bin/jq, or brew install jq" "$T/err"; then ok "no jq: fails closed with the fix"; else bad "no jq: expected exit 2 and the message, got rc $rc"; fi
 
 # The frozen list agrees with the contract.
 total=0

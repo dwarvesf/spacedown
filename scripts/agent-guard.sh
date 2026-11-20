@@ -3,25 +3,26 @@
 # accidents, not a security boundary. It refuses, with the fix in the message:
 #   1. a push to main (also @, HEAD or @{-1} while main is checked out)
 #   2. a force push (-f, --force*, +ref) and --mirror
-#   3. --no-verify, `git commit -n`, and setting core.hooksPath
+#   3. --no-verify, `git commit -n`, setting core.hooksPath, and a commit on main
 #   4. an edit or commit of a file docs/contract-r1.md freezes, off a contract/<slug>
 #      branch. The list is scripts/agent-frozen-paths.txt as committed on
 #      refs/remotes/origin/main; this script, that list and .claude/settings.json are
 #      always frozen.
 # Wired in .claude/settings.json for Bash (1 to 4) and Edit, Write, MultiEdit,
 # NotebookEdit (4). Exit 2 blocks and shows stderr to the agent; anything else allows,
-# so a broken guard never traps a session. Needs jq; without it the guard is off.
+# so a broken guard never traps a session. Without jq it fails closed (exit 2).
 #
-# Known gaps. It reads command text after dropping quoted strings and judges only
-# commands whose first word is git. A determined agent gets past it: a quoted value
-# (git -c "core.hooksPath=x"), bash -c or eval, a script or variable that runs git,
-# config includes (include.path, includeIf), exported GIT_CONFIG_* or GIT_DIR, a chain
-# that switches branch first, a sed -i on a frozen file (the commit-time check still
-# catches it). It guards Claude Code only. The real control is the server-side ruleset
+# Known gaps. It reads command text, with quote characters removed and a quoted string
+# that holds a space folded to one word, and judges only commands whose first word is
+# git. A determined agent gets past it: bash -c or eval, a script or variable that runs
+# git, config includes (include.path, includeIf), GIT_CONFIG_* or GIT_DIR set in front
+# of git or exported, a sed -i on a frozen file (the commit-time check still catches
+# it). A switch earlier in the same command is not followed, so the guard sees the
+# branch you are on now: switch in one call, commit in the next. It guards Claude Code only. The real control is the server-side ruleset
 # on main: a required PR, required checks, no force push. Review is the second line.
 set -f
 ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
-command -v jq >/dev/null 2>&1 || { echo "agent-guard: jq is not installed, so the guard is off" >&2; exit 0; }
+command -v jq >/dev/null 2>&1 || { echo "agent-guard needs jq; macOS 15+ ships /usr/bin/jq, or brew install jq" >&2; exit 2; }
 input="$(cat)"
 field() { printf '%s' "$input" | jq -r "$1" 2>/dev/null; }
 cwd="$(field '.cwd // ""')"
@@ -100,6 +101,8 @@ commit_check() { # <dir> <words>
         esac
     done
     top="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" || return 0
+    [ "$(git -C "$dir" symbolic-ref --short -q HEAD 2>/dev/null)" = "main" ] &&
+        block "you are on main, and nothing commits to main directly." "git switch -c <type>/<slug>   (your changes come with you), then commit again"
     pats="$(frozen_patterns "$top")"
     prefix="$(git -C "$dir" rev-parse --show-prefix 2>/dev/null)"
     for f in $(git -C "$dir" diff --cached --name-only 2>/dev/null) $([ "$all" -eq 1 ] && git -C "$dir" diff --name-only 2>/dev/null) "${paths[@]+"${paths[@]/#/$prefix}"}"; do
@@ -171,6 +174,6 @@ while IFS= read -r seg; do
     push) push_check "$dir" "$@" ;;
     esac
 done <<EOF
-$(printf '%s' "$cmd" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g" | tr ';&|' '\n\n\n')
+$(printf '%s' "$cmd" | sed -E "s/\"[^\"]*[[:space:]][^\"]*\"/Q/g; s/'[^']*[[:space:]][^']*'/Q/g; s/[\"']//g" | tr ';&|' '\n\n\n')
 EOF
 exit 0
