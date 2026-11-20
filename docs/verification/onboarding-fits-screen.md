@@ -2,6 +2,8 @@
 
 The "Welcome to Spacedown" window (`Onboarding.swift`) is about 600 points tall. It was centered before SwiftUI had sized it, and a later resize grows a window down from its top-left corner, so on a 1280x720-point screen it landed low and off center, and the Done button sat under the Dock. The window now stays inside the screen's visible frame: its content height is capped at the visible height minus the title bar, taller content scrolls, and it is positioned again after every resize and once more when layout has settled.
 
+The bug was first measured in `r1-live-checks.md` (check 4a): window origin y=177, height 625, on this same 1280x720-point screen.
+
 All screenshots are of the real built app, in the mac-ui VM, opened from Help, "Welcome to Spacedown", with real clicks over VNC. The images are cropped to the window and the screen edge it must clear; nothing else was edited.
 
 ## Green run
@@ -14,6 +16,10 @@ All screenshots are of the real built app, in the mac-ui VM, opened from Help, "
 | 1024x576 (shorter than the content) | display mode 11 | window capped to the screen, scrollbar shown | [top](onboarding-fits-screen/after-1024x576-top.png) |
 | 1024x576, scrolled to the end | click in the scroll track | Done reachable | [scrolled](onboarding-fits-screen/after-1024x576-scrolled.png) |
 | 1024x576, click Done | VNC click on Done | the window closes | [closed](onboarding-fits-screen/after-1024x576-done-clicked.png) |
+| 1280x720, "Fix it" page (`--onboarding-state fix`) | launch argument | whole page inside the visible frame, "Back to checklist" visible | [fix](onboarding-fits-screen/after-1280x720-fix-page.png) |
+| 1280x720, "Try it now" page (`--onboarding-state tryit`, the tallest) | launch argument | window capped to the visible frame with a scrollbar; Done is below the fold and was not scrolled to in this run (the 1024x576 rows show the scroll) | [tryit](onboarding-fits-screen/after-1280x720-tryit-page.png) |
+
+The two hook shots contain an unrelated system permission prompt from another process in the shared VM; it is not part of the app.
 
 ```
 Command: NO_INSTALL=1 bash integrations/build-safari.sh
