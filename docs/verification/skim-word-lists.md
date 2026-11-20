@@ -87,3 +87,7 @@ node scripts/skim-parity.mjs                       # port against the committed 
 node scripts/skim-parity.mjs --upstream <skimgram clone at 4ebb78a>   # against upstream with the rebuilt lists
 /bin/bash tests/smoke.sh
 ```
+
+## Superseded, 2026-11-21
+
+The English list now also draws on US federal government documentation, and the publication years were checked against Library of Congress records; two Chinese works were dropped. See `docs/verification/skim-tech-vocab.md`. The numbers above are from the literature-only lists.

@@ -84,24 +84,35 @@ the code block keeps md-style's chrome. Rebuild the file that way after any upst
 
 ## Skim word lists (`EN_WORDS`, `CJK_CHARS` in `skim-surprise.html`)
 
-Both lists are built from public-domain texts, never copied from a third-party list. The sources are in
-`scripts/skim-lists/sources.tsv`: Project Gutenberg plain-text editions of works whose contributors all
-died in 1955 or earlier and that were first published in 1929 or earlier, plus Unihan 16.0.0 (Unicode
-License V3) to fold the Traditional Chinese texts to Simplified. Each file's sha256 is recorded there.
+Both lists are built from public-domain sources, never copied from a third-party list. The sources are in
+`scripts/skim-lists/sources.tsv`, each with the evidence for its status:
+
+- Project Gutenberg plain-text editions of works whose contributors all died in 1955 or earlier and that
+  were published in 1929 or earlier, each confirmed by a Library of Congress catalog record (LCCN) or the
+  dated title page in the file. The file's sha256 is recorded.
+- The Markdown documentation of US federal government repositories (public domain in the US under
+  17 U.S.C. 105, CC0 worldwide), each pinned to a git revision. These give the English list the technical
+  vocabulary Spacedown's pages use.
+- Unihan 16.0.0 (Unicode License V3), to fold the Traditional Chinese texts to Simplified.
 
 ```bash
 node scripts/skim-lists.mjs build                    # fetch, rebuild, compare with the engine (exit 1 if different)
 node scripts/skim-lists.mjs build --write            # put the rebuilt lists into assets/skim-surprise.html
 node scripts/skim-lists.mjs build --record-hashes    # accept changed source files, then review the list diff
-node scripts/skim-lists.mjs check-notices            # offline: every source is credited in THIRD_PARTY_NOTICES.md
+node scripts/skim-lists.mjs check-notices            # offline: every source is credited and has its evidence
 ```
 
-The build needs network access and `unzip`; downloads are cached (default: a `spacedown-skim-lists` folder
-in the temp dir, `--cache <dir>` to choose). English keys come from the engine's own tokenizer. Each work
-counts equally, and an entry must appear in at least 40% of the English works or 50% of the Chinese ones,
-so names and one-book terms stay out. Ties break by code point, so a rebuild is byte-identical.
+The build needs network access, `git` and `unzip`; downloads are cached (default: a `spacedown-skim-lists`
+folder in the temp dir, `--cache <dir>` to choose). English keys come from the engine's own tokenizer;
+Markdown loses its front matter, code, HTML, template tags, link targets and URLs first, and repository
+boilerplate (license, contributing, security, changelog files) is skipped. Each literary work counts
+equally, and the technical repositories count as one work per agency, so one agency's house words cannot
+qualify alone. The English score blends the two corpora 0.7 literary to 0.3 technical, the smallest
+technical weight that brings technical-doc coverage back to the level of the lists Skim shipped before
+(see `docs/verification/skim-tech-vocab.md`). An entry must appear in at least 40% of the literary works,
+50% of the agencies, or 50% of the Chinese works. Ties break by code point, so a rebuild is byte-identical.
 
-A source added to the manifest must be credited in `THIRD_PARTY_NOTICES.md` (by `#<ebook number>`, or
-`Unihan <version>`), or `node scripts/skim-parity.mjs` and the smoke parity check fail. After changing
-the lists, regenerate the Skim goldens against upstream skimgram with the same lists:
-`node scripts/skim-parity.mjs --upstream <skimgram clone at 4ebb78a> --write-golden`.
+A source added to the manifest must be credited in `THIRD_PARTY_NOTICES.md` (by `#<ebook number>`, the
+`owner/repo` name, or `Unihan <version>`) and carry evidence, or `node scripts/skim-parity.mjs` and the
+smoke parity check fail. After changing the lists, regenerate the Skim goldens against upstream skimgram
+with the same lists: `node scripts/skim-parity.mjs --upstream <skimgram clone at 4ebb78a> --write-golden`.

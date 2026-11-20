@@ -1,76 +1,84 @@
 # Sources of the Skim word lists (assets/skim-surprise.html). Built by scripts/skim-lists.mjs.
-# Rule: every contributor died in 1955 or earlier and the work was first published in 1929 or earlier,
-# so each text is public domain in the United States, the EU and China. died = the latest death among the
-# listed contributors. sha256 = the Project Gutenberg plain-text file the build read; empty until the first fetch.
-list	source	id	title	contributors	died	published	sha256
-en	gutenberg	1342	Pride and Prejudice	Jane Austen	1817	1813	3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75
-en	gutenberg	158	Emma	Jane Austen	1817	1815	532b122b4e6a76cc556d6fdcd729b5892f5c4ce4a1b7060b9f832adfad8680dc
-en	gutenberg	84	Frankenstein	Mary Shelley	1851	1818	2b97b7f8aad508649481d8dd4f6b54f9b965ddb3ba634e9151c815f537b49e42
-en	gutenberg	2701	Moby Dick	Herman Melville	1891	1851	b5e88b71a1cda068e9ab1d94344c9d932338ba6da1a66def97a1aecd9cfcc87d
-en	gutenberg	1661	The Adventures of Sherlock Holmes	Arthur Conan Doyle	1930	1892	922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0
-en	gutenberg	2852	The Hound of the Baskervilles	Arthur Conan Doyle	1930	1902	aea75dfb3977a0a0222f838593c45dfbcb1af9fbb7bf5b60b1f13d5e452cbcf7
-en	gutenberg	2097	The Sign of the Four	Arthur Conan Doyle	1930	1890	4cdea89cf6cd2567a556d0e6901edb89949dd79e200dbaf4ced4cabf1d5d2c26
-en	gutenberg	98	A Tale of Two Cities	Charles Dickens	1870	1859	d54c2b80d40a40b982cd88852c6180bb944d95acdb028af3d0e01a1750681784
-en	gutenberg	1400	Great Expectations	Charles Dickens	1870	1861	9a637118af8e953e9764ec603d9b0a032883384d465acac2e27966a80cf1c6f8
-en	gutenberg	730	Oliver Twist	Charles Dickens	1870	1838	6c37f41a8a253e95eba0f990f61cf60ac2e6d625c306c13027672d67885a6b6a
-en	gutenberg	46	A Christmas Carol	Charles Dickens; John Leech (illustrator)	1870	1843	8c36b93723d454982df045ec0efdf2664e5a48e6b5e2f670e883575f75ad0cc8
-en	gutenberg	74	The Adventures of Tom Sawyer	Mark Twain	1910	1876	74d77384b123a6360db9ab58463cff8b38df8525fbdc6000c81ee388e1f3cf10
-en	gutenberg	76	Adventures of Huckleberry Finn	Mark Twain; E. W. Kemble (illustrator, died 1933)	1933	1884	d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59
-en	gutenberg	3176	The Innocents Abroad	Mark Twain	1910	1869	0c95100895426b22f0a377bd4783f3fbd621b958b8f602c2c55192182b394fe0
-en	gutenberg	345	Dracula	Bram Stoker	1912	1897	96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28
-en	gutenberg	174	The Picture of Dorian Gray	Oscar Wilde	1900	1890	38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547
-en	gutenberg	1260	Jane Eyre	Charlotte Bronte; F. H. Townsend (illustrator, died 1920)	1920	1847	13414dee2951c3ee731d76d2ffd822016b2479c892162760c5d0eb2aa5fa7631
-en	gutenberg	768	Wuthering Heights	Emily Bronte	1848	1847	e533fe750589f0421d5d744576315f5c2b9b0d69e981179ea0551bbf134c5e02
-en	gutenberg	145	Middlemarch	George Eliot	1880	1871	dc2e0107e6ae07e8e33da934b2ec4e8e600826a2e0cd48df265119cd02e5fb50
-en	gutenberg	35	The Time Machine	H. G. Wells	1946	1895	2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc
-en	gutenberg	36	The War of the Worlds	H. G. Wells	1946	1898	8417469e3ab664749f7b36ebb85799075818207b0380b54c27d07d592a44117d
-en	gutenberg	5230	The Invisible Man	H. G. Wells	1946	1897	28c70e3809ce945efbe5f8681532916a2c4253fee5cca6e1a191707af22280d3
-en	gutenberg	215	The Call of the Wild	Jack London	1916	1903	30f569c5671bba7bbc4a92ab6d8ee01a0d3be00f994819c77da62c28041eb8a2
-en	gutenberg	219	Heart of Darkness	Joseph Conrad	1924	1899	1bcdf0a1ac611dd6b70a20d100a07085754da4e90a949d6031717b86cd6d020a
-en	gutenberg	2814	Dubliners	James Joyce	1941	1914	6be7d8400ac2549459307d1c1a20a25c86a736984269d3e9d989c817814be60c
-en	gutenberg	4217	A Portrait of the Artist as a Young Man	James Joyce	1941	1916	1bd1403d4877d1bcc7b80df89acd291fec54d6bfb668013187f0ce301428f107
-en	gutenberg	160	The Awakening, and Selected Short Stories	Kate Chopin	1904	1899	31d4577d255806b92c6296419adddd5ca460bdb788743878a09ded1e19f4161a
-en	gutenberg	541	The Age of Innocence	Edith Wharton	1937	1920	aae279f1a60ac64be53f63357e708a2fdaabdb334a1c92f81fc1c3b5c848a092
-en	gutenberg	4517	Ethan Frome	Edith Wharton	1937	1911	995fb43e2017211808edd68464ac9a5fb975fb81d6973bfbef59796702ae543a
-en	gutenberg	120	Treasure Island	Robert Louis Stevenson; Louis Rhead (illustrator, died 1926)	1926	1883	5bc08275eacea8640b1aa185c645283bb8c564d7b23df6b03437d229b4fc6ebd
-en	gutenberg	43	The Strange Case of Dr. Jekyll and Mr. Hyde	Robert Louis Stevenson	1894	1886	b43448a88391591f9cf82b25553df00faf47a2752a873185fcdd1156eebdb990
-en	gutenberg	514	Little Women	Louisa May Alcott	1888	1868	36831477b339dbcd7e7206119d77e9e58b9727ef3c299d1a1dc4446e1db97850
-en	gutenberg	829	Gulliver's Travels	Jonathan Swift	1745	1726	fca36de3de0d8b831b7588cf1df84639ccf4c503172d6444ee61d1c1b2036edd
-en	gutenberg	55	The Wonderful Wizard of Oz	L. Frank Baum	1919	1900	969bffab7740d4d8a0bac332d78bd0152ad4a40a2efc52f06c74a9bb6120be75
-en	gutenberg	16	Peter Pan	J. M. Barrie	1937	1911	6b08714281fe38266a756741e4c62915cda7536c2f78cca501f7fd53f3f445ae
-en	gutenberg	113	The Secret Garden	Frances Hodgson Burnett	1924	1911	40709a2894f0816a97dd8a67d3082cfc4dac31e45b45ee55a908d62e1dd18c23
-en	gutenberg	45	Anne of Green Gables	L. M. Montgomery	1942	1908	89a5e9fb2e0bb44562a969785385366f94e1da736aebee7d9cdf459eb0b5f9f6
-en	gutenberg	236	The Jungle Book	Rudyard Kipling	1936	1894	571353c4c69d127020fb16cd6a566f1d80101bc0fc3cf2b0c2ea5678bf4c769f
-en	gutenberg	932	The Fall of the House of Usher	Edgar Allan Poe	1849	1839	f1093719bbbc8115a95fd0ed8e51ee9ed5c67ad94abf3229a2a96f8ed0762bf9
-en	gutenberg	10007	Carmilla	Joseph Sheridan Le Fanu	1873	1872	f751453ef6ad9363a7e31f63b8d4ef830c7ea20a2aba465a59fb6fbee6bbddca
-en	gutenberg	2166	King Solomon's Mines	H. Rider Haggard	1925	1885	3650779c5fc37d982ed9270f017201b171209084366d3577ab8cc560b7704b8b
-en	gutenberg	1695	The Man Who Was Thursday	G. K. Chesterton	1936	1908	16fde29acf764ba5742fd5db8833f424b6b89c0f6e282d518f6c626006faf6e1
-en	gutenberg	8492	The King in Yellow	Robert W. Chambers	1933	1895	a1fe8503649b13bc46c6b98c49000eb8a9da59f9d3bd7aa8f94fc1b258c53096
-en	gutenberg	201	Flatland	Edwin Abbott Abbott	1926	1884	03dd4508636e44ab9b37efda856745545f22ea5ace95e2eb16c3ef50307cd9f7
-en	gutenberg	1228	On the Origin of Species	Charles Darwin	1882	1859	362142cb7c6f90850477520cfe2a62fe423ae92ea8eb6d9cd8b30ddb39de60b9
-en	gutenberg	205	Walden, and On the Duty of Civil Disobedience	Henry David Thoreau	1862	1854	2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9
-en	gutenberg	23	Narrative of the Life of Frederick Douglass	Frederick Douglass	1895	1845	234c15348a66919bad1d534cdd48ee8ddf91f50115a706cbefaa8edd049672fd
-en	gutenberg	2376	Up from Slavery	Booker T. Washington	1915	1901	084e7f54e60b9ae26ecf2ab23f1789db44d926c3b02106a984f475f9ccc7bdbe
-en	gutenberg	2044	The Education of Henry Adams	Henry Adams; Henry Cabot Lodge (editor, died 1924)	1924	1918	512eb06e74482bff4df27073501c0bca62a2ef49038999c3360a6b5553d3ca73
-en	gutenberg	37134	The Elements of Style	William Strunk	1946	1918	bf5312eb0fa36837253ec84211cdab51deae01744e1de3ffef528aee43c27496
-en	gutenberg	15776	The Economic Consequences of the Peace	John Maynard Keynes	1946	1919	47c9ba595e2ea6c1fe2ead0c34ad5c145cb73bc5d9521338a7af4a5e4aff2a81
-en	gutenberg	833	The Theory of the Leisure Class	Thorstein Veblen	1929	1899	84ee65366e377e9c087171c2286d28d74e6c860b83c01175ad5f863f09666bca
-en	gutenberg	621	The Varieties of Religious Experience	William James	1910	1902	bcfadbaeb796fdd8a721909409d27e42a81a9beed814b60d708a9f4559712bf2
-en	gutenberg	5116	Pragmatism	William James	1910	1907	92c8654ebc3052887740ab0ce8cd953456f63ba3f7749d31377488d807765db6
-en	gutenberg	6435	The Principles of Scientific Management	Frederick Winslow Taylor	1915	1911	1f504a9abe674ee616f13bf1db66ec25cbb1be0ff5fd9bfe70ab8593aa08a3b2
-en	gutenberg	1404	The Federalist Papers	Alexander Hamilton, John Jay, James Madison	1836	1788	0b92fadc9d7afd767eefd27805a20e44417ff26d1fb2f964229f39dcc7b2a65d
-en	gutenberg	815	Democracy in America, Volume 1	Alexis de Tocqueville; Henry Reeve (translator, died 1895)	1895	1835	734b3b0352dc2ec312a6b2b9e9165aac054439eee2d6e8d83d1fd9a35d1c9e2d
-cjk	gutenberg	24264	紅樓夢 (Dream of the Red Chamber)	Cao Xueqin	1763	1791	ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011
-cjk	gutenberg	23863	水滸傳 (Water Margin)	Shi Nai'an	1365	1589	9d5b723b57f462545d412593870e7f48157829777b9329350a29bc44fd654789
-cjk	gutenberg	23962	西遊記 (Journey to the West)	Wu Cheng'en	1582	1592	bd18088ccb70d3164e3a4bc9805a6ea72095d6cc3891e4f172ed0a3d281292bb
-cjk	gutenberg	24032	儒林外史 (The Scholars)	Wu Jingzi	1754	1803	98a08c88b154cfef2e6a4436f124b1e29254839c04cf0bc4538ce1fc87610393
-cjk	gutenberg	23950	三國志演義 (Romance of the Three Kingdoms)	Luo Guanzhong	1400	1522	ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d
-cjk	gutenberg	23850	老殘遊記 (The Travels of Lao Can)	Liu E	1909	1907	85f17048f6d79e6c24b40e946be0fde044436da30b21ed62036125a3b8c39733
-cjk	gutenberg	24138	官場現形記 (Officialdom Unmasked)	Li Boyuan	1906	1903	2300cd65db102cee5a32a4ae3f910a0e2d003fcf8105cad8d8c84ae6e056f5ae
-cjk	gutenberg	25379	文明小史 (A Short History of Civilization)	Li Boyuan	1906	1906	0c527d843dc699e58acbaba679c8f963896bd81871018842fc63b9e289dc862c
-cjk	gutenberg	27166	吶喊 (Call to Arms)	Lu Xun	1936	1923	ddf28d52eff750e9b62b53e065a16d666d27f7d468fd038a44bc887c4a429732
-cjk	gutenberg	24042	徬徨 (Wandering)	Lu Xun	1936	1926	5a3bbbf817fa6d1a901dd468d1fa5db523e47c4e3174af44bf4d7107399476cd
-cjk	gutenberg	25242	野草 (Wild Grass)	Lu Xun	1936	1927	2d072c1bee105e672b9da78db177e4cb550c8f2c9acd1341a88985123baeace3
-cjk	gutenberg	25271	朝花夕拾 (Dawn Blossoms Plucked at Dusk)	Lu Xun	1936	1928	25ddb5c8ae34764e9e4995c3eee783d08a576ae5ed569030969593180057bcb4
-cjk	gutenberg	27636	沉沦 (Sinking)	Yu Dafu	1945	1921	8bb65af17ddc7bb9d7b5da784e2277f78c855fafa00db9c17cf110017d71210e
-cjk-map	unihan	16.0.0	Unihan database, kSimplifiedVariant (folds Traditional characters to Simplified)	Unicode, Inc.		2024	b8f000df69de7828d21326a2ffea462b04bc7560022989f7cc704f10521ef3e0
+# gutenberg rows: every contributor died in 1955 or earlier and the work was published in 1929 or earlier, so
+# each text is public domain in the United States, the EU and China. died = the latest death among the listed
+# contributors (Project Gutenberg catalog); published = the earliest year confirmed by the record in evidence.
+# github rows: US federal government documentation, public domain in the US and CC0 worldwide (evidence);
+# only the Markdown files at the pinned revision are read.
+# hash = sha256 of the fetched file, or the pinned git revision for a repository.
+list	source	id	title	contributors	died	published	hash	evidence
+en	gutenberg	1342	Pride and Prejudice	Jane Austen	1817	1813	3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75	Library of Congress catalog, LCCN 00007087 (1813 imprint)
+en	gutenberg	158	Emma	Jane Austen	1817	1816	532b122b4e6a76cc556d6fdcd729b5892f5c4ce4a1b7060b9f832adfad8680dc	Library of Congress catalog, LCCN 06015462 (1816 imprint)
+en	gutenberg	84	Frankenstein	Mary Shelley	1851	1818	2b97b7f8aad508649481d8dd4f6b54f9b965ddb3ba634e9151c815f537b49e42	Library of Congress catalog, LCCN 53051218 (1818 imprint)
+en	gutenberg	2701	Moby Dick	Herman Melville	1891	1851	b5e88b71a1cda068e9ab1d94344c9d932338ba6da1a66def97a1aecd9cfcc87d	Library of Congress catalog, LCCN 07017953 (1851 imprint)
+en	gutenberg	1661	The Adventures of Sherlock Holmes	Arthur Conan Doyle	1930	1902	922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0	Library of Congress catalog, LCCN 04018948 (1902 imprint)
+en	gutenberg	2852	The Hound of the Baskervilles	Arthur Conan Doyle	1930	1901	aea75dfb3977a0a0222f838593c45dfbcb1af9fbb7bf5b60b1f13d5e452cbcf7	Library of Congress catalog, LCCN 2004023718 (1901 imprint)
+en	gutenberg	2097	The Sign of the Four	Arthur Conan Doyle	1930	1900	4cdea89cf6cd2567a556d0e6901edb89949dd79e200dbaf4ced4cabf1d5d2c26	Library of Congress catalog, LCCN 04016519 ([1900?] imprint)
+en	gutenberg	98	A Tale of Two Cities	Charles Dickens	1870	1907	d54c2b80d40a40b982cd88852c6180bb944d95acdb028af3d0e01a1750681784	Library of Congress catalog, LCCN 07038601 ([1907] imprint)
+en	gutenberg	1400	Great Expectations	Charles Dickens	1870	1861	9a637118af8e953e9764ec603d9b0a032883384d465acac2e27966a80cf1c6f8	Library of Congress catalog, LCCN unk82033759 ((1861) imprint)
+en	gutenberg	730	Oliver Twist	Charles Dickens	1870	1838	6c37f41a8a253e95eba0f990f61cf60ac2e6d625c306c13027672d67885a6b6a	Library of Congress catalog, LCCN 01005375 (1838 imprint)
+en	gutenberg	46	A Christmas Carol	Charles Dickens; John Leech (illustrator)	1870	1843	8c36b93723d454982df045ec0efdf2664e5a48e6b5e2f670e883575f75ad0cc8	Library of Congress catalog, LCCN 47033462 (1843 imprint)
+en	gutenberg	74	The Adventures of Tom Sawyer	Mark Twain	1910	1876	74d77384b123a6360db9ab58463cff8b38df8525fbdc6000c81ee388e1f3cf10	Library of Congress catalog, LCCN 35020964 (1876 imprint)
+en	gutenberg	76	Adventures of Huckleberry Finn	Mark Twain; E. W. Kemble (illustrator, died 1933)	1933	1884	d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59	Library of Congress catalog, LCCN 35020965 (1884 imprint)
+en	gutenberg	3176	The Innocents Abroad	Mark Twain	1910	1869	0c95100895426b22f0a377bd4783f3fbd621b958b8f602c2c55192182b394fe0	Library of Congress catalog, LCCN 04028129 (1869 imprint)
+en	gutenberg	345	Dracula	Bram Stoker	1912	1897	96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28	Title page of the Project Gutenberg file: "Copyright, 1897, in the United States of America"; also Library of Congress catalog, LCCN 01024939 (1899 imprint)
+en	gutenberg	174	The Picture of Dorian Gray	Oscar Wilde	1900	1891	38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547	Library of Congress catalog, LCCN 48035535 ([1891] imprint)
+en	gutenberg	1260	Jane Eyre	Charlotte Bronte; F. H. Townsend (illustrator, died 1920)	1920	1848	13414dee2951c3ee731d76d2ffd822016b2479c892162760c5d0eb2aa5fa7631	Library of Congress catalog, LCCN 06017956 (1848 imprint)
+en	gutenberg	768	Wuthering Heights	Emily Bronte	1848	1848	e533fe750589f0421d5d744576315f5c2b9b0d69e981179ea0551bbf134c5e02	Library of Congress catalog, LCCN 06024368 (1848 imprint)
+en	gutenberg	145	Middlemarch	George Eliot	1880	1871	dc2e0107e6ae07e8e33da934b2ec4e8e600826a2e0cd48df265119cd02e5fb50	Library of Congress catalog, LCCN 64058757 (1871-72 imprint)
+en	gutenberg	35	The Time Machine	H. G. Wells	1946	1895	2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc	Library of Congress catalog, LCCN 08036642 (1895 imprint)
+en	gutenberg	36	The War of the Worlds	H. G. Wells	1946	1898	8417469e3ab664749f7b36ebb85799075818207b0380b54c27d07d592a44117d	Library of Congress catalog, LCCN 08036641 (1898 imprint)
+en	gutenberg	5230	The Invisible Man	H. G. Wells	1946	1897	28c70e3809ce945efbe5f8681532916a2c4253fee5cca6e1a191707af22280d3	Library of Congress catalog, LCCN 04018332 (1897 imprint)
+en	gutenberg	215	The Call of the Wild	Jack London	1916	1903	30f569c5671bba7bbc4a92ab6d8ee01a0d3be00f994819c77da62c28041eb8a2	Library of Congress catalog, LCCN 03008560 (1903 imprint)
+en	gutenberg	219	Heart of Darkness	Joseph Conrad	1924	1902	1bcdf0a1ac611dd6b70a20d100a07085754da4e90a949d6031717b86cd6d020a	Library of Congress catalog, LCCN 03002225 (MCMII [1902] imprint), Youth, whose record lists Heart of darkness
+en	gutenberg	2814	Dubliners	James Joyce	1941	1916	6be7d8400ac2549459307d1c1a20a25c86a736984269d3e9d989c817814be60c	Library of Congress catalog, LCCN 17024698 (1916 imprint)
+en	gutenberg	4217	A Portrait of the Artist as a Young Man	James Joyce	1941	1916	1bd1403d4877d1bcc7b80df89acd291fec54d6bfb668013187f0ce301428f107	Library of Congress catalog, LCCN 85163666 (1916 imprint)
+en	gutenberg	160	The Awakening, and Selected Short Stories	Kate Chopin	1904	1899	31d4577d255806b92c6296419adddd5ca460bdb788743878a09ded1e19f4161a	Library of Congress catalog, LCCN 99001948 (1899 imprint)
+en	gutenberg	541	The Age of Innocence	Edith Wharton	1937	1920	aae279f1a60ac64be53f63357e708a2fdaabdb334a1c92f81fc1c3b5c848a092	Library of Congress catalog, LCCN 20018615 (1920 imprint)
+en	gutenberg	4517	Ethan Frome	Edith Wharton	1937	1911	995fb43e2017211808edd68464ac9a5fb975fb81d6973bfbef59796702ae543a	Library of Congress catalog, LCCN 82224969 (1911 imprint)
+en	gutenberg	120	Treasure Island	Robert Louis Stevenson; Louis Rhead (illustrator, died 1926)	1926	1927	5bc08275eacea8640b1aa185c645283bb8c564d7b23df6b03437d229b4fc6ebd	Library of Congress catalog, LCCN 44013487 (1927 imprint), a Yiddish translation of Treasure Island
+en	gutenberg	43	The Strange Case of Dr. Jekyll and Mr. Hyde	Robert Louis Stevenson	1894	1886	b43448a88391591f9cf82b25553df00faf47a2752a873185fcdd1156eebdb990	Library of Congress catalog, LCCN ca 10001445 ([1886] imprint)
+en	gutenberg	514	Little Women	Louisa May Alcott	1888	1868	36831477b339dbcd7e7206119d77e9e58b9727ef3c299d1a1dc4446e1db97850	Library of Congress catalog, LCCN 94159885 (1868 imprint)
+en	gutenberg	829	Gulliver's Travels	Jonathan Swift	1745	1726	fca36de3de0d8b831b7588cf1df84639ccf4c503172d6444ee61d1c1b2036edd	Library of Congress catalog, LCCN 79320791 (M,DCC,XXVI [1726] imprint)
+en	gutenberg	55	The Wonderful Wizard of Oz	L. Frank Baum	1919	1900	969bffab7740d4d8a0bac332d78bd0152ad4a40a2efc52f06c74a9bb6120be75	Library of Congress catalog, LCCN 03032405 (1900 imprint)
+en	gutenberg	16	Peter Pan	J. M. Barrie	1937	1911	6b08714281fe38266a756741e4c62915cda7536c2f78cca501f7fd53f3f445ae	Library of Congress catalog, LCCN 11026953 (1911 imprint), Peter and Wendy
+en	gutenberg	113	The Secret Garden	Frances Hodgson Burnett	1924	1911	40709a2894f0816a97dd8a67d3082cfc4dac31e45b45ee55a908d62e1dd18c23	Library of Congress catalog, LCCN 11021580 (1911 imprint)
+en	gutenberg	45	Anne of Green Gables	L. M. Montgomery	1942	1908	89a5e9fb2e0bb44562a969785385366f94e1da736aebee7d9cdf459eb0b5f9f6	Library of Congress catalog, LCCN 08018572 (1908 imprint)
+en	gutenberg	236	The Jungle Book	Rudyard Kipling	1936	1894	571353c4c69d127020fb16cd6a566f1d80101bc0fc3cf2b0c2ea5678bf4c769f	Library of Congress catalog, LCCN 2007570082 (1894 imprint)
+en	gutenberg	932	The Fall of the House of Usher	Edgar Allan Poe	1849	1897	f1093719bbbc8115a95fd0ed8e51ee9ed5c67ad94abf3229a2a96f8ed0762bf9	Library of Congress catalog, LCCN 07038187 (1897 imprint)
+en	gutenberg	10007	Carmilla	Joseph Sheridan Le Fanu	1873	1872	f751453ef6ad9363a7e31f63b8d4ef830c7ea20a2aba465a59fb6fbee6bbddca	Title page of the Project Gutenberg file: "Copyright 1872"
+en	gutenberg	2166	King Solomon's Mines	H. Rider Haggard	1925	1885	3650779c5fc37d982ed9270f017201b171209084366d3577ab8cc560b7704b8b	Library of Congress catalog, LCCN 64058730 (1885 imprint)
+en	gutenberg	1695	The Man Who Was Thursday	G. K. Chesterton	1936	1908	16fde29acf764ba5742fd5db8833f424b6b89c0f6e282d518f6c626006faf6e1	Library of Congress catalog, LCCN 08007893 (1908 imprint)
+en	gutenberg	8492	The King in Yellow	Robert W. Chambers	1933	1895	a1fe8503649b13bc46c6b98c49000eb8a9da59f9d3bd7aa8f94fc1b258c53096	Library of Congress catalog, LCCN 24022225 ([1895] imprint)
+en	gutenberg	201	Flatland	Edwin Abbott Abbott	1926	1885	03dd4508636e44ab9b37efda856745545f22ea5ace95e2eb16c3ef50307cd9f7	Library of Congress catalog, LCCN 06039826 (1885 imprint)
+en	gutenberg	1228	On the Origin of Species	Charles Darwin	1882	1859	362142cb7c6f90850477520cfe2a62fe423ae92ea8eb6d9cd8b30ddb39de60b9	Library of Congress catalog, LCCN 06017473 (1859 imprint)
+en	gutenberg	205	Walden, and On the Duty of Civil Disobedience	Henry David Thoreau	1862	1854	2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9	Library of Congress catalog, LCCN 15002573 (MDCCCLIV [1854] imprint)
+en	gutenberg	23	Narrative of the Life of Frederick Douglass	Frederick Douglass	1895	1845	234c15348a66919bad1d534cdd48ee8ddf91f50115a706cbefaa8edd049672fd	Library of Congress catalog, record 12439659 (1845 imprint)
+en	gutenberg	2376	Up from Slavery	Booker T. Washington	1915	1901	084e7f54e60b9ae26ecf2ab23f1789db44d926c3b02106a984f475f9ccc7bdbe	Library of Congress catalog, LCCN 01031242 (1901 imprint)
+en	gutenberg	2044	The Education of Henry Adams	Henry Adams; Henry Cabot Lodge (editor, died 1924)	1924	1907	512eb06e74482bff4df27073501c0bca62a2ef49038999c3360a6b5553d3ca73	Library of Congress catalog, LCCN unk82006147 (1907 imprint)
+en	gutenberg	37134	The Elements of Style	William Strunk	1946	1918	bf5312eb0fa36837253ec84211cdab51deae01744e1de3ffef528aee43c27496	Library of Congress catalog, LCCN 18020045 (1918 imprint)
+en	gutenberg	15776	The Economic Consequences of the Peace	John Maynard Keynes	1946	1919	47c9ba595e2ea6c1fe2ead0c34ad5c145cb73bc5d9521338a7af4a5e4aff2a81	Library of Congress catalog, LCCN 20001315 (1919 imprint)
+en	gutenberg	833	The Theory of the Leisure Class	Thorstein Veblen	1929	1899	84ee65366e377e9c087171c2286d28d74e6c860b83c01175ad5f863f09666bca	Library of Congress catalog, LCCN 99001220 (1899 imprint)
+en	gutenberg	621	The Varieties of Religious Experience	William James	1910	1902	bcfadbaeb796fdd8a721909409d27e42a81a9beed814b60d708a9f4559712bf2	Library of Congress catalog, LCCN 02026239 (1902 imprint)
+en	gutenberg	5116	Pragmatism	William James	1910	1907	92c8654ebc3052887740ab0ce8cd953456f63ba3f7749d31377488d807765db6	Library of Congress catalog, LCCN 07020643 (1907 imprint)
+en	gutenberg	6435	The Principles of Scientific Management	Frederick Winslow Taylor	1915	1911	1f504a9abe674ee616f13bf1db66ec25cbb1be0ff5fd9bfe70ab8593aa08a3b2	Library of Congress catalog, LCCN 11010339 (1911 imprint)
+en	gutenberg	1404	The Federalist Papers	Alexander Hamilton, John Jay, James Madison	1836	1864	0b92fadc9d7afd767eefd27805a20e44417ff26d1fb2f964229f39dcc7b2a65d	Library of Congress catalog, LCCN 09021558 (1864 imprint)
+en	gutenberg	815	Democracy in America, Volume 1	Alexis de Tocqueville; Henry Reeve (translator, died 1895)	1895	1835	734b3b0352dc2ec312a6b2b9e9165aac054439eee2d6e8d83d1fd9a35d1c9e2d	Library of Congress catalog, LCCN 84203806 (1835-1840 imprint)
+cjk	gutenberg	24264	紅樓夢 (Dream of the Red Chamber)	Cao Xueqin	1763	1791	ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011	Library of Congress catalog, LCCN 2021666448 (1791 imprint)
+cjk	gutenberg	23863	水滸傳 (Water Margin)	Shi Nai'an	1365	1644	9d5b723b57f462545d412593870e7f48157829777b9329350a29bc44fd654789	Library of Congress catalog, LCCN 75835917 (between 1640 and 1644? imprint)
+cjk	gutenberg	23962	西遊記 (Journey to the West)	Wu Cheng'en	1582	1923	bd18088ccb70d3164e3a4bc9805a6ea72095d6cc3891e4f172ed0a3d281292bb	Library of Congress catalog, LCCN 77838911 (1923 imprint)
+cjk	gutenberg	24032	儒林外史 (The Scholars)	Wu Jingzi	1754	1869	98a08c88b154cfef2e6a4436f124b1e29254839c04cf0bc4538ce1fc87610393	Library of Congress catalog, LCCN ltf58039430 (1869 imprint)
+cjk	gutenberg	23950	三國志演義 (Romance of the Three Kingdoms)	Luo Guanzhong	1400	1522	ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d	Library of Congress catalog, LCCN 2012402764 (1522 imprint)
+cjk	gutenberg	23850	老殘遊記 (The Travels of Lao Can)	Liu E	1909	1928	85f17048f6d79e6c24b40e946be0fde044436da30b21ed62036125a3b8c39733	Library of Congress catalog, LCCN ltf58039457 (1928 imprint)
+cjk	gutenberg	24138	官場現形記 (Officialdom Unmasked)	Li Boyuan	1906	1906	2300cd65db102cee5a32a4ae3f910a0e2d003fcf8105cad8d8c84ae6e056f5ae	Library of Congress catalog, LCCN ltf58039453 (1906 imprint)
+cjk	gutenberg	27166	吶喊 (Call to Arms)	Lu Xun	1936	1922	ddf28d52eff750e9b62b53e065a16d666d27f7d468fd038a44bc887c4a429732	Library of Congress catalog, LCCN c 68000674 (1922 imprint)
+cjk	gutenberg	24042	徬徨 (Wandering)	Lu Xun	1936	1926	5a3bbbf817fa6d1a901dd468d1fa5db523e47c4e3174af44bf4d7107399476cd	Library of Congress catalog, LCCN c 68001636 (1926 imprint)
+cjk	gutenberg	25271	朝花夕拾 (Dawn Blossoms Plucked at Dusk)	Lu Xun	1936	1929	25ddb5c8ae34764e9e4995c3eee783d08a576ae5ed569030969593180057bcb4	Library of Congress catalog, LCCN ltf58037813 (1929 imprint), under Lu Xun's name Zhou Shuren
+cjk	gutenberg	27636	沉沦 (Sinking)	Yu Dafu	1945	1927	8bb65af17ddc7bb9d7b5da784e2277f78c855fafa00db9c17cf110017d71210e	Library of Congress catalog, LCCN 2016420134 (Minguo 16 [1927] imprint)
+cjk-map	unihan	16.0.0	Unihan database, kSimplifiedVariant (folds Traditional characters to Simplified)	Unicode, Inc.		2024	b8f000df69de7828d21326a2ffea462b04bc7560022989f7cc704f10521ef3e0	Unicode License V3 (THIRD_PARTY_NOTICES.md); build input only
+en	github	18F/guides	18F guides (content, accessibility, engineering, product and methods guides)	18F, U.S. General Services Administration		2025	debc24b34f23686194d9fe42e391859d569bd39a	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	uswds/uswds-site	U.S. Web Design System documentation site	U.S. Web Design System team, U.S. General Services Administration		2026	af13d80f071c3d897bee422f51954d9d7d156474	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	GSA-TTS/identity-dev-docs	Login.gov developer documentation	Technology Transformation Services, U.S. General Services Administration		2026	f696cc7db097395e9ef8c628c962965d0bd24eed	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	GSA/api-standards	GSA API standards	U.S. General Services Administration		2024	12629c3d1fc1420f1a16885d3dfcfc980a0a26cd	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	18F/frontend	18F front-end guide	18F, U.S. General Services Administration		2019	24c28da4281ee032f1725fa32a32cb20459d0665	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	18F/automated-testing-playbook	18F automated testing playbook	18F, U.S. General Services Administration		2017	b4dad85252a8db0ba1f9aee68b1002c78cf63b9c	LICENSE.md at the pinned revision: a work of the United States government, public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0
+en	github	CMSgov/beneficiary-fhir-data	Beneficiary FHIR Data Server (Blue Button) documentation	Centers for Medicare and Medicaid Services, U.S. Department of Health and Human Services		2026	ffc6c4d58b0f10e6d6f6ae600ee1a5391997fe64	LICENSE and README.md (Public domain) at the pinned revision: public domain in the US (17 U.S.C. 105); copyright waived worldwide under CC0 1.0

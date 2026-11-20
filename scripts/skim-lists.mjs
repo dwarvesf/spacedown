@@ -2,23 +2,27 @@
 // skim-lists: build the two word-frequency lists of the Skim reading mode from public-domain texts.
 //
 //   node scripts/skim-lists.mjs check-notices       offline: every source in the manifest is credited
-//                                                    in THIRD_PARTY_NOTICES.md (skim-parity runs this too)
+//                                                    in THIRD_PARTY_NOTICES.md and carries its evidence
+//                                                    (skim-parity runs this too)
 //   node scripts/skim-lists.mjs build [--cache <dir>] [--write] [--record-hashes]
 //                                                    fetch the sources, rebuild both lists, compare them
 //                                                    with assets/skim-surprise.html; --write puts them there
 //
-// Sources: scripts/skim-lists/sources.tsv. English: the 3000 most common words over a set of Project
-// Gutenberg public-domain works. Chinese: the 2000 most common Han characters over a set of public-domain
+// Sources: scripts/skim-lists/sources.tsv. English: the 3000 most common words over two corpora, Project
+// Gutenberg public-domain works (literature) and the Markdown of US federal government documentation
+// repositories, public domain in the US and dedicated worldwide under CC0 (technical), weighted by
+// DOMAIN_WEIGHT, because Spacedown mostly shows technical Markdown. Chinese: the 2000 most common Han characters over a set of public-domain
 // Chinese works, folded from Traditional to Simplified with the Unihan kSimplifiedVariant field, since the
 // texts are Traditional and most Chinese pages today are Simplified.
 //
-// Ranking: each work counts equally (relative frequency per work, averaged), and an entry must appear in
-// at least MIN_SHARE of the works, so a character name or a whaling term cannot ride one book into the
-// list. Ties break by code point, so a rebuild from the same files is byte-identical. English keys come
+// Ranking: each work counts equally within its corpus (relative frequency per work, averaged), the corpora
+// are blended by DOMAIN_WEIGHT, and an entry must appear in at least MIN_SHARE of the works of one corpus,
+// so a character name, a whaling term or one product's jargon cannot ride one work into the list. Ties break by code point, so a rebuild from the same files is byte-identical. English keys come
 // from the engine's own tokenizer, so a listed word is exactly the key Skim looks up.
 //
-// The build reads the network (Project Gutenberg, unicode.org); the app and the CLI never run it.
-// Each fetched file must match the sha256 in the manifest; --record-hashes fills or replaces them.
+// The build reads the network (Project Gutenberg, unicode.org, github.com) and needs git and unzip; the app
+// and the CLI never run it. Each fetched file must match the sha256 in the manifest (--record-hashes fills
+// or replaces them); a repository is fetched at the commit the manifest pins.
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -33,7 +37,11 @@ const NOTICES = path.join(ROOT, "THIRD_PARTY_NOTICES.md");
 const ENGINE = path.join(ROOT, "assets/skim-surprise.html");
 const EN_SIZE = 3000;
 const CJK_SIZE = 2000;
-const MIN_SHARE = { en: 0.4, cjk: 0.5 };
+const MIN_SHARE = { lit: 0.4, tech: 0.5, cjk: 0.5 };
+// The smallest technical weight that brings technical-doc coverage back to the level of the lists Skim
+// shipped before (0.2 to 0.5 were measured; see docs/verification/skim-tech-vocab.md).
+const DOMAIN_WEIGHT = { lit: 0.7, tech: 0.3 };
+const BOILERPLATE = /^(license|licence|contributing|security|code_of_conduct|changelog|changes|history)\b/i;
 const DIED_BY = 1955;
 const PUBLISHED_BY = 1929;
 const EN_ALLOWED = /^[a-z0-9'-]+$/;
@@ -49,7 +57,8 @@ export function readManifest() {
 }
 
 // How THIRD_PARTY_NOTICES.md must name a source.
-export const citation = (row) => (row.source === "gutenberg" ? `#${row.id}` : `Unihan ${row.id}`);
+export const citation = (row) => (row.source === "gutenberg" ? `#${row.id}` : row.source === "github" ? row.id : `Unihan ${row.id}`);
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/#]/g, (c) => `\\${c}`);
 
 // The offline provenance check: a list whose source is not credited fails.
 export function checkNotices() {
@@ -59,11 +68,13 @@ export function checkNotices() {
   const rows = readManifest();
   for (const r of rows) {
     const cite = citation(r);
-    const re = new RegExp(`${cite.replace(/[.#]/g, (c) => `\\${c}`)}(?![0-9.])`);
+    const re = new RegExp(`${escapeRe(cite)}(?![0-9A-Za-z.-])`);
     if (!re.test(notices)) problems.push(`THIRD_PARTY_NOTICES.md does not credit ${r.list} source ${cite} (${r.title})`);
     if (r.source === "gutenberg" && !(Number(r.died) <= DIED_BY && Number(r.published) <= PUBLISHED_BY)) {
       problems.push(`${cite} breaks the public-domain rule: died ${r.died}, published ${r.published}`);
     }
+    if (!r.evidence) problems.push(`${cite} has no evidence (publication record or license) in the manifest`);
+    if (r.source === "github" && !/^[0-9a-f]{40}$/.test(r.hash)) problems.push(`${cite} is not pinned to a commit`);
   }
   for (const list of ["en", "cjk"]) if (!rows.some((r) => r.list === list)) problems.push(`the manifest has no source for ${list}`);
   if (!notices.includes("scripts/skim-lists/sources.tsv")) problems.push("THIRD_PARTY_NOTICES.md does not name scripts/skim-lists/sources.tsv");
@@ -151,19 +162,61 @@ function countChinese(simp, body) {
   return { counts, total };
 }
 
-function rank(perWork, size, minShare) {
-  const n = perWork.length, need = Math.ceil(minShare * n);
-  const score = new Map(), df = new Map();
-  for (const { counts, total } of perWork) {
-    for (const [k, c] of counts) {
-      score.set(k, (score.get(k) || 0) + c / total / n);
-      df.set(k, (df.get(k) || 0) + 1);
+// corpora: { name: { works: [{ counts, total }], weight, minShare } }. An entry's score is the weighted sum
+// of its mean relative frequency in each corpus; it qualifies when it clears the floor of any one corpus.
+function rank(corpora, size) {
+  const score = new Map(), ok = new Set();
+  for (const { works, weight, minShare } of Object.values(corpora)) {
+    const n = works.length, need = Math.ceil(minShare * n), df = new Map();
+    for (const { counts, total } of works) {
+      for (const [k, c] of counts) {
+        score.set(k, (score.get(k) || 0) + (weight * c) / total / n);
+        df.set(k, (df.get(k) || 0) + 1);
+      }
     }
+    for (const [k, d] of df) if (d >= need) ok.add(k);
   }
-  const keys = [...score.keys()].filter((k) => df.get(k) >= need);
+  const keys = [...score.keys()].filter((k) => ok.has(k));
   keys.sort((a, b) => score.get(b) - score.get(a) || (a < b ? -1 : a > b ? 1 : 0));
-  if (keys.length < size) throw new Error(`only ${keys.length} entries pass the ${need}-work floor, ${size} needed`);
+  if (keys.length < size) throw new Error(`only ${keys.length} entries pass the work floor, ${size} needed`);
   return keys.slice(0, size);
+}
+
+// A repository at its pinned commit, Markdown files only (sparse checkout), in path order.
+function fetchRepo(row, cache) {
+  const dir = path.join(cache, `${row.id.replace("/", "__")}-${row.hash.slice(0, 12)}`);
+  const git = (...args) => {
+    const r = spawnSync("git", ["-C", dir, ...args], { encoding: "utf8", maxBuffer: 256 << 20 });
+    if (r.status !== 0) throw new Error(`${row.id}: git ${args[0]} failed: ${r.stderr.trim()}`);
+    return r.stdout;
+  };
+  if (!existsSync(path.join(dir, ".fetched"))) {
+    mkdirSync(dir, { recursive: true });
+    git("init", "-q");
+    git("sparse-checkout", "set", "--no-cone", "*.md", "*.MD");
+    git("fetch", "-q", "--depth", "1", "--filter=blob:none", `https://github.com/${row.id}`, row.hash);
+    git("checkout", "-q", row.hash);
+    writeFileSync(path.join(dir, ".fetched"), row.hash);
+  }
+  if (git("rev-parse", "HEAD").trim() !== row.hash) throw new Error(`${row.id}: checkout is not at ${row.hash}`);
+  // Repository boilerplate (license, contributing, security, changelog) repeats across repositories and
+  // would rank its own words, so only the documentation itself is read.
+  const files = git("ls-files", "-z").split("\0").filter((f) => /\.md$/i.test(f) && !BOILERPLATE.test(path.basename(f))).sort();
+  return files.map((f) => markdownProse(readFileSync(path.join(dir, f), "utf8"))).join("\n\n");
+}
+
+// One Markdown file down to its prose: no front matter, code, HTML, template tags, link targets or URLs.
+function markdownProse(md) {
+  return md
+    .replace(/^---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n/, "\n")
+    .replace(/^(```|~~~)[\s\S]*?^\1[^\n]*$/gm, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/\{%[\s\S]*?%\}|\{\{[\s\S]*?\}\}/g, " ")
+    .replace(/<[^>\n]+>/g, " ")
+    .replace(/`[^`\n]*`/g, " ")
+    .replace(/\]\([^)\n]*\)/g, "]")
+    .replace(/^\s*\[[^\]\n]+\]:\s*\S+.*$/gm, " ")
+    .replace(/\b(?:https?:\/\/|www\.)\S+/g, " ");
 }
 
 export async function buildLists({ cache = path.join(tmpdir(), "spacedown-skim-lists"), recordHashes = false, log = () => {} } = {}) {
@@ -173,8 +226,8 @@ export async function buildLists({ cache = path.join(tmpdir(), "spacedown-skim-l
   const load = async (row, urls, name) => {
     const buf = await fetchOnce(urls, path.join(cache, name));
     const got = sha(buf);
-    if (row.sha256 && row.sha256 !== got) drift.push(`${citation(row)}: sha256 ${got} against the manifest's ${row.sha256}`);
-    row.sha256 = got;
+    if (row.hash && row.hash !== got) drift.push(`${citation(row)}: sha256 ${got} against the manifest's ${row.hash}`);
+    row.hash = got;
     return buf;
   };
   const unihanRow = rows.find((r) => r.source === "unihan");
@@ -185,7 +238,20 @@ export async function buildLists({ cache = path.join(tmpdir(), "spacedown-skim-l
   const simp = simplifiedMap(unz.stdout);
 
   const tokenize = engineTokenizer();
-  const en = [], cjk = [];
+  const lit = [], cjk = [];
+  // The technical corpus counts one work per agency (the last part of the contributors cell), so one
+  // agency's house words cannot clear the floor alone and a small repository does not outvote a big one.
+  const agencies = new Map();
+  for (const row of rows.filter((r) => r.source === "github")) {
+    const counted = countEnglish(tokenize, fetchRepo(row, cache));
+    const agency = row.contributors.split(", ").pop();
+    log(`  ${row.id} en ${counted.total} tokens  ${row.title} (${agency})`);
+    const a = agencies.get(agency) || { counts: new Map(), total: 0 };
+    for (const [k, c] of counted.counts) a.counts.set(k, (a.counts.get(k) || 0) + c);
+    a.total += counted.total;
+    agencies.set(agency, a);
+  }
+  const tech = [...agencies.keys()].sort().map((k) => agencies.get(k));
   for (const row of rows.filter((r) => r.source === "gutenberg")) {
     const buf = await load(row, GUTENBERG.map((u) => u.replaceAll("{id}", row.id)), `pg${row.id}.txt`);
     const text = buf.toString("utf8");
@@ -194,23 +260,26 @@ export async function buildLists({ cache = path.join(tmpdir(), "spacedown-skim-l
     const body = gutenbergBody(text, row.id);
     const counted = row.list === "en" ? countEnglish(tokenize, body) : countChinese(simp, body);
     log(`  #${row.id} ${row.list} ${counted.total} tokens  ${row.title}`);
-    (row.list === "en" ? en : cjk).push(counted);
+    (row.list === "en" ? lit : cjk).push(counted);
   }
   if (drift.length && !recordHashes) throw new Error(`sources changed since the manifest was written:\n  ${drift.join("\n  ")}\nre-run with --record-hashes, then review the list diff`);
   if (recordHashes) writeManifestHashes(rows);
-  const chars = rank(cjk, CJK_SIZE, MIN_SHARE.cjk);
+  const chars = rank({ cjk: { works: cjk, weight: 1, minShare: MIN_SHARE.cjk } }, CJK_SIZE);
   const unfolded = chars.filter((c) => simp.has(c));
   if (unfolded.length) throw new Error(`Traditional characters left in the Chinese list: ${unfolded.join("")}`);
   return {
-    en: rank(en, EN_SIZE, MIN_SHARE.en).join(" "),
+    en: rank({
+      lit: { works: lit, weight: DOMAIN_WEIGHT.lit, minShare: MIN_SHARE.lit },
+      tech: { works: tech, weight: DOMAIN_WEIGHT.tech, minShare: MIN_SHARE.tech },
+    }, EN_SIZE).join(" "),
     cjk: chars.join(""),
-    works: { en: en.length, cjk: cjk.length },
+    works: { lit: lit.length, tech: tech.length, repos: rows.filter((r) => r.source === "github").length, cjk: cjk.length },
   };
 }
 
 function writeManifestHashes(rows) {
   const lines = readFileSync(MANIFEST, "utf8").split("\n");
-  const byId = new Map(rows.map((r) => [`${r.source}:${r.id}`, r.sha256]));
+  const byId = new Map(rows.filter((r) => r.source !== "github").map((r) => [`${r.source}:${r.id}`, r.hash]));
   const out = lines.map((l) => {
     if (!l || l.startsWith("#") || l.startsWith("list\t")) return l;
     const f = l.split("\t");
@@ -262,7 +331,7 @@ async function main(argv) {
   }
   const lists = await buildLists(opts);
   const have = engineLists();
-  console.log(`EN_WORDS  ${lists.en.split(" ").length} words from ${lists.works.en} works, sha256 ${sha(lists.en)}`);
+  console.log(`EN_WORDS  ${lists.en.split(" ").length} words from ${lists.works.lit} literary works and ${lists.works.repos} technical repositories (${lists.works.tech} agencies), sha256 ${sha(lists.en)}`);
   console.log(`CJK_CHARS ${[...lists.cjk].length} characters from ${lists.works.cjk} works, sha256 ${sha(lists.cjk)}`);
   if (write) { writeEngine(lists); console.log(`wrote both lists to ${path.relative(ROOT, ENGINE)}`); return; }
   const same = have.en === lists.en && have.cjk === lists.cjk;

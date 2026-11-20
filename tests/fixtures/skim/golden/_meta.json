@@ -14,8 +14,8 @@
  ],
  "minTokens": 80,
  "lists": {
-  "enSha": "5161396b02b87e6fdd2a67cf85466a7baefb9ade70b10f56745474330992a6e5",
-  "cjkSha": "fc612b5160e22240e6a85a4c2cc7924d9d4d09df45bf3884ca60541e62f555dd",
+  "enSha": "b49d7b187bf0476f82ab0b68b745af2f718b19ec0842427f6d23c545b2ea491f",
+  "cjkSha": "06865c6cd36804be4d606fc5269ccf70bd7363678a4f5c1a6ff7f980d1824b81",
   "enCount": 3000,
   "cjkCount": 2000
  },

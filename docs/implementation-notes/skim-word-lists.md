@@ -14,3 +14,4 @@ Only the delta from the brief: what was decided along the way, and why.
 - **History.** The old lists stay in git history and in release v1.1.0 and earlier, which shipped under MIT terms; the maintainer judges that separately.
 - **CODEOWNERS touched.** The brief kept CODEOWNERS off limits, but `scripts/check-owners.sh` (run in CI) fails on a new script without its own line, and the file's header says the PR that adds a script adds that line. Two lines were added next to `skim-parity.mjs`; no open PR touched the file.
 - **No screenshot.** The page chrome is unchanged; the difference is which words Skim fades, measured per token in the proof file instead.
+- **Follow-up.** The publication years were later confirmed against Library of Congress records or dated title pages, and two works without one were dropped: `docs/implementation-notes/skim-tech-vocab.md`.
