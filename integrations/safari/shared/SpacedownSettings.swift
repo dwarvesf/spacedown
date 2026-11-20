@@ -11,8 +11,14 @@ import Foundation
 
 enum SpacedownSettings {
     /// App Group id in the macOS team-prefixed form, so no provisioning profile entry is
-    /// needed. Also named in both targets' entitlements and in scripts/sd-settings.
+    /// needed. Also named in both targets' entitlements and in scripts/sd-settings. A Debug
+    /// build uses its own group (build-safari.sh signs it with the .dev id), so a test build
+    /// never reads or writes the installed release's settings.
+    #if DEBUG
+    static let suiteName = "W777S7V8TN.dfoundation.spacedown.dev"
+    #else
     static let suiteName = "W777S7V8TN.dfoundation.spacedown"
+    #endif
 
     /// Every key with its default. The render core validates values and fills gaps, so
     /// the extension passes only what the user set (see `stored`).

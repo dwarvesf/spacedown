@@ -15,6 +15,9 @@
 #   ./install.sh --set-default    # explicitly make Spacedown Opener the default .md app
 #   ./install.sh --revert-default # restore the .md handler we replaced (one command)
 #   ./install.sh --uninstall      # remove app, manifests, and (if set) the default
+#
+# Env: CONFIG=Debug builds a test opener that never replaces the installed one: id
+# dfoundation.spacedown.dev.opener, named "Spacedown Opener Dev" (as build-safari.sh CONFIG=Debug).
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,7 +25,13 @@ MD_OPEN="${HERE}/spacedown-open"
 APP_SRC="${HERE}/finder-app/SpacedownOpener.applescript"
 # The bundle is named "Spacedown Opener.app": macOS's default-handler / Open-With dialogs
 # use the bundle FILENAME (not CFBundleDisplayName), so the name must live in the filename.
-APP_OUT="${HERE}/finder-app/Spacedown Opener.app"
+OPENER_NAME="Spacedown Opener"
+HANDLER_BUNDLE="dfoundation.spacedown.opener"            # the Finder Open-With app, set on the opener below
+if [[ "${CONFIG:-Release}" == "Debug" ]]; then
+  OPENER_NAME="Spacedown Opener Dev"
+  HANDLER_BUNDLE="dfoundation.spacedown.dev.opener"
+fi
+APP_OUT="${HERE}/finder-app/${OPENER_NAME}.app"
 HOST_BIN="${HERE}/extension/native-host/spacedown-host"
 HOST_TPL="${HERE}/extension/native-host/dfoundation.spacedown.json.template"
 HOST_NAME="dfoundation.spacedown"
@@ -31,7 +40,6 @@ MD_UTI="net.daringfireball.markdown"
 # The .md extension can resolve through either UTI depending on the machine, and our app
 # claims both, so set/revert must cover both or the `md` binding won't flip cleanly.
 MD_UTIS=( "net.daringfireball.markdown" "public.markdown" )
-HANDLER_BUNDLE="dfoundation.spacedown.opener"            # the Finder Open-With app, set on Spacedown Opener.app below
 STATE_DIR="${HOME}/.config/spacedown"
 FIRSTRUN_MARKER="${STATE_DIR}/handler-offered"    # so the first-run offer asks exactly once
 PREV_HANDLER_FILE="${STATE_DIR}/prev-md-handler"  # snapshot of the handler we replaced, for revert
@@ -121,14 +129,14 @@ rm -f "$tmp_scpt"
 # Declare the app as a viewer/editor for markdown + plain text so it shows up in
 # Finder's "Open With" and is eligible as a default handler.
 plist="${APP_OUT}/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string dfoundation.spacedown.opener" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier dfoundation.spacedown.opener" "$plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Spacedown Opener" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Spacedown Opener" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $HANDLER_BUNDLE" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $HANDLER_BUNDLE" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $OPENER_NAME" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $OPENER_NAME" "$plist"
 # CFBundleName too, so every surface (Get Info, Open With, the change-all dialog) reads
 # "Spacedown Opener", never the "SpacedownOpener" source filename stem.
-/usr/libexec/PlistBuddy -c "Add :CFBundleName string Spacedown Opener" "$plist" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c "Set :CFBundleName Spacedown Opener" "$plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleName string $OPENER_NAME" "$plist" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleName $OPENER_NAME" "$plist"
 # Declare the app as a markdown document handler. Without CFBundleDocumentTypes /
 # LSItemContentTypes, LaunchServices ignores `duti -s` (an app can only be the default
 # for a type it claims to open). The fresh osacompile bundle has none, so plain Add works.

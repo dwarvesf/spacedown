@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		9B2B34BC2FDBE0E1007C5476 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2B34BB2FDBE0E1007C5476 /* AppDelegate.swift */; };
 		9B2B34C02FDBE0E1007C5476 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34BE2FDBE0E1007C5476 /* Main.html */; };
-		9B2B34C22FDBE0E1007C5476 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34C12FDBE0E1007C5476 /* Icon.png */; };
 		9B2B34C42FDBE0E1007C5476 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34C32FDBE0E1007C5476 /* Style.css */; };
 		9B2B34C62FDBE0E1007C5476 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 9B2B34C52FDBE0E1007C5476 /* Script.js */; };
 		9B2B34C82FDBE0E1007C5476 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2B34C72FDBE0E1007C5476 /* ViewController.swift */; };
@@ -56,7 +55,6 @@
 		9B2B34B82FDBE0E1007C5476 /* SpacedownDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpacedownDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B2B34BB2FDBE0E1007C5476 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9B2B34BF2FDBE0E1007C5476 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
-		9B2B34C12FDBE0E1007C5476 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		9B2B34C32FDBE0E1007C5476 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
 		9B2B34C52FDBE0E1007C5476 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
 		9B2B34C72FDBE0E1007C5476 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -133,7 +131,6 @@
 			isa = PBXGroup;
 			children = (
 				9B2B34BE2FDBE0E1007C5476 /* Main.html */,
-				9B2B34C12FDBE0E1007C5476 /* Icon.png */,
 				9B2B34C32FDBE0E1007C5476 /* Style.css */,
 				9B2B34C52FDBE0E1007C5476 /* Script.js */,
 				9B2B35A62FDBE0E3007C5476 /* Sample.md */,
@@ -250,7 +247,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9B2B34C22FDBE0E1007C5476 /* Icon.png in Resources */,
 				9B2B34CB2FDBE0E1007C5476 /* Main.storyboard in Resources */,
 				9B2B34C62FDBE0E1007C5476 /* Script.js in Resources */,
 				9B2B34C02FDBE0E1007C5476 /* Main.html in Resources */,
@@ -461,12 +457,12 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown.dev.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -495,7 +491,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -525,7 +521,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SpacedownDrop/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown";
+				INFOPLIST_KEY_CFBundleDisplayName = "Spacedown Dev";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -533,14 +529,14 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown;
+				PRODUCT_BUNDLE_IDENTIFIER = dfoundation.spacedown.dev;
 				PRODUCT_NAME = "Spacedown";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -574,7 +570,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,

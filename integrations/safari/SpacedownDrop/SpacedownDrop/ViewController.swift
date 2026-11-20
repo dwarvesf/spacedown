@@ -7,7 +7,11 @@ import Cocoa
 import SafariServices
 import WebKit
 
+#if DEBUG
+let extensionBundleIdentifier = "dfoundation.spacedown.dev.Extension"
+#else
 let extensionBundleIdentifier = "dfoundation.spacedown.Extension"
+#endif
 
 // Opens System Settings on the Quick Look extensions list; the base pane is the fallback.
 let quickLookSettingsURL = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.quicklook.preview")!

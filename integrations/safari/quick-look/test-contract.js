@@ -120,7 +120,13 @@ check("load-order.txt: vendor, ql-render, then plug-ins; every file exists",
 check("plug-ins load in registry order", JSON.stringify(SD.plugins().filter((id) => ["boxdraw", "xray", "present"].includes(id))) ===
   JSON.stringify(["boxdraw", "xray", "present"]));
 
-const group = (/static let suiteName = "([^"]+)"/.exec(swiftSettings) || [])[1];
+// The release group, and its Debug twin (.dev) that build-safari.sh CONFIG=Debug signs with.
+const groups = [...swiftSettings.matchAll(/static let suiteName = "([^"]+)"/g)].map((m) => m[1]);
+const group = groups.find((g) => !g.endsWith(".dev"));
+const buildSafari = fs.readFileSync(path.join(root, "integrations", "build-safari.sh"), "utf8");
+check("the Debug App Group is the release group plus .dev, in Swift and in build-safari.sh",
+  groups.length === 2 && groups.includes(group + ".dev") &&
+  buildSafari.includes('GROUP_ID="' + group + '"') && buildSafari.includes('GROUP_ID="${GROUP_ID}.dev"'));
 const groupFiles = [
   path.join(safari, "entitlements", "app.entitlements"),
   path.join(safari, "entitlements", "app.release.entitlements"),

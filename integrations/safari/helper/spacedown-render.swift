@@ -107,8 +107,13 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
 }
 
 // MachService name must match the LaunchAgent plist's MachServices key and the
-// extension's mach-lookup temporary-exception entitlement.
+// extension's mach-lookup temporary-exception entitlement. build-safari.sh CONFIG=Debug
+// compiles with -D DEBUG and renames all three to the .dev name.
+#if DEBUG
+let serviceName = "dfoundation.spacedown.render.dev"
+#else
 let serviceName = "dfoundation.spacedown.render"
+#endif
 let delegate = ListenerDelegate()
 let listener = NSXPCListener(machServiceName: serviceName)
 listener.delegate = delegate

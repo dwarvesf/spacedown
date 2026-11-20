@@ -38,8 +38,13 @@ enum Onboarding {
 private enum Links {
     static let quickLookSettings = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.quicklook.preview")!
     static let extensionsSettings = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences")!
+    #if DEBUG
+    static let safariExtensionID = "dfoundation.spacedown.dev.Extension"
+    static let quickLookExtensionID = "dfoundation.spacedown.dev.quicklook"
+    #else
     static let safariExtensionID = "dfoundation.spacedown.Extension"
     static let quickLookExtensionID = "dfoundation.spacedown.quicklook"
+    #endif
     static let brewCommand = "brew install --cask consolelabs/tap/spacedown"
     static let resetCommand = "qlmanage -r && qlmanage -r cache"
     static let seenKey = "onboarding.seen"
