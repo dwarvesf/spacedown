@@ -64,12 +64,16 @@ There is no formatter or linter for the shell, JavaScript or Swift code. Match t
 ## Pull requests
 
 1. Fork the repo (or branch, if you have write access) and open a PR against `main`.
-2. Fill in [the PR template](.github/pull_request_template.md): what changed, a demo, the proof file.
+2. Fill in [the PR template](.github/pull_request_template.md): what changed, a demo, the proof file, and the license checkbox ([why](#license-of-contributions)).
 3. A behavior change adds `docs/verification/<slug>.md` with a green run and a negative control ([how](docs/verification/README.md)). A change to what the panel shows adds a before and after screenshot.
 4. Fix any doc your change makes wrong in the same PR.
 5. CI runs on every PR that changes more than docs. It must be green before a maintainer merges. A first-time contributor's run waits for a maintainer to approve it.
 
 The PR title becomes the commit subject on `main` (squash merge), so write it as a conventional commit.
+
+## License of contributions
+
+Spacedown ships under the [AGPL-3.0](LICENSE) (outbound). Contributions are accepted under the [MIT license](https://opensource.org/license/mit) (inbound): by opening a pull request you agree that your change is yours to give and that Console Labs may use it under the MIT license. That lets Console Labs ship your change in every build it publishes, including the Mac App Store build, which the AGPL alone may not allow. Your change stays open source in this repo under the AGPL. The PR template has a checkbox for this.
 
 ## Issues
 
