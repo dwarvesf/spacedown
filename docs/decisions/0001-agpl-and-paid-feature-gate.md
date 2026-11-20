@@ -1,6 +1,6 @@
 # 0001: AGPL, the paid-feature gate and the license ask
 
-- **Status**: Accepted
+- **Status**: Accepted. The maintainer approved the day counting in the Quick Look extension (the date only, kept in the App Group settings).
 - **Date**: 2026-11-21
 
 ## Context

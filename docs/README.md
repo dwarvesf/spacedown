@@ -8,6 +8,7 @@ The root [README.md](../README.md) is the user guide: install, use, the CLI, the
 |---|---|---|
 | [dev/](dev/) | Contributors and agents | How to build, test and release |
 | [decisions/](decisions/) | Maintainers and contributors | Decision records (ADRs): what was decided, why, and what was ruled out. Numbered, one per decision |
+| [implementation-notes/](implementation-notes/) | Maintainers | Per-change notes: only what differed from the brief |
 | [verification/](verification/) | Anyone tracing a change | Proof files, one per PR. Dated records: add, never rewrite |
 | [images/](images/) | The README | Screenshots |
 | [app-store/](app-store/) | Maintainers | The App Store listing data and screenshots |
@@ -22,6 +23,8 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 | [PRIVACY.md](PRIVACY.md) | The privacy policy: Spacedown collects no data, and what each part loads |
 | [../NOTICE](../NOTICE) | The license: AGPL-3.0-only after v1.1.0, which versions stay MIT, and the license of contributions |
 | [../TRADEMARKS.md](../TRADEMARKS.md) | The Spacedown name and icon: what you can do with them, and when a build needs a different name |
+| [../CHANGELOG.md](../CHANGELOG.md) | What changed in each release, users first, developers last |
+| [../SECURITY.md](../SECURITY.md) | How to report a vulnerability privately, which versions get fixes, what to expect |
 | [../integrations/README.md](../integrations/README.md) | The Finder "Open With" app and the Chromium drop extension |
 
 ## Contributors
@@ -29,6 +32,7 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 | Doc | What it covers |
 |---|---|
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Prerequisites, a fresh clone to green tests, code style, commits, PRs, issues |
+| [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | The Contributor Covenant 2.1 and how to report a conduct problem |
 | [../AGENTS.md](../AGENTS.md) | The rules every change follows: size the work, branch and PR, proof of done, when to stop and ask |
 | [dev/development.md](dev/development.md) | How the parts fit, build commands, project layout, vendored code |
 | [dev/testing.md](dev/testing.md) | Test tiers, what CI runs and what stays local, skips, bash 3.2, known failures |
@@ -51,6 +55,7 @@ A new how-to page goes in `dev/`. Add it to this index in the same PR.
 |---|---|
 | `../.github/workflows/ci.yml` | CI: tests, the app build and the workflow lint on GitHub-hosted runners |
 | `../.github/pull_request_template.md` | The PR body: What, Demo, Proof, Notes |
+| `../.github/dependabot.yml` | Weekly, grouped updates for the GitHub Actions the workflows use |
 | `../.github/ISSUE_TEMPLATE/` | The bug report and the feature or task forms |
 | `../tests/known-failures.txt` | Checks that are red on purpose, with the reason; empty means all must pass |
 | `../.kit.toml` | Settings for the optional agent kit |
