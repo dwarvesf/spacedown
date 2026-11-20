@@ -81,3 +81,27 @@ sha512-EBLzUL8XLl+va/zAsmXwS7Z2B1F9HUHkZwyS/VKwh3S7T/U0nF4BaU29EP/ZSf6zgiIxYAnKL
 `@media (prefers-color-scheme: dark)`, then two rules that drop the themes' own `.hljs` background so
 the code block keeps md-style's chrome. Rebuild the file that way after any upstream bump, then run
 `node integrations/safari/quick-look/test-render.js`.
+
+## Skim word lists (`EN_WORDS`, `CJK_CHARS` in `skim-surprise.html`)
+
+Both lists are built from public-domain texts, never copied from a third-party list. The sources are in
+`scripts/skim-lists/sources.tsv`: Project Gutenberg plain-text editions of works whose contributors all
+died in 1955 or earlier and that were first published in 1929 or earlier, plus Unihan 16.0.0 (Unicode
+License V3) to fold the Traditional Chinese texts to Simplified. Each file's sha256 is recorded there.
+
+```bash
+node scripts/skim-lists.mjs build                    # fetch, rebuild, compare with the engine (exit 1 if different)
+node scripts/skim-lists.mjs build --write            # put the rebuilt lists into assets/skim-surprise.html
+node scripts/skim-lists.mjs build --record-hashes    # accept changed source files, then review the list diff
+node scripts/skim-lists.mjs check-notices            # offline: every source is credited in THIRD_PARTY_NOTICES.md
+```
+
+The build needs network access and `unzip`; downloads are cached (default: a `spacedown-skim-lists` folder
+in the temp dir, `--cache <dir>` to choose). English keys come from the engine's own tokenizer. Each work
+counts equally, and an entry must appear in at least 40% of the English works or 50% of the Chinese ones,
+so names and one-book terms stay out. Ties break by code point, so a rebuild is byte-identical.
+
+A source added to the manifest must be credited in `THIRD_PARTY_NOTICES.md` (by `#<ebook number>`, or
+`Unihan <version>`), or `node scripts/skim-parity.mjs` and the smoke parity check fail. After changing
+the lists, regenerate the Skim goldens against upstream skimgram with the same lists:
+`node scripts/skim-parity.mjs --upstream <skimgram clone at 4ebb78a> --write-golden`.

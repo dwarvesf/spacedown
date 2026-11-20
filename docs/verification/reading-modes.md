@@ -140,7 +140,7 @@ SPACEDOWN_TEST_BROWSER="/Applications/Google Chrome.app/Contents/MacOS/Google Ch
 
 - RSVP reads headings and keeps link and bold text; the other three prose modes skip links, bold, headings and the first table cell, as Skim does.
 - BeeLine assumes left to right text.
-- The two word lists come from `most-common-words-by-language` and `hanzi` (see `THIRD_PARTY_NOTICES.md`); the licences of the lists those packages draw on were not audited here.
+- The two word lists were replaced on 2026-11-21 with lists built from public-domain texts (`docs/verification/skim-word-lists.md`, `THIRD_PARTY_NOTICES.md`).
 - The scorer cannot tell a loanword from a native word, so an English term in a Vietnamese page is scored on the page's own counts like any other token.
 
 ## Rollback

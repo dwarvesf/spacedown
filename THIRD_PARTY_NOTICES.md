@@ -1,6 +1,6 @@
 # Third-party notices
 
-Spacedown and the spacedown CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts. Spacedown's own code is AGPL-3.0-only ([NOTICE](NOTICE)); the licenses of the bundled code and fonts below (MIT, BSD-3-Clause, SIL OFL 1.1) are compatible with it.
+Spacedown and the spacedown CLI bundle or reference the third-party works below. Each keeps its own license. The upstream projects hold the full license texts. Spacedown's own code is AGPL-3.0-only ([NOTICE](NOTICE)); the licenses of the bundled code, data and fonts below (MIT, BSD-3-Clause, SIL OFL 1.1, public domain) are compatible with it.
 
 ## Bundled code
 
@@ -14,12 +14,32 @@ Spacedown and the spacedown CLI bundle or reference the third-party works below.
 
 ## Word-frequency data (bundled)
 
-`assets/skim-surprise.html` carries two rank-ordered word lists, the same data skimgram builds in. Only the ordering is kept (a rank becomes a probability), no counts and no text from the sources.
+`assets/skim-surprise.html` carries two rank-ordered lists that Skim uses as its prior. Only the ordering is kept (a rank becomes a probability): no counts and no text from the sources. Both lists are derived by `scripts/skim-lists.mjs` from the public-domain works named in `scripts/skim-lists/sources.tsv`; `assets/REFRESH.md` has the build command.
 
-| Data | Where it lives | Taken from | License of the package |
+| Data | Where it lives | Derived from | License |
 |---|---|---|---|
-| The 3000 most common English words | `EN_WORDS` in `assets/skim-surprise.html` | `most-common-words-by-language` 3.0.14, whose English list is first20hours/google-10000-english | MIT, https://github.com/oprogramador/most-common-words-by-language |
-| The 2000 most common Chinese characters | `CJK_CHARS` in `assets/skim-surprise.html` | `hanzi` 3.2.0, Jun Da's character frequency list (see http://lingua.mtsu.edu/chinese-computing/copyright.html) | MIT, https://github.com/nieldlr/Hanzi |
+| The 3000 most common English words | `EN_WORDS` in `assets/skim-surprise.html` | Project Gutenberg plain-text editions of public-domain English works, listed below | Public domain: every contributor died in 1955 or earlier and every work was first published in 1929 or earlier |
+| The 2000 most common Chinese characters (Simplified) | `CJK_CHARS` in `assets/skim-surprise.html` | Project Gutenberg plain-text editions of public-domain Chinese works, listed below, folded from Traditional to Simplified with the `kSimplifiedVariant` field of Unihan 16.0.0 | Works: public domain, same rule. Unihan: Unicode License V3 (below), used at build time only |
+
+English works (Project Gutenberg ebook numbers): #1342 Pride and Prejudice (Jane Austen); #158 Emma (Jane Austen); #84 Frankenstein (Mary Shelley); #2701 Moby Dick (Herman Melville); #1661 The Adventures of Sherlock Holmes (Arthur Conan Doyle); #2852 The Hound of the Baskervilles (Arthur Conan Doyle); #2097 The Sign of the Four (Arthur Conan Doyle); #98 A Tale of Two Cities (Charles Dickens); #1400 Great Expectations (Charles Dickens); #730 Oliver Twist (Charles Dickens); #46 A Christmas Carol (Charles Dickens); #74 The Adventures of Tom Sawyer (Mark Twain); #76 Adventures of Huckleberry Finn (Mark Twain); #3176 The Innocents Abroad (Mark Twain); #345 Dracula (Bram Stoker); #174 The Picture of Dorian Gray (Oscar Wilde); #1260 Jane Eyre (Charlotte Bronte); #768 Wuthering Heights (Emily Bronte); #145 Middlemarch (George Eliot); #35 The Time Machine (H. G. Wells); #36 The War of the Worlds (H. G. Wells); #5230 The Invisible Man (H. G. Wells); #215 The Call of the Wild (Jack London); #219 Heart of Darkness (Joseph Conrad); #2814 Dubliners (James Joyce); #4217 A Portrait of the Artist as a Young Man (James Joyce); #160 The Awakening, and Selected Short Stories (Kate Chopin); #541 The Age of Innocence (Edith Wharton); #4517 Ethan Frome (Edith Wharton); #120 Treasure Island (Robert Louis Stevenson); #43 The Strange Case of Dr. Jekyll and Mr. Hyde (Robert Louis Stevenson); #514 Little Women (Louisa May Alcott); #829 Gulliver's Travels (Jonathan Swift); #55 The Wonderful Wizard of Oz (L. Frank Baum); #16 Peter Pan (J. M. Barrie); #113 The Secret Garden (Frances Hodgson Burnett); #45 Anne of Green Gables (L. M. Montgomery); #236 The Jungle Book (Rudyard Kipling); #932 The Fall of the House of Usher (Edgar Allan Poe); #10007 Carmilla (Joseph Sheridan Le Fanu); #2166 King Solomon's Mines (H. Rider Haggard); #1695 The Man Who Was Thursday (G. K. Chesterton); #8492 The King in Yellow (Robert W. Chambers); #201 Flatland (Edwin Abbott Abbott); #1228 On the Origin of Species (Charles Darwin); #205 Walden, and On the Duty of Civil Disobedience (Henry David Thoreau); #23 Narrative of the Life of Frederick Douglass (Frederick Douglass); #2376 Up from Slavery (Booker T. Washington); #2044 The Education of Henry Adams (Henry Adams); #37134 The Elements of Style (William Strunk); #15776 The Economic Consequences of the Peace (John Maynard Keynes); #833 The Theory of the Leisure Class (Thorstein Veblen); #621 The Varieties of Religious Experience (William James); #5116 Pragmatism (William James); #6435 The Principles of Scientific Management (Frederick Winslow Taylor); #1404 The Federalist Papers (Alexander Hamilton, John Jay, James Madison); #815 Democracy in America, Volume 1 (Alexis de Tocqueville).
+
+Chinese works (Project Gutenberg ebook numbers): #24264 紅樓夢 (Dream of the Red Chamber) (Cao Xueqin); #23863 水滸傳 (Water Margin) (Shi Nai'an); #23962 西遊記 (Journey to the West) (Wu Cheng'en); #24032 儒林外史 (The Scholars) (Wu Jingzi); #23950 三國志演義 (Romance of the Three Kingdoms) (Luo Guanzhong); #23850 老殘遊記 (The Travels of Lao Can) (Liu E); #24138 官場現形記 (Officialdom Unmasked) (Li Boyuan); #25379 文明小史 (A Short History of Civilization) (Li Boyuan); #27166 吶喊 (Call to Arms) (Lu Xun); #24042 徬徨 (Wandering) (Lu Xun); #25242 野草 (Wild Grass) (Lu Xun); #25271 朝花夕拾 (Dawn Blossoms Plucked at Dusk) (Lu Xun); #27636 沉沦 (Sinking) (Yu Dafu).
+
+The Project Gutenberg editions are read only to count words. No Project Gutenberg text, header or trademark is distributed.
+
+Unihan 16.0.0 (https://www.unicode.org/Public/16.0.0/ucd/Unihan.zip) is distributed under the Unicode License V3:
+
+> Copyright © 1991-2026 Unicode, Inc.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of data files and any associated documentation (the "Data Files") or software and any associated documentation (the "Software") to deal in the Data Files or Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, and/or sell copies of the Data Files or Software, and to permit persons to whom the Data Files or Software are furnished to do so, provided that either (a) this copyright and permission notice appear with all copies of the Data Files or Software, or (b) this copyright and permission notice appear in associated Documentation.
+>
+> THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+>
+> IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+>
+> Except as contained in this notice, the name of a copyright holder shall not be used in advertising or otherwise to promote the sale, use or other dealings in these Data Files or Software without prior written authorization of the copyright holder.
+
+`node scripts/skim-parity.mjs` (part of `bash tests/smoke.sh`) fails when a source in the manifest is not credited here.
 
 ## Runtime dependencies (not bundled)
 

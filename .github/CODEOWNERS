@@ -45,6 +45,8 @@
 /scripts/release.sh @tieubao
 /scripts/sd-settings @tieubao
 /scripts/size-budget @tieubao
+/scripts/skim-lists.mjs @tieubao
+/scripts/skim-lists/sources.tsv @tieubao
 /scripts/skim-parity.mjs @tieubao
 /scripts/store-shots.sh @tieubao
 /scripts/test-agent-guard.sh @tieubao

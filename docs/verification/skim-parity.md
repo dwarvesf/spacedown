@@ -16,9 +16,9 @@ The Read menu had two Skims: a rules-based one and a port of the skimgram scorer
 |---|---|---|
 | `bash tests/smoke.sh` | 0 | PASS, 114 checks |
 | `node scripts/skim-parity.mjs` | 0 | PASS, port against the committed goldens, 0.4 s |
-| `node scripts/skim-parity.mjs --upstream <clone> --freq-dir <dir>` | 0 | PASS, port against skimgram run live |
+| `node scripts/skim-parity.mjs --upstream <clone>` | 0 | PASS, port against skimgram run live |
 
-The live run, upstream `4ebb78a`, word lists from `most-common-words-by-language` 3.0.14 and `hanzi` 3.2.0. Each fixture is scored under basis auto, surprisal and gain, and intensity 0, 25, 50 and 100 (12 runs). Per token it compares key, kind, offsets, level, raw score and smoothed score. Scores must agree to 1e-9; the live run measured a largest difference of 0.
+The live run, upstream `4ebb78a`, with the word lists Skim bundled at the time (since replaced, see `docs/verification/skim-word-lists.md`). Each fixture is scored under basis auto, surprisal and gain, and intensity 0, 25, 50 and 100 (12 runs). Per token it compares key, kind, offsets, level, raw score and smoothed score. Scores must agree to 1e-9; the live run measured a largest difference of 0.
 
 | Fixture | What it is | Tokens (port) | Tokens (upstream) | Sequence | Scored | Path | Mismatched tokens |
 |---|---|---|---|---|---|---|---|
@@ -132,17 +132,16 @@ After `git checkout -- assets/skim-surprise.html`: `skim-parity: OK` and `smoke:
 ```bash
 bash tests/smoke.sh                       # the whole suite; parity-1 and parity-2 need node
 node scripts/skim-parity.mjs              # port against the committed goldens
-# against skimgram itself: a clone at 4ebb78a, plus the two word-list packages unpacked under <dir>/node_modules/
-#   npm pack most-common-words-by-language@3.0.14 hanzi@3.2.0   (then unpack each to <dir>/node_modules/<name>/)
-node scripts/skim-parity.mjs --upstream ~/src/skimgram --freq-dir <dir>
-node scripts/skim-parity.mjs --upstream ~/src/skimgram --freq-dir <dir> --write-golden   # regenerate the goldens, then read the diff
+# against skimgram itself: a clone at 4ebb78a; the word lists are rebuilt from scripts/skim-lists/sources.tsv
+node scripts/skim-parity.mjs --upstream ~/src/skimgram
+node scripts/skim-parity.mjs --upstream ~/src/skimgram --write-golden   # regenerate the goldens, then read the diff
 ```
 
 The clone is read only: the script copies `src/core/*.ts` and `src/dom/walker.ts` to a temp directory, rewrites their import paths, adds one `debug` field to the copy of `scorer.ts` so the raw and smoothed scores can be read, and runs them with `node --experimental-strip-types`. Nothing in the clone is built or installed.
 
 ## Known limits
 
-- The golden run needs node but no clone. The live run needs node 22 or later (type stripping), the clone and the two packages.
+- The golden run needs node but no clone. The live run needs node 22 or later (type stripping), the clone and network access for the word-list sources.
 - Fixtures have no decomposed accents and no non-English prose, because deviations 1 and 2 are meant to differ there. The Vietnamese path is covered by the browser checks (`read-10`), not by parity.
 - A non-English page written in ASCII only (for example Indonesian) keeps the English prior, as in skimgram. Before this change it went page-only.
 - The word lists are the same data as upstream; the licences of the lists those packages draw on were not audited here (see `reading-modes.md`).
@@ -150,3 +149,7 @@ The clone is read only: the script copies `src/core/*.ts` and `src/dom/walker.ts
 ## Rollback
 
 Revert the commits of this branch. After a revert a saved `skim` opens the rules-based Skim again and a saved `surprise` the scored one; the new `sd-skim-emph`, `sd-skim-intensity` and `sd-skim-basis` values are ignored by the old chrome.
+
+## Superseded, 2026-11-21
+
+The word lists and the goldens changed in `docs/verification/skim-word-lists.md`: both lists are now built from public-domain texts by `scripts/skim-lists.mjs`, and `--freq-dir` is gone. The commands above were updated to match; the counts and scores in this record are from the earlier lists.
