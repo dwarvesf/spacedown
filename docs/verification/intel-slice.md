@@ -62,7 +62,7 @@ Output: job success, 10 min 41 s end to end (build 5 min 45 s, slice test 4 s, s
 Verdict: PASS
 ```
 
-Two earlier runs of the same job failed on one smoke check, `--shot --offline: PNGs identical or missing`, and a probe run found the cause: the first launch of Python on a fresh Intel runner takes about 36 seconds, the smoke suite waits 5 seconds for its local image server, so the remote-image page rendered with no server and both PNGs matched. A `Warm up Python` step before the smoke suite pays that cold start; the suite itself is unchanged. Under 15 minutes and green, so the job is in `CI summary`'s `needs` list.
+Two earlier runs of the same job failed on one smoke check, `--shot --offline: PNGs identical or missing`, and a probe run found the cause: the first launch of Python on a fresh Intel runner takes about 36 seconds, the smoke suite waits 5 seconds for its local image server, so the remote-image page rendered with no server and both PNGs matched. A `Warm up Python` step before the smoke suite pays that cold start; the suite itself is unchanged. That one run was green and under 15 minutes, but the same job on the PR run (44817489054) hung in the build step until the runner cancelled it at 24 minutes, with no log kept. One hang in four runs is not a reliable required check, so the job is NOT in `CI summary`'s `needs`: it reports on every PR, is not required, and has `timeout-minutes: 15`.
 
 ## CI negative control
 

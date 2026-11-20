@@ -143,12 +143,15 @@ jobs:
   # builds on a GitHub-hosted Intel runner (free on a public repo), checks every Mach-O
   # carries both slices, renders through the bundled CLI under `arch -x86_64`, then runs
   # the smoke suite there. `macos-26-intel` is the Intel label of the macos-26 image.
+  # Not in `CI summary`'s needs, so it is not required: the build step ran 6 minutes on
+  # three runs and hung for 24 minutes on a fourth (about 11 minutes end to end when it
+  # works). Read its result on the PR; a red one is a reason to look, not a merge block.
   intel:
     name: Intel Mac (x86_64 slice)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: macos-26-intel
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -219,7 +222,7 @@ jobs:
   summary:
     name: CI summary
     if: always()
-    needs: [changes, test, build, intel, actionlint]
+    needs: [changes, test, build, actionlint]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -227,12 +230,11 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
-          INTEL: ${{ needs.intel.result }}
           ACTIONLINT: ${{ needs.actionlint.result }}
         run: |
-          echo "changes=$CHANGES test=$TEST build=$BUILD intel=$INTEL actionlint=$ACTIONLINT"
+          echo "changes=$CHANGES test=$TEST build=$BUILD actionlint=$ACTIONLINT"
           [ "$CHANGES" = success ] || { echo "the owners and paths job did not succeed"; exit 1; }
-          for r in "$TEST" "$BUILD" "$INTEL" "$ACTIONLINT"; do
+          for r in "$TEST" "$BUILD" "$ACTIONLINT"; do
             case "$r" in
             success | skipped) ;;
             *) echo "a CI job ended $r"; exit 1 ;;
