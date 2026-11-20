@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Owners, then the docs filter. The diff is HEAD^1..HEAD: the PR merge commit
+  # Owners, the PR shape gate's tests, then the docs filter. The diff is HEAD^1..HEAD: the PR merge commit
   # against main, or the squash commit on main. A manual run, or a commit with
   # no parent, runs everything.
   changes:
@@ -39,6 +39,11 @@ jobs:
 
       - name: Every script and workflow has an owner
         run: bash scripts/check-owners.sh
+
+      # The PR's copy of the PR shape gate passes its tests before it becomes
+      # the base copy. Here, not in pr-shape.yml: that job runs no PR code.
+      - name: The PR shape gate passes its tests
+        run: bash scripts/pr-shape-test.sh
 
       # Docs-only paths. README.md is NOT one: the MCP test reads it.
       - id: filter
