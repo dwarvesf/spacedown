@@ -5,19 +5,12 @@ Skim's two word-frequency lists were replaced, because the sources of the old on
 ## Green run
 
 ```
-Command: node scripts/skim-lists.mjs build --cache <dir> --record-hashes --write
+Command: node scripts/skim-lists.mjs build --cache <new empty dir>     (cold: every source fetched again)
 Exit: 0
 Output: EN_WORDS  3000 words from 57 works, sha256 5161396b...0992a6e5
         CJK_CHARS 2000 characters from 13 works, sha256 fc612b51...62f555dd
-        wrote both lists to assets/skim-surprise.html
-Verdict: PASS
-```
-
-```
-Command: node scripts/skim-lists.mjs build --cache <dir>        (a second build from the same files, no write)
-Exit: 0
-Output: skim-lists: the engine's lists equal the rebuild
-Verdict: PASS, the build is byte-reproducible
+        skim-lists: the engine's lists equal the rebuild
+Verdict: PASS: every fetched file matched its manifest sha256, and the rebuild is byte-identical to the committed lists
 ```
 
 ```
