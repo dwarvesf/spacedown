@@ -74,6 +74,8 @@ final class OnboardingModel: ObservableObject {
     @Published var claimants: ClaimantScan = .scanning
     @Published var cliPath: String?
     @Published var copiedID: String?
+    /// Tallest the page may be, set from the screen's visible frame. Taller content scrolls.
+    @Published var maxContentHeight: CGFloat = 600
 
     var onPreview: () -> Void = {}
     var onOpenQuickLookSettings: () -> Void = {}
@@ -199,6 +201,8 @@ final class OnboardingController: NSObject {
     private let model = OnboardingModel()
     private var window: OnboardingWindow?
     private var hook = Hook()
+    private var resizeObserver: NSObjectProtocol?
+    private var recenter = false
 
     /// Screenshot hooks from the environment or launch arguments.
     private struct Hook {
@@ -242,7 +246,7 @@ final class OnboardingController: NSObject {
 
     // MARK: Window
 
-    private func showWindow(activate: Bool) {
+    private func showWindow(activate: Bool, center: Bool = true) {
         refreshProbes()
         if model.quickLook == .unchecked, UserDefaults.standard.bool(forKey: Links.confirmedKey) {
             model.quickLook = .confirmed
@@ -254,10 +258,17 @@ final class OnboardingController: NSObject {
             win.styleMask = [.titled, .closable, .miniaturizable]
             win.title = "Welcome to Spacedown"
             win.isReleasedWhenClosed = false
-            win.center()
             window = win
+            // SwiftUI sets the final height after the window exists, and a resize grows the
+            // window downward from its top-left corner. Keep it on screen after every resize.
+            resizeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResizeNotification, object: win, queue: .main
+            ) { [weak self] _ in self?.fitOnScreen() }
         }
         guard let window = window else { return }
+        let shouldCenter = center && !window.isVisible
+        recenter = shouldCenter
+        updateHeightCap()
         model.page = .checklist
         if activate {
             window.makeKeyAndOrderFront(nil)
@@ -265,6 +276,42 @@ final class OnboardingController: NSObject {
         } else {
             window.orderFrontRegardless()
         }
+        fitOnScreen()
+        if shouldCenter {
+            // Center once the layout has settled, not on the size the window had at creation.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.fitOnScreen()
+                self?.recenter = false
+            }
+        }
+    }
+
+    private func visibleFrame() -> NSRect {
+        (window?.screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 720)
+    }
+
+    /// The page may be as tall as the visible screen minus the title bar; taller content scrolls.
+    private func updateHeightCap() {
+        guard let window = window else { return }
+        let chrome = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 560, height: 100)).height - 100
+        model.maxContentHeight = max(240, visibleFrame().height - chrome - 16)
+    }
+
+    /// Keep the whole window inside the visible frame (below the menu bar, above the Dock);
+    /// while `recenter` is set, put it in the middle instead.
+    private func fitOnScreen() {
+        guard let window = window else { return }
+        let visible = visibleFrame()
+        var frame = window.frame
+        frame.size.height = min(frame.height, visible.height)
+        frame.size.width = min(frame.width, visible.width)
+        if recenter {
+            frame.origin = NSPoint(x: visible.midX - frame.width / 2, y: visible.midY - frame.height / 2)
+        } else {
+            frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+        }
+        if !NSEqualRects(frame, window.frame) { window.setFrame(frame, display: true) }
     }
 
     private func showForScreenshot(state: String) {
@@ -277,7 +324,7 @@ final class OnboardingController: NSObject {
         }
         let wanted = model.page
         let wantedStatus = model.quickLook
-        showWindow(activate: false)
+        showWindow(activate: false, center: false)
         model.page = wanted
         model.quickLook = wantedStatus
         guard let window = window else { return }
@@ -289,6 +336,7 @@ final class OnboardingController: NSObject {
         // Only the onboarding window and its panel should be on screen for the capture.
         for other in NSApp.windows where other !== window { other.orderOut(nil) }
         window.setFrameTopLeftPoint(NSPoint(x: 120, y: (NSScreen.main?.visibleFrame.maxY ?? 900) - 80))
+        fitOnScreen()
         // SwiftUI sizes the window on its first layout pass; report the number after it.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
             guard let self = self, let window = self.window else { return }
@@ -358,18 +406,34 @@ final class OnboardingController: NSObject {
 
 // MARK: - Views
 
+private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 private struct OnboardingView: View {
     @ObservedObject var model: OnboardingModel
 
+    @State private var contentHeight: CGFloat = 0
+
     var body: some View {
-        Group {
-            switch model.page {
-            case .checklist: ChecklistView(model: model)
-            case .fix: FixView(model: model)
-            }
+        ScrollView(.vertical) {
+            page.background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ContentHeightKey.self, value: proxy.size.height)
+                }
+            )
         }
-        .frame(width: 560)
+        .onPreferenceChange(ContentHeightKey.self) { contentHeight = $0 }
+        .frame(width: 560, height: min(max(contentHeight, 120), model.maxContentHeight))
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    @ViewBuilder private var page: some View {
+        switch model.page {
+        case .checklist: ChecklistView(model: model)
+        case .fix: FixView(model: model)
+        }
     }
 }
 
