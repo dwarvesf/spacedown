@@ -61,7 +61,7 @@ Spacedown is AGPL-3.0-only after v1.1.0. Version 1.1.0 and every release before 
 - The agent harness works for any contributor, with a guard that keeps frozen files on `contract/` branches (#98).
 - `CONFIG=Debug integrations/build-safari.sh` makes a test build whose ids, App Group and helper carry `.dev`, so it installs beside a release (#100).
 - The size budget is 2.8 MB for the app and 1.5 MB for the dmg, measured on the universal build; the unused `Icon.png` stub is gone (#100).
-- Release notes come from this file (`scripts/release-notes.sh`), and `scripts/release.sh` keeps older releases unless `PRUNE_OLD_RELEASES=1` (#RP).
+- Release notes come from this file (`scripts/release-notes.sh`), and `scripts/release.sh` keeps older releases unless `PRUNE_OLD_RELEASES=1` (#101).
 - Size budget test, and a build that refuses a release with stale extension versions (#45, #66, #74).
 - The build can notarize with an App Store Connect API key (#43).
 - A deterministic smoke baseline, `--only` subset runs and a `layout-check` script (#35, #61, #64).
