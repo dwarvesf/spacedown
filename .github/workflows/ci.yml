@@ -219,7 +219,7 @@ jobs:
   summary:
     name: CI summary
     if: always()
-    needs: [changes, test, build, actionlint]
+    needs: [changes, test, build, intel, actionlint]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -227,11 +227,12 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
+          INTEL: ${{ needs.intel.result }}
           ACTIONLINT: ${{ needs.actionlint.result }}
         run: |
-          echo "changes=$CHANGES test=$TEST build=$BUILD actionlint=$ACTIONLINT"
+          echo "changes=$CHANGES test=$TEST build=$BUILD intel=$INTEL actionlint=$ACTIONLINT"
           [ "$CHANGES" = success ] || { echo "the owners and paths job did not succeed"; exit 1; }
-          for r in "$TEST" "$BUILD" "$ACTIONLINT"; do
+          for r in "$TEST" "$BUILD" "$INTEL" "$ACTIONLINT"; do
             case "$r" in
             success | skipped) ;;
             *) echo "a CI job ended $r"; exit 1 ;;

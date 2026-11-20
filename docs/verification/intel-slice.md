@@ -42,6 +42,38 @@ Output: FAIL REQUIRE_INTEL=1 but this host is arm64 (translated=0)
 Verdict: RED, as expected: the CI job cannot pass on an Apple silicon runner
 ```
 
+## CI run on the hosted Intel runner
+
+Label: `macos-26-intel` (Intel Core i7-8700B, macOS 26.6.1). Run 44815598268 on branch `ci/intel-slice`, workflow_dispatch.
+
+```
+Command: the `Intel Mac (x86_64 slice)` job (build, tests/intel-slice-test.sh with REQUIRE_INTEL=1, smoke suite)
+Exit: 0
+Output: job success, 10 min 41 s end to end (build 5 min 45 s, slice test 4 s, smoke suite 4 min 25 s)
+        Mach-O count is 3 on the CI build because it uses --with-safari; the local run above built Quick Look only
+        host: x86_64, Intel(R) Core(TM) i7-8700B CPU @ 3.20GHz, macOS 26.6.1
+        ok   the host is a native Intel Mac
+        ok   3 Mach-O files, each with arm64 and x86_64
+        ok   lipo -thin x86_64 gives an x86_64 Mach-O
+        ok   heading page rendered under arch -x86_64
+        ok   math typeset with inlined fonts under arch -x86_64
+        intel-slice-test: 5 passed, 0 failed
+        smoke: all 192 passed
+Verdict: PASS
+```
+
+Two earlier runs of the same job failed on one smoke check, `--shot --offline: PNGs identical or missing`, and a probe run found the cause: the first launch of Python on a fresh Intel runner takes about 36 seconds, the smoke suite waits 5 seconds for its local image server, so the remote-image page rendered with no server and both PNGs matched. A `Warm up Python` step before the smoke suite pays that cold start; the suite itself is unchanged. Under 15 minutes and green, so the job is in `CI summary`'s `needs` list.
+
+## CI negative control
+
+```
+Command: the same job on the same code before the Warm up Python step
+Exit: 1
+Output: FAIL: --shot --offline: online rc=0 offline rc=0, PNGs identical or missing
+        smoke: 191 passed, 1 FAILED
+Verdict: RED, as expected: the job fails when a check fails
+```
+
 ## Reproduce
 
 ```
