@@ -188,6 +188,12 @@ jobs:
           REQUIRE_INTEL: "1"
         run: /bin/bash tests/intel-slice-test.sh "$APP"
 
+      # The first launch of Python on a fresh Intel runner takes about 40 seconds; the smoke
+      # suite waits 5 seconds for its local image server, then renders a page without the
+      # image and fails the --offline check. Pay the cold start here.
+      - name: Warm up Python
+        run: python3 -I -c 'print("python ready")'
+
       - name: Smoke suite on Intel
         run: |
           set -o pipefail
