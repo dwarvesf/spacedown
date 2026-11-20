@@ -3,12 +3,19 @@
 # moment they happen and says what to do instead.
 #
 #   1. `git push` that targets main              -> push a branch and open a PR
-#   2. a force push (-f, --force*, +ref)         -> push a new commit, or merge main in
-#   3. --no-verify, or `git commit -n`           -> fix what the check reports
+#   2. a force push (-f, --force*, +ref), --mirror -> push a new commit, or merge main in
+#   3. --no-verify, `git commit -n`, core.hooksPath, GIT_CONFIG_* or GIT_DIR
+#      in front of git                           -> fix what the check reports
 #   4. `git commit` while on main                -> create a branch first
 #   5. an edit or a commit that touches a file docs/contract-r1.md freezes
-#      (the list is scripts/agent-frozen-paths.txt), on a branch that is not
-#      named contract/<slug>                     -> use a contract branch and PR
+#      (the list is scripts/agent-frozen-paths.txt as committed on origin/main,
+#      plus this script, that list and .claude/settings.json, always), on a
+#      branch that is not named contract/<slug>  -> use a contract branch and PR
+#
+# Long options are matched by abbreviation (git accepts --no-ver for --no-verify).
+# A push destination counts as main when git resolves it to refs/heads/main (@, @{-1}).
+# A branch switch earlier in the same command counts only when it creates the
+# branch or the branch exists; else the real HEAD stands.
 #
 # Wired in .claude/settings.json for the Bash tool (rules 1 to 5, the commit-time
 # check for 5) and for Edit, Write, MultiEdit and NotebookEdit (rule 5 at edit
@@ -28,7 +35,8 @@
 # pass. It also looks inside `bash -c` and `eval`. It cannot see a command built
 # from variables, a script that runs git itself, or a `sed -i` on a frozen file
 # (the commit-time check still catches that one). It guards Claude Code only.
-# Review and CI are the second line.
+# It is a seatbelt for agents, not a security boundary: the server-side ruleset on
+# main is the real control, and review is the second line.
 set -o pipefail
 
 GUARD_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
@@ -93,13 +101,25 @@ block() { # block <rule> <fix>
 
 # ---- the frozen files ------------------------------------------------------
 
-# frozen_list <repo top>: the pattern file of that repo, else this guard's own
-frozen_list() {
-    if [ -f "$1/scripts/agent-frozen-paths.txt" ]; then
-        printf '%s' "$1/scripts/agent-frozen-paths.txt"
+# These three are frozen whatever any list says, so an agent cannot edit the guard,
+# its list or its wiring in the same change that relies on the edit.
+BUILTIN_FROZEN="scripts/agent-guard.sh
+scripts/agent-frozen-paths.txt
+.claude/settings.json"
+
+# frozen_patterns <repo top>: the built-in three, then the list as committed on
+# origin/main. The working tree copy is read only when the repo has no origin/main
+# at all (a fresh repo, a test), because an agent can edit the working tree copy.
+frozen_patterns() {
+    printf '%s\n' "$BUILTIN_FROZEN"
+    if git -C "$1" rev-parse -q --verify refs/remotes/origin/main >/dev/null 2>&1; then
+        git -C "$1" show origin/main:scripts/agent-frozen-paths.txt 2>/dev/null
+    elif [ -f "$1/scripts/agent-frozen-paths.txt" ]; then
+        cat "$1/scripts/agent-frozen-paths.txt"
     else
-        printf '%s' "$GUARD_ROOT/scripts/agent-frozen-paths.txt"
+        cat "$GUARD_ROOT/scripts/agent-frozen-paths.txt" 2>/dev/null
     fi
+    return 0
 }
 
 # norm_rel <path>: drop "", "." and "x/.." parts so a ../ cannot dodge a pattern
@@ -118,16 +138,17 @@ norm_rel() {
     printf '%s' "${out[*]-}"
 }
 
-# is_frozen <repo-relative path> <list file>: 0 when a pattern matches
+# is_frozen <repo-relative path> <patterns, one per line>: 0 when a pattern matches
 is_frozen() {
     local rel pat
-    [ -f "$2" ] || return 1
     rel="$(norm_rel "$1")"
     while IFS= read -r pat || [ -n "$pat" ]; do
         case "$pat" in "" | "#"*) continue ;; esac
         # shellcheck disable=SC2254
         case "$rel" in $pat) return 0 ;; esac
-    done <"$2"
+    done <<EOF
+$2
+EOF
     return 1
 }
 
@@ -156,7 +177,7 @@ edit_check() {
     full="$d$tail"
     rel="${full#"$top"/}"
     [ "$rel" != "$full" ] || return 0
-    is_frozen "$rel" "$(frozen_list "$top")" || return 0
+    is_frozen "$rel" "$(frozen_patterns "$top")" || return 0
     b="$(git -C "$d" symbolic-ref --short -q HEAD 2>/dev/null || true)"
     contract_branch "$b" || frozen_block "$rel"
     return 0
@@ -217,12 +238,43 @@ split_parts() {
     END { flush() }'
 }
 
-branch_of() { # branch_of <dir>
+# branch_of <dir>: the branch a later part of the command runs on. A switch earlier
+# in the same command counts only when it creates the branch or the branch exists;
+# else the real branch from `git symbolic-ref` stands (a failed switch changes nothing).
+branch_override_creates=0
+branch_of() {
     if [ -n "$branch_override" ]; then
-        printf '%s' "$branch_override"
-        return
+        if [ "$branch_override_creates" -eq 1 ] ||
+            git -C "$1" show-ref --verify --quiet "refs/heads/$branch_override" 2>/dev/null; then
+            printf '%s' "$branch_override"
+            return
+        fi
     fi
     git -C "$1" symbolic-ref --short -q HEAD 2>/dev/null || true
+}
+
+# long_opt <word> <option name>: 0 when <word> is --<option name> or an abbreviation
+# of it. git accepts any unambiguous prefix of a long option, so --no-ver and --forc
+# mean --no-verify and --force. Four characters after the dashes or more.
+long_opt() {
+    local name
+    case "$1" in --?*) ;; *) return 1 ;; esac
+    name="${1#--}"
+    name="${name%%=*}"
+    [ "${#name}" -ge 4 ] || return 1
+    [ "${2#"$name"}" != "$2" ]
+}
+
+# cfg_check <name=value>: a config that moves the hooks directory switches the repo's hooks off
+cfg_check() {
+    local name
+    name="$(printf '%s' "${1%%=*}" | tr '[:upper:]' '[:lower:]')"
+    case "$name" in
+    core.hookspath)
+        block "setting core.hooksPath points git at other hooks, so the repo's hooks and checks do not run." \
+            "leave core.hooksPath alone; fix what the check reports and run the command again"
+        ;;
+    esac
 }
 
 resolve_dir() { # resolve_dir <path>: relative to the current effective dir
@@ -241,7 +293,7 @@ frozen_commit_check() {
     local dir="$1" all="$2" top list b f prefix w
     shift 2
     top="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" || return 0
-    list="$(frozen_list "$top")"
+    list="$(frozen_patterns "$top")"
     b="$(branch_of "$dir")"
     contract_branch "$b" && return 0
     while IFS= read -r f; do
@@ -269,7 +321,20 @@ check_git() { # check_git <words...>, the words after `git`
             i=$((i + 2))
             ;;
         -c)
+            cfg_check "${w[$((i + 1))]:-}"
             i=$((i + 2))
+            ;;
+        -c?*)
+            cfg_check "${w[$i]#-c}"
+            i=$((i + 1))
+            ;;
+        --config-env)
+            cfg_check "${w[$((i + 1))]:-}"
+            i=$((i + 2))
+            ;;
+        --config-env=*)
+            cfg_check "${w[$i]#--config-env=}"
+            i=$((i + 1))
             ;;
         -*) i=$((i + 1)) ;;
         *)
@@ -282,35 +347,49 @@ check_git() { # check_git <words...>, the words after `git`
     local -a rest=()
     rest=("${w[@]:$i}")
 
-    # --no-verify on any git command, and `git commit -n`
+    # --no-verify (or an abbreviation of it) on any git command, and `git commit -n`
     local a
     for a in "${rest[@]+"${rest[@]}"}"; do
-        case "$a" in
-        --no-verify)
+        if long_opt "$a" no-verify; then
             block "--no-verify skips the repo's hooks and checks." \
                 "fix what the check reports, then run the command again without the flag"
-            ;;
-        esac
+        fi
     done
 
     case "$sub" in
-    switch | checkout)
-        # A branch change earlier in the same command decides the later parts.
-        local target="" prev=""
+    config)
         for a in "${rest[@]+"${rest[@]}"}"; do
-            case "$prev" in
-            -c | -b | -B | -C | --create)
-                target="$a"
-                break
-                ;;
+            cfg_check "$a"
+        done
+        ;;
+    switch | checkout)
+        # A branch change earlier in the same command decides the later parts. Read
+        # only the options before `--` (after it come paths). `switch` counts always;
+        # `checkout` counts only with -b, -B or -c, because a plain
+        # `git checkout x` may name a file, not a branch.
+        local target="" prev="" creates=0 creator
+        for a in "${rest[@]+"${rest[@]}"}"; do
+            [ "$a" != "--" ] || break
+            creator=0
+            case "$sub:$prev" in
+            switch:-c | switch:-C | switch:--create | switch:--force-create) creator=1 ;;
+            checkout:-b | checkout:-B | checkout:-c) creator=1 ;;
             esac
+            if [ "$creator" -eq 1 ]; then
+                target="$a"
+                creates=1
+                break
+            fi
             case "$a" in
             -*) ;;
-            *) [ -n "$target" ] || target="$a" ;;
+            *) [ "$sub" = "switch" ] && [ -z "$target" ] && target="$a" ;;
             esac
             prev="$a"
         done
-        [ -z "$target" ] || branch_override="$target"
+        if [ -n "$target" ]; then
+            branch_override="$target"
+            branch_override_creates="$creates"
+        fi
         ;;
     commit)
         local skip=0 all=0 last paths_done=0
@@ -357,10 +436,17 @@ check_git() { # check_git <words...>, the words after `git`
                 skip=0
                 continue
             fi
+            if long_opt "$a" force || long_opt "$a" force-with-lease || long_opt "$a" force-if-includes; then
+                force=1
+                continue
+            fi
+            if long_opt "$a" mirror; then
+                block "git push --mirror overwrites every ref on the remote, main included." \
+                    "push the one branch you mean: git push -u origin <type>/<slug>"
+            fi
             case "$a" in
             -n | --dry-run) dry=1 ;;
             --tags) tags=1 ;;
-            -f | --force | --force-with-lease | --force-with-lease=* | --force-if-includes) force=1 ;;
             -o | --push-option | --repo | --receive-pack | --exec) skip=1 ;;
             -[A-Za-z]*)
                 case "$a" in *f*) force=1 ;; esac
@@ -387,7 +473,7 @@ check_git() { # check_git <words...>, the words after `git`
             if [ "$tags" -eq 0 ] && [ "$b" = "main" ]; then block "$msg" "$fix"; fi
             return 0
         fi
-        local r dst
+        local r dst full
         for r in "${refs[@]}"; do
             case "$r" in
             +*) block "$fmsg" "$ffix" ;;
@@ -397,8 +483,19 @@ check_git() { # check_git <words...>, the words after `git`
             *) dst="$r" ;;
             esac
             dst="${dst#refs/heads/}"
+            dst="${dst#heads/}"
             if [ "$dst" = "main" ]; then block "$msg" "$fix"; fi
-            if [ "$dst" = "HEAD" ] && [ "$b" = "main" ]; then block "$msg" "$fix"; fi
+            case "$dst" in
+            HEAD | @)
+                if [ "$b" = "main" ]; then block "$msg" "$fix"; fi
+                ;;
+            -* | "") ;;
+            *)
+                # a name git resolves to refs/heads/main (@{-1}, an abbreviation, ...)
+                full="$(git -C "$dir" rev-parse --symbolic-full-name "$dst" 2>/dev/null || true)"
+                if [ "$full" = "refs/heads/main" ]; then block "$msg" "$fix"; fi
+                ;;
+            esac
         done
         ;;
     esac
@@ -409,11 +506,23 @@ check_git() { # check_git <words...>, the words after `git`
 # like) and P_args (the words after it); P_first is empty when there is none
 P_first=""
 P_args=()
+P_gitenv=0
+
+# git_env_word <VAR=value>: 0 for GIT_CONFIG_*, GIT_DIR or GIT_WORK_TREE, which can
+# point git at other hooks, another repo or other settings
+git_env_word() {
+    case "$1" in
+    GIT_CONFIG_*=* | GIT_CONFIG=* | GIT_DIR=* | GIT_WORK_TREE=*) return 0 ;;
+    esac
+    return 1
+}
+
 parse_seg() {
     local seg="$1" word i=0 n
     local -a w=() c=()
     P_first=""
     P_args=()
+    P_gitenv=0
     # shellcheck disable=SC2162
     read -a w <<<"$seg" || true
     n="${#w[@]}"
@@ -426,7 +535,10 @@ parse_seg() {
         word="${c[$i]#(}"
         case "$word" in
         "" | sudo | env | command | exec | nohup | time | if | then | else | do | while | until | '!' | '{') i=$((i + 1)) ;;
-        [A-Za-z_]*=*) i=$((i + 1)) ;;
+        [A-Za-z_]*=*)
+            if git_env_word "$word"; then P_gitenv=1; fi
+            i=$((i + 1))
+            ;;
         *) break ;;
         esac
     done
@@ -458,8 +570,21 @@ check_segment() { # check_segment <one part>
         esac
         ;;
     git)
+        if [ "$P_gitenv" -eq 1 ]; then
+            block "GIT_CONFIG_*, GIT_DIR and GIT_WORK_TREE in front of git can switch off the repo's hooks or aim git at another repo." \
+                "run git without them; fix what the check reports"
+        fi
         parse_seg "$(fold_quotes "$seg")"
         check_git "${P_args[@]+"${P_args[@]}"}"
+        ;;
+    export | declare | typeset | readonly)
+        local ev
+        for ev in "${args[@]+"${args[@]}"}"; do
+            if git_env_word "$ev"; then
+                block "exporting GIT_CONFIG_*, GIT_DIR or GIT_WORK_TREE can switch off the repo's hooks or aim git at another repo." \
+                    "run git without them; fix what the check reports"
+            fi
+        done
         ;;
     bash | sh | zsh | dash | ksh | eval)
         [ "$depth" -lt 3 ] || return 0

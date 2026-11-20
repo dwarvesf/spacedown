@@ -10,10 +10,11 @@ Delta from the brief only.
 - A frozen file may change only on a branch named `contract/<slug>`. There is no environment bypass: a bypass the agent can set is not a guard. The second line is review and CI.
 - Force pushes are blocked on every branch, not only main. Fix text: push a new commit or merge `main` in.
 - `check.sh` runs the commands AGENTS.md lists and `docs/dev/testing.md` marks as run by CI. It does not run the app build, the live panel or any release script. A missing `actionlint` is a note, not a failure (the brief says "if installed"). A missing `node` fails, as the smoke suite does.
-
 - The guard does not block a bare `gh pr merge`: this repo has no merge script to point at, and a maintainer merges. The door table in AGENTS.md is prose; the guard enforces the frozen-file row only, from `scripts/agent-frozen-paths.txt`.
 - Lessons seeded in `.claude/memory/` restate pitfalls the existing docs already name (bash 3.2, the panel runs no scripts, `build-safari.sh` installs). No new incident is claimed.
 - Quoted strings with a space are folded to one word before the guard reads git flags, so `git commit -m "never use --no-verify"` passes.
+- Review round: the guard, its list and `.claude/settings.json` are always frozen; the list is read from `origin/main` (the working tree copy only when the repo has no `origin/main`; an `origin/main` without the list leaves only the three built-in paths). Long options match by abbreviation (four characters or more), `--mirror`, `core.hooksPath` in `-c`, `--config-env` and `git config`, and `GIT_CONFIG_*`, `GIT_DIR`, `GIT_WORK_TREE` in front of git are blocked. A switch earlier in a command counts only when it creates the branch or the branch exists. A push destination is resolved with `git rev-parse --symbolic-full-name`.
+- A plain `git checkout <branch> && git commit` from main is now blocked (a plain checkout may name a file); use `git switch`.
 
 ## Tradeoffs
 

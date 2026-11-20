@@ -195,6 +195,106 @@ case_edit "Edit a doc" allow "$FEAT" "$FEAT/README.md"
 case_edit "Edit a file outside any repo" allow "$T/not-a-repo" "$T/not-a-repo/$FROZEN_REL"
 case_edit "Edit a file with the same name elsewhere" allow "$FEAT" "$FEAT/docs/ql-render.js"
 
+# 1. The guard, its list and its wiring are frozen whatever the list says, and the
+# list is read as committed on origin/main, not from the working tree.
+case_edit "Edit the guard script" block "$FEAT" "$FEAT/scripts/agent-guard.sh" "$FROZEN_FIX"
+case_edit "Edit the frozen list" block "$FEAT" "$FEAT/scripts/agent-frozen-paths.txt" "$FROZEN_FIX"
+case_edit "Edit the agent settings" block "$FEAT" "$FEAT/.claude/settings.json" "$FROZEN_FIX"
+case_edit "Edit the guard script, contract branch" allow "$CONTRACT" "$CONTRACT/scripts/agent-guard.sh"
+mkrepo "$T/seed" main
+mkdir -p "$T/seed/scripts" "$T/seed/tests"
+cp "$LIST" "$T/seed/scripts/agent-frozen-paths.txt"
+echo x >"$T/seed/tests/smoke.sh"
+echo x >"$T/seed/a.txt"
+git -C "$T/seed" add -A
+git -C "$T/seed" -c user.name=t -c user.email=t@t commit -q -m seed
+git init -q --bare --template= "$T/remote.git"
+git -C "$T/seed" push -q "$T/remote.git" main 2>/dev/null
+git clone -q --template= "$T/remote.git" "$T/clone" 2>/dev/null
+git -C "$T/clone" switch -q -c feat/c
+grep -v '^tests/smoke.sh$' "$LIST" >"$T/clone/scripts/agent-frozen-paths.txt"
+echo y >>"$T/clone/tests/smoke.sh"
+git -C "$T/clone" add tests/smoke.sh
+case_edit "list edited in the working tree: frozen file still blocked" block "$T/clone" "$T/clone/tests/smoke.sh" "$FROZEN_FIX"
+case_run "list edited in the working tree: commit still blocked" block "$T/clone" "git commit -m x" "$FROZEN_FIX"
+case_edit "list edited in the working tree: the list itself is blocked" block "$T/clone" "$T/clone/scripts/agent-frozen-paths.txt" "$FROZEN_FIX"
+git -C "$T/clone" reset -q
+mkdir -p "$T/clone/.claude"
+echo '{}' >"$T/clone/.claude/settings.json"
+git -C "$T/clone" add .claude/settings.json
+case_run "settings.json staged: commit blocked" block "$T/clone" "git commit -m x" "$FROZEN_FIX"
+
+# 2. git accepts any unambiguous prefix of a long option
+case_run "push --forc" block "$FEAT" "git push --forc origin feat/x" "$FORCE_FIX"
+case_run "push --force-w" block "$FEAT" "git push --force-w origin feat/x" "$FORCE_FIX"
+case_run "push --force-if" block "$FEAT" "git push --force-if origin feat/x" "$FORCE_FIX"
+case_run "push --force-with-lease abbreviated with a value" block "$FEAT" "git push --force-with origin feat/x" "$FORCE_FIX"
+case_run "push --mirror" block "$FEAT" "git push --mirror origin" "overwrites every ref"
+case_run "push --mirr" block "$FEAT" "git push --mirr origin" "overwrites every ref"
+case_run "commit --no-ver" block "$FEAT" "git commit --no-ver -m x" "$VERIFY_FIX"
+case_run "commit --no-v" block "$FEAT" "git commit --no-v -m x" "$VERIFY_FIX"
+case_run "push --no-veri" block "$FEAT" "git push --no-veri origin feat/x" "$VERIFY_FIX"
+case_run "merge --no-verif" block "$FEAT" "git merge --no-verif origin/main" "$VERIFY_FIX"
+case_run "push --follow-tags" allow "$FEAT" "git push --follow-tags origin feat/x"
+case_run "commit --no-edit" allow "$FEAT" "git commit --no-edit"
+case_run "commit --no-gpg-sign" allow "$FEAT" "git commit --no-gpg-sign -m x"
+case_run "push --set-upstream" allow "$FEAT" "git push --set-upstream origin feat/x"
+
+# 3. hook switches in config, and git env in front of git
+HOOKS_FIX="leave core.hooksPath alone"
+ENV_FIX="run git without them"
+case_run "-c core.hooksPath" block "$FEAT" "git -c core.hooksPath=/dev/null commit -m x" "$HOOKS_FIX"
+case_run "-c core.hookspath (lower case)" block "$FEAT" "git -c core.hookspath=/x push origin feat/x" "$HOOKS_FIX"
+case_run "-ccore.hooksPath attached" block "$FEAT" "git -ccore.hooksPath=/x commit -m x" "$HOOKS_FIX"
+case_run "--config-env=core.hooksPath" block "$FEAT" "git --config-env=core.hooksPath=HP commit -m x" "$HOOKS_FIX"
+case_run "--config-env core.hooksPath" block "$FEAT" "git --config-env core.hooksPath=HP commit -m x" "$HOOKS_FIX"
+case_run "git config core.hooksPath" block "$FEAT" "git config core.hooksPath /dev/null" "$HOOKS_FIX"
+case_run "git config --local core.hooksPath" block "$FEAT" "git config --local core.hooksPath /dev/null" "$HOOKS_FIX"
+case_run "GIT_CONFIG_COUNT in front of git" block "$FEAT" "GIT_CONFIG_COUNT=1 git commit -m x" "$ENV_FIX"
+case_run "GIT_CONFIG_KEY_0 in front of git" block "$FEAT" "GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/x git push origin feat/x" "$ENV_FIX"
+case_run "GIT_CONFIG_GLOBAL in front of git" block "$FEAT" "GIT_CONFIG_GLOBAL=/x git commit -m x" "$ENV_FIX"
+case_run "GIT_DIR in front of git" block "$FEAT" "GIT_DIR=/x/.git git status" "$ENV_FIX"
+case_run "env GIT_DIR git" block "$FEAT" "env GIT_DIR=/x/.git git status" "$ENV_FIX"
+case_run "export GIT_CONFIG_PARAMETERS" block "$FEAT" "export GIT_CONFIG_PARAMETERS=x; git commit -m y" "$ENV_FIX"
+case_run "git -c user.name is fine" allow "$FEAT" "git -c user.name=x commit -m y"
+case_run "git -c color.ui is fine" allow "$FEAT" "git -c color.ui=never status"
+case_run "GIT_AUTHOR_NAME in front of git is fine" allow "$FEAT" "GIT_AUTHOR_NAME=x git commit -m y"
+case_run "git config user.name is fine" allow "$FEAT" "git config user.name x"
+
+# 4. a switch earlier in the command counts only when it can have worked
+mkrepo "$T/multi" main
+echo x >"$T/multi/a.txt"
+git -C "$T/multi" add a.txt
+git -C "$T/multi" -c user.name=t -c user.email=t@t commit -q -m seed
+git -C "$T/multi" branch feat/ok
+M="$T/multi"
+case_run "switch -c then commit, from main" allow "$M" "git switch -c feat/new && git commit -m x"
+case_run "checkout -b then commit, from main" allow "$M" "git checkout -b feat/new && git commit -m x"
+case_run "switch to an existing branch then commit" allow "$M" "git switch feat/ok && git commit -m x"
+case_run "switch to a missing branch then commit" block "$M" "git switch feat/missing && git commit -m x" "$COMMIT_FIX"
+case_run "path checkout does not change the branch" block "$M" "git checkout feat/ok -- a.txt && git commit -m x" "$COMMIT_FIX"
+case_run "path checkout after -- does not change the branch" block "$M" "git checkout -- feat/ok && git commit -m x" "$COMMIT_FIX"
+case_run "a plain checkout is not trusted" block "$M" "git checkout feat/ok && git commit -m x" "$COMMIT_FIX"
+case_run "switch -c main then commit" block "$M" "git switch -C main && git commit -m x" "$COMMIT_FIX"
+case_run "switch to main then commit" block "$M" "git switch main && git commit -m x" "$COMMIT_FIX"
+case_run "a failed switch does not hide main" block "$M" "git switch feat/missing; git commit -m x" "$COMMIT_FIX"
+
+# 5. push destinations that mean main
+mkrepo "$T/prev" main
+echo x >"$T/prev/a.txt"
+git -C "$T/prev" add a.txt
+git -C "$T/prev" -c user.name=t -c user.email=t@t commit -q -m seed
+git -C "$T/prev" branch feat/ok
+git -C "$T/prev" switch -q feat/ok
+git -C "$T/prev" switch -q main
+git -C "$T/prev" switch -q feat/ok
+case_run "push @ while on main" block "$M" "git push origin @" "$PUSH_FIX"
+case_run "push HEAD:@ while on main" block "$M" "git push origin HEAD:@" "$PUSH_FIX"
+case_run "push HEAD:@{-1}, which is main" block "$T/prev" "git push origin HEAD:@{-1}" "$PUSH_FIX"
+case_run "push HEAD:heads/main" block "$FEAT" "git push origin HEAD:heads/main" "$PUSH_FIX"
+case_run "push @ while on a feature branch" allow "$T/prev" "git push origin @"
+case_run "push HEAD:feat/ok from a feature branch" allow "$T/prev" "git push origin HEAD:feat/ok"
+
 # Bad input never traps a session.
 run_raw '{not json'
 if [ "$rc" -eq 0 ]; then ok "malformed JSON: allowed (exit 0)"; else bad "malformed JSON: expected exit 0, got $rc"; fi
