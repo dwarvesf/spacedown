@@ -30,7 +30,7 @@ VAULT = need("OP_VAULT", "name the 1Password vault that holds the App Store Conn
 ASC_ITEM = need("ASC_OP_ITEM", "name the 1Password item (title or its end) that holds the API key")
 CONTACT_BUNDLE = need("REVIEW_CONTACT_BUNDLE", "give the bundle id of the team app whose review contact is copied")
 BUNDLE = "dfoundation.spacedown"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 meta = json.load(open(args[0]))
 shots = args[1:]
@@ -215,7 +215,7 @@ if shots:
         ok(f"screenshot {name} commit", *call("PATCH", f"/v1/appScreenshots/{sid}", {"data": {"type": "appScreenshots", "id": sid,
            "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}}))
 
-# build: attach the newest processed 1.1.0 build
+# build: attach the newest processed build of VERSION
 s, d = call("GET", f"/v1/builds?filter[app]={APP}&filter[preReleaseVersion.version]={VERSION}&sort=-uploadedDate&limit=5")
 builds = [(b["id"], b["attributes"]["version"], b["attributes"]["processingState"]) for b in d.get("data", [])]
 print("builds:", [(v, st) for _, v, st in builds])
