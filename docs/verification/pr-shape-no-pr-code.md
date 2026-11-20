@@ -48,6 +48,24 @@ Verdict: PASS
 
 #93 is re-run on the fixed workflow from `main`; the result is added below when it lands.
 
+### #93 on the fixed workflow (added after #94 merged as e5f783c)
+
+`main` merged into #93 (head 6e50e95). `PR shape` run 44798776050 ran no PR code and judged the title with the base copy; the hostile script ran only in CI run 44798776098, where there is no base copy to replace.
+
+```
+Command: gh run view 44798776050 --log; gh run view 44798776098 --log; gh pr view 93 --json mergeStateStatus; gh pr merge 93 --squash
+Exit: 1
+Output:
+FAIL  title: "Throwaway: a PR test script that rewrites the gate" is not type(scope): subject with type feat, fix, refactor, docs, test, chore or ci and 72 characters or less (50 now)
+pr-shape: 1 failed
+hostile: no base copy to replace
+{"mergeStateStatus":"BLOCKED"}
+X Pull request consolelabs/spacedown#93 is not mergeable: the base branch policy prohibits the merge.
+Verdict: PASS (the gate holds: the check fails and the merge is blocked)
+```
+
+#93 was then closed unmerged and its branch deleted.
+
 ## Reproduce
 
 Open a PR whose `scripts/pr-shape-test.sh` writes to `$GITHUB_WORKSPACE/base/scripts/pr-shape.sh` and whose title is not a conventional commit: `PR shape` fails on the title.
