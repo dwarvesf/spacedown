@@ -2,6 +2,15 @@
 
 Every test runs from the repo root on macOS. Setup and prerequisites: [CONTRIBUTING.md](../../CONTRIBUTING.md#prerequisites).
 
+## One command
+
+```bash
+bash scripts/check.sh          # every row marked "yes" below that needs no GUI, plus the agent harness tests; exit 0 is the bar
+bash scripts/check.sh --quick  # skips the smoke suite (runs the render core tests instead), for the inner loop
+```
+
+It runs the smoke suite under `/bin/bash`, the three unit tests, `/bin/bash -n` on every `tests/*.sh`, the agent guard and kit hook tests, and `actionlint` when it is installed. It does not build the app or open the Quick Look panel. Run the full form before you open a PR.
+
 ## Tiers
 
 | Tier | Command | What it covers | CI |
@@ -15,7 +24,7 @@ Every test runs from the repo root on macOS. Setup and prerequisites: [CONTRIBUT
 | Workflow lint | `actionlint` | `.github/workflows/` | yes |
 | Owners | `bash scripts/check-owners.sh` | Every script and workflow has its own line in `.github/CODEOWNERS` | yes |
 | PR shape | `bash scripts/pr-shape-test.sh`; one PR by hand: `PR_TITLE=... PR_BODY=... BASE_SHA=... HEAD_SHA=... bash scripts/pr-shape.sh` | The PR title, the proof file or `no-proof:` line, the issue link | yes, on every PR |
-| Live panel | `integrations/build-safari.sh`, then press space on a `.md` file in Finder | What the real Quick Look panel shows | no: local only |
+| Live panel | `integrations/build-safari.sh`, then press space on a `.md` file in Finder | What the real Quick Look panel shows | no: local only, in a macOS VM or a clean macOS user, never on a daily-use Mac |
 
 `bash tests/smoke.sh` ends with `smoke: all N passed` and exit 0. A failure prints `FAIL:` lines, then `smoke: N passed, M FAILED`, and exit 1.
 
@@ -68,7 +77,7 @@ These need a GUI session, an installed app, signing identities or a specific bro
 
 | Check | Command | Needs |
 |---|---|---|
-| The real Quick Look panel | `integrations/build-safari.sh`, then `qlmanage -r; qlmanage -r cache; qlmanage -p <file.md>` | an installed app, a desktop session |
+| The real Quick Look panel | `integrations/build-safari.sh`, then `qlmanage -r; qlmanage -r cache; qlmanage -p <file.md>` | an installed app, a desktop session, in a macOS VM or a clean macOS user: the script installs and registers the app on the account that runs it |
 | The Safari drop extension | `integrations/build-safari.sh --with-safari`, then the steps in the README | Safari, "Allow unsigned extensions" |
 | Layout at 390, 768, 1470 and 1728 px: overflow, edges, side gaps; exits 1 when a width scrolls sideways | `scripts/layout-check <file.md>` | Helium (`BROWSER` overrides) |
 | README and store screenshots | `scripts/readme-shots.sh`, `scripts/store-shots.sh`, `scripts/window-shots.sh` | Brave Browser |

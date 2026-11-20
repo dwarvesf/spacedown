@@ -6,7 +6,7 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/output-offload.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" output-offload.sh",
             "timeout": 10,
             "type": "command"
           }
@@ -18,29 +18,50 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/pre-compact-backup.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" pre-compact-backup.sh",
             "timeout": 15,
             "type": "command"
           },
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/harvest.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" harvest.sh",
             "timeout": 30,
             "type": "command"
           }
         ]
       }
     ],
-    "PreToolUse": [],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-guard.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-guard.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      }
+    ],
     "SessionEnd": [
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/backlog-stage.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" backlog-stage.sh",
             "timeout": 30,
             "type": "command"
           },
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/harvest.sh --lab-log",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" harvest.sh --lab-log",
             "timeout": 30,
             "type": "command"
           }
@@ -51,7 +72,7 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/context-readiness.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-lessons.sh\"",
             "timeout": 10,
             "type": "command"
           }
@@ -60,7 +81,16 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/post-compact-reinject.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" context-readiness.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" post-compact-reinject.sh",
             "timeout": 10,
             "type": "command"
           }
@@ -72,12 +102,12 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/session-state-save.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" session-state-save.sh",
             "timeout": 5,
             "type": "command"
           },
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/citation-guard.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" citation-guard.sh",
             "timeout": 5,
             "type": "command"
           }
@@ -88,7 +118,7 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/session-state-save.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" session-state-save.sh",
             "timeout": 5,
             "type": "command"
           }
@@ -99,7 +129,7 @@
       {
         "hooks": [
           {
-            "command": "bash $HOME/.claude/dwarves-kit/hooks/anchor-root.sh $HOME/.claude/dwarves-kit/hooks/context-hints.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/agent-kit-hook.sh\" context-hints.sh",
             "timeout": 5,
             "type": "command"
           }

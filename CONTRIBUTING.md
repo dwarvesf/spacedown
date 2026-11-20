@@ -15,12 +15,13 @@ Spacedown builds and runs on macOS only: the CLI renders through `osascript` and
 | Python 3 | the reading-mode checks and the `--watch` reload server (`/usr/bin/python3` is enough) | `python3 --version` |
 | A Chromium-family browser: Google Chrome, Helium, Brave, Edge or Chromium | the headless checks (`--shot`, reading modes, KaTeX fonts). Without one they skip. `SPACEDOWN_TEST_BROWSER=<binary>` picks one | any of them in `/Applications` |
 | pandoc | `spacedown docx` in the iA look. The test suite's `docx` section fails without it (`brew install pandoc`). Users of the CLI need it only for `docx` | `pandoc --version` |
+| jq | the agent guard hook (`scripts/agent-guard.sh`); with an agent that runs it, every call is refused without jq. macOS 15 and later ship `/usr/bin/jq` | `jq --version` |
 | entr (optional) | the `--watch` check (`brew install entr`) | `command -v entr` |
 
 The test suite skips a check when a browser, entr or python3 is missing, and says so with a `skip:` line. Without node or pandoc it fails. To run what CI runs, install all of them:
 
 ```bash
-brew install xcodegen pandoc entr node
+brew install xcodegen pandoc entr node jq
 ```
 
 ## From a fresh clone
