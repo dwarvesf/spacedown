@@ -173,8 +173,9 @@ jobs:
           srv.serve_forever()
           PY
           python3 -I "$T/srv.py" "$T/port" > "$T/srv.log" 2>&1 &
-          for _ in $(seq 1 20); do [ -s "$T/port" ] && break; sleep 0.25; done
-          echo "port=$(cat "$T/port")"
+          which python3; python3 --version; date
+          for _ in $(seq 1 240); do [ -s "$T/port" ] && break; sleep 0.25; done
+          date; echo "port=$(cat "$T/port")"; cat "$T/srv.log"; jobs; ps aux | grep -i '[p]ython' | head
           printf '# Remote\n\n![remote](http://localhost:%s/red.png)\n' "$(cat "$T/port")" > "$T/r.md"
           bin/spacedown "$T/r.md" --out "$T/r.html" --shot "$T/on.png"; echo on=$?
           cat "$T/srv.log"
