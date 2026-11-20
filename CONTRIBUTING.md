@@ -59,7 +59,7 @@ There is no formatter or linter for the shell, JavaScript or Swift code. Match t
 ## Commits and branches
 
 - Branch names: `<type>/<short-slug>`, type `feat`, `fix`, `refactor`, `docs`, `test`, `chore` or `ci`, two to five kebab-case words.
-- `contract/<slug>`: a change to a file that [docs/contract-r1.md](docs/contract-r1.md) freezes, and nothing else. The agent guard and [AGENTS.md](AGENTS.md) refuse such an edit on any other branch. The PR title still uses a conventional type, for example `feat(contract): ...`.
+- `contract/<slug>`: a change that touches a file [docs/contract-r1.md](docs/contract-r1.md) freezes. The agent guard and [AGENTS.md](AGENTS.md) refuse such an edit on any other branch. The PR title still uses a conventional type, for example `feat(contract): ...`.
 - Conventional commits: `type(scope): subject`, 72 characters or less, one logical change per commit.
 - Do not switch branches in a checkout that someone else (or another agent) is using: use `git worktree add`.
 - Never stage `build/`, rendered `.html` files, `.DS_Store`, signing material or secrets.

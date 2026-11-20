@@ -35,7 +35,7 @@ The notes are the version's section of [CHANGELOG.md](../../CHANGELOG.md): every
 
 ## Steps
 
-1. Bump the version in every file above and move the CHANGELOG entries under the new version, in one PR. Merge it.
+1. Bump the version in every file above and move the CHANGELOG entries under the new version, in one PR. `project.yml` and the Xcode project are frozen by the release contract, so that PR runs on a `contract/<slug>` branch. `tests/release-notes-test.sh` fails while `project.yml` names a version with no CHANGELOG section, so the bump and the section land together. Merge it.
 2. On a clean `main`, run `scripts/release.sh --dry-run` first: it prints the release notes and whether older releases would be kept, runs every precondition check, prints the identity and notary credentials it would use, and stops before the build. Then run `scripts/release.sh`. It checks the same preconditions and stops on the first one that fails.
 3. Bump `Casks/spacedown.rb` in [consolelabs/homebrew-tap](https://github.com/consolelabs/homebrew-tap) to the new version and the zip's sha256 (the release notes carry it).
 4. Mac App Store: `scripts/release.sh --mas` builds the signed store package. Upload it to App Store Connect, attach the build to a new version, and submit it for review.
