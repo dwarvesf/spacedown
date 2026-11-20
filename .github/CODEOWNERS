@@ -1,0 +1,50 @@
+# Owners. GitHub asks the owner to review a PR that touches their files.
+#
+# Every script and workflow has its own line below; scripts/check-owners.sh
+# fails CI when one is missing, so a PR that adds a script adds its line here.
+# The catch-all line does not count for that check. The last matching line wins.
+
+* @tieubao
+
+# Workflows
+/.github/workflows/ci.yml @tieubao
+/.github/workflows/pr-shape.yml @tieubao
+
+# The CLI and the build and install scripts
+/bin/spacedown @tieubao
+/integrations/build-safari.sh @tieubao
+/integrations/install.sh @tieubao
+/integrations/notary-auth.sh @tieubao
+/integrations/safari/quick-look/preview-skin.sh @tieubao
+
+# Vendored-asset and preview helpers
+/assets/livereload-server.py @tieubao
+/assets/tables-blankline.py @tieubao
+
+# scripts/
+/scripts/asc_listing.py @tieubao
+/scripts/asc_setup.py @tieubao
+/scripts/build-docx-reference.py @tieubao
+/scripts/build-ql-katex @tieubao
+/scripts/build-ql-skin @tieubao
+/scripts/bundle-cli @tieubao
+/scripts/check-owners.sh @tieubao
+/scripts/hljs-build @tieubao
+/scripts/ia-fontface-css @tieubao
+/scripts/layout-check @tieubao
+/scripts/mas-altool.sh @tieubao
+/scripts/pr-shape-test.sh @tieubao
+/scripts/pr-shape.sh @tieubao
+/scripts/qlwrap.js @tieubao
+/scripts/readme-shots.sh @tieubao
+/scripts/release.sh @tieubao
+/scripts/sd-settings @tieubao
+/scripts/size-budget @tieubao
+/scripts/skim-parity.mjs @tieubao
+/scripts/store-shots.sh @tieubao
+/scripts/window-shots.sh @tieubao
+
+# Tests
+/tests/katex-one-test.sh @tieubao
+/tests/size-budget-test.sh @tieubao
+/tests/smoke.sh @tieubao
