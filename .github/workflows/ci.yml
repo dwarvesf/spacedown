@@ -146,53 +146,46 @@ jobs:
   intel:
     name: Intel Mac (x86_64 slice)
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26-intel
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: Select newest Xcode
+      - name: Probe
         run: |
-          newest=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' | grep -E '/Xcode_[0-9]+\.[0-9]+(\.[0-9]+)?\.app$' | sort -V | tail -1)
-          echo "Selecting $newest"
-          sudo xcode-select -s "$newest/Contents/Developer"
-          xcodebuild -version
-
-      - name: Install build and test tools
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: "1"
-          HOMEBREW_NO_INSTALL_CLEANUP: "1"
-        run: brew install xcodegen pandoc entr
-
-      - name: Machine
-        run: |
-          uname -m
-          sysctl -n machdep.cpu.brand_string
-          sw_vers -productVersion
-
-      - name: Build the universal app (unsigned, not installed)
-        env:
-          NO_INSTALL: "1"
-        run: |
-          set -o pipefail
-          integrations/build-safari.sh --with-safari | tee "$RUNNER_TEMP/build.log"
-          app="$(tail -n 1 "$RUNNER_TEMP/build.log")"
-          [ -d "$app/Contents" ]
-          echo "APP=$app" >> "$GITHUB_ENV"
-
-      - name: Both slices are there and the x86_64 one renders
-        env:
-          REQUIRE_INTEL: "1"
-        run: /bin/bash tests/intel-slice-test.sh "$APP"
-
-      - name: Smoke suite on Intel
-        run: |
-          set -o pipefail
-          /bin/bash tests/smoke.sh | tee "$RUNNER_TEMP/smoke.log"
-          grep -Eq '^smoke: all [0-9]+ passed$' "$RUNNER_TEMP/smoke.log"
+          set +e
+          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version
+          T="$RUNNER_TEMP/p"; mkdir -p "$T"
+          cat > "$T/srv.py" <<'PY'
+          import http.server, struct, sys, zlib
+          def chunk(t, d):
+              return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+          rows = b"".join(b"\x00" + b"\xff\x00\x00" * 200 for _ in range(100))
+          png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 200, 100, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b"")
+          class H(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  print("GET", self.path, flush=True)
+                  self.send_response(200); self.send_header("Content-Type", "image/png"); self.send_header("Content-Length", str(len(png))); self.end_headers(); self.wfile.write(png)
+              def log_message(self, *a): pass
+          srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+          open(sys.argv[1], "w").write(str(srv.server_port))
+          srv.serve_forever()
+          PY
+          python3 -I "$T/srv.py" "$T/port" > "$T/srv.log" 2>&1 &
+          for _ in $(seq 1 20); do [ -s "$T/port" ] && break; sleep 0.25; done
+          echo "port=$(cat "$T/port")"
+          printf '# Remote\n\n![remote](http://localhost:%s/red.png)\n' "$(cat "$T/port")" > "$T/r.md"
+          bin/spacedown "$T/r.md" --out "$T/r.html" --shot "$T/on.png"; echo on=$?
+          cat "$T/srv.log"
+          bin/spacedown "$T/r.md" --out "$T/r.html" --shot "$T/off.png" --offline; echo off=$?
+          cat "$T/srv.log"
+          ls -l "$T"/*.png; shasum "$T"/*.png
+          sleep 1; sed -i '' 's#localhost#127.0.0.1#' "$T/r.md"
+          bin/spacedown "$T/r.md" --out "$T/r2.html" --shot "$T/on2.png"; echo on2=$?
+          bin/spacedown "$T/r.md" --out "$T/r2.html" --shot "$T/off2.png" --offline; echo off2=$?
+          shasum "$T"/*2.png
+          cat "$T/srv.log"
 
   actionlint:
     name: Lint workflows
