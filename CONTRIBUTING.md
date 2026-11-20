@@ -33,6 +33,7 @@ cd spacedown
 bash tests/smoke.sh                 # ends with "smoke: all N passed"
 bash tests/katex-one-test.sh        # "katex-one-test: N passed, 0 failed"
 bash tests/size-budget-test.sh      # "size-budget-test: N passed, 0 failed"
+bash tests/release-notes-test.sh    # "release-notes-test: N passed, 0 failed"
 node tests/hljs-bundle-test.js      # "hljs-bundle-test: all passed"
 
 NO_INSTALL=1 integrations/build-safari.sh   # builds and ad hoc signs the app, prints its path
@@ -58,6 +59,7 @@ There is no formatter or linter for the shell, JavaScript or Swift code. Match t
 ## Commits and branches
 
 - Branch names: `<type>/<short-slug>`, type `feat`, `fix`, `refactor`, `docs`, `test`, `chore` or `ci`, two to five kebab-case words.
+- `contract/<slug>`: a change that touches a file [docs/contract-r1.md](docs/contract-r1.md) freezes. The agent guard and [AGENTS.md](AGENTS.md) refuse such an edit on any other branch. The PR title still uses a conventional type, for example `feat(contract): ...`.
 - Conventional commits: `type(scope): subject`, 72 characters or less, one logical change per commit.
 - Do not switch branches in a checkout that someone else (or another agent) is using: use `git worktree add`.
 - Never stage `build/`, rendered `.html` files, `.DS_Store`, signing material or secrets.

@@ -19,9 +19,11 @@
 #   PUBLISH=1               0 = stop after the notarized zip, no GitHub release
 #   APP_BUDGET_BYTES / DMG_BUDGET_BYTES   override the size budget in scripts/size-budget, which
 #                           fails the release when the app or the dmg grows past it
-#   KEEP_OLD_RELEASES=0     1 = keep older GitHub releases; by default a published release
-#                           replaces them (they and their tags are deleted), so the Releases
-#                           page lists only the latest version
+#   PRUNE_OLD_RELEASES=0    1 = after publishing, delete every older GitHub release and its
+#                           tag. By default older releases and tags are kept.
+#
+# The release notes are CHANGELOG.md's section for the version (scripts/release-notes.sh),
+# plus the zip's sha256; a version with no section stops the release before the build.
 #
 # Mac App Store mode (--mas): builds the Quick Look-only app, signs it with Apple
 # Distribution plus the Mac App Store provisioning profiles, packages a signed .pkg,
@@ -37,9 +39,9 @@
 # next to a previewed file do not render there; the direct download keeps them.
 #
 # Usage: scripts/release.sh [--mas] [--dry-run] [x.y.z]   (default: MARKETING_VERSION in quick-look/project.yml)
-#   --dry-run  run every precondition check (versions, identities, profiles, notary
-#              credentials), print what would be used, then stop: no build, no signing,
-#              no upload, no release.
+#   --dry-run  print the release notes and whether older releases would be kept, run every
+#              precondition check (versions, identities, profiles, notary credentials), print
+#              what would be used, then stop: no build, no signing, no upload, no release.
 set -euo pipefail
 
 MAS=0
@@ -200,8 +202,22 @@ if [[ $MAS -eq 1 ]]; then
   exit 0
 fi
 
-# --- preconditions ------------------------------------------------------------
+# --- notes: printed by a dry run before any check that needs a credential --------
 [[ -n "$VERSION" ]] || die "no version given and none found in project.yml"
+NOTES="$("$ROOT/scripts/release-notes.sh" "$VERSION")" \
+  || die "no release notes for $VERSION: add a \"## [$VERSION]\" section to CHANGELOG.md"
+PRUNE="${PRUNE_OLD_RELEASES:-0}"
+if [[ $DRY_RUN -eq 1 ]]; then
+  echo "dry run: release notes for $TAG (from CHANGELOG.md), then the zip's sha256:"
+  printf '%s\n' "$NOTES" | sed 's/^/  | /'
+  if [[ "$PRUNE" == "1" ]]; then
+    echo "dry run: older releases and their tags would be DELETED (PRUNE_OLD_RELEASES=1)"
+  else
+    echo "dry run: older releases and their tags are kept (PRUNE_OLD_RELEASES=1 deletes them)"
+  fi
+fi
+
+# --- preconditions ------------------------------------------------------------
 [[ -n "$SIGN_ID" ]] || SIGN_ID="$(find_identity "Developer ID Application" -p codesigning || true)"
 [[ -n "$SIGN_ID" ]] || die "no Developer ID Application identity for team $TEAM_ID in the keychain (or set SIGN_ID)"
 has "$(security find-identity -v -p codesigning)" "\"$SIGN_ID\"" \
@@ -277,12 +293,12 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
   die "release $TAG already exists on $REPO"
 fi
 gh release create "$TAG" "$ZIP" "$DMG" --repo "$REPO" --title "Spacedown $VERSION" \
-  --notes "Quick Look preview for Markdown on macOS 13 and later. Open the .dmg (or unzip the .zip), drag Spacedown to Applications, open it once, then press space on any .md file in Finder.
+  --notes "$NOTES
 
 sha256: \`$SHA\`" ${DRAFT_FLAG[@]+"${DRAFT_FLAG[@]}"}
 
-# --- stack: the new release replaces the older ones -------------------------------
-if [[ "${KEEP_OLD_RELEASES:-0}" != "1" && "$DRAFT" != "1" ]]; then
+# --- prune: only on request, older releases and tags stay by default ---------------
+if [[ "$PRUNE" == "1" && "$DRAFT" != "1" ]]; then
   OLD_TAGS="$(gh release list --repo "$REPO" --limit 100 --json tagName -q '.[].tagName')"
   for old in $OLD_TAGS; do
     [[ "$old" == "$TAG" ]] && continue

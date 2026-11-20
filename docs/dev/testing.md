@@ -18,6 +18,7 @@ It runs the smoke suite under `/bin/bash`, the three unit tests, `/bin/bash -n` 
 | Smoke suite | `bash tests/smoke.sh` | The CLI contract, the reading chrome, themes, fonts, `spacedown docx`, reading modes, the Skim parity check, the app bundle wiring, `--shot`, KaTeX, the plug-ins and the MCP server. It also runs the Quick Look render tests | yes |
 | KaTeX | `bash tests/katex-one-test.sh [<built Spacedown.app>]` | One pinned KaTeX for script, stylesheet and fonts; the panel page and the CLI page both typeset the math fixture with every font loaded | yes (without an app) |
 | Size budget | `bash tests/size-budget-test.sh` | `scripts/size-budget` passes a small app and fails an oversized one | yes |
+| Release notes | `bash tests/release-notes-test.sh` | `scripts/release-notes.sh` prints one CHANGELOG section and fails on a missing or empty one; the CHANGELOG has notes for the version in `project.yml` | yes |
 | highlight.js | `node tests/hljs-bundle-test.js` | The custom highlight.js build knows every language the preview promises and stays small | yes |
 | Render core | `node integrations/safari/quick-look/test-render.js` (and `test-contract.js`, `test-boxdraw.js`, `test-xray.js`, `test-present.js`) | One part of the render core, fast; the smoke suite runs all of them | through smoke |
 | App build | `NO_INSTALL=1 integrations/build-safari.sh --with-safari` | The app, both extensions and the render helper compile and sign ad hoc | yes |

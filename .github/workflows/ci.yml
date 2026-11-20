@@ -105,6 +105,7 @@ jobs:
         run: |
           /bin/bash tests/katex-one-test.sh
           /bin/bash tests/size-budget-test.sh
+          /bin/bash tests/release-notes-test.sh
           node tests/hljs-bundle-test.js
 
   build:
