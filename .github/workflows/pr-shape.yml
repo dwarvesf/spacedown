@@ -41,12 +41,9 @@ jobs:
           path: base
           persist-credentials: false
 
-      # The PR's own copy of the script must pass its tests, so a change to the
-      # gate is tested before it becomes the base.
-      - name: The gate script passes its tests (the PR's copy)
-        run: bash pr/scripts/pr-shape-test.sh pr/scripts/pr-shape.sh
-
-      # The base copy judges the PR. Only the PR that adds the script finds no
+      # This job runs no code from the PR: a PR script that ran here first could
+      # rewrite base/ or $GITHUB_ENV. The PR's copy of the gate is tested in
+      # ci.yml instead. The base copy judges the PR. Only the PR that adds the script finds no
       # base copy; it falls back to its own, with a notice.
       - name: PR shape (the base's copy)
         working-directory: pr
