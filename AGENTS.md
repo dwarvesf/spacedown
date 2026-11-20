@@ -46,6 +46,9 @@ Run each command from the repo root.
 - Work on a branch named `<type>/<short-slug>` and open a PR against `main`. Never push to `main` and never commit on it.
 - The PR title is a conventional commit (`type(scope): subject`, 72 characters or less): a squash merge makes it the commit subject on `main`.
 - The PR body follows [.github/pull_request_template.md](.github/pull_request_template.md).
+- A ruleset on `main` is the real control: a PR is required, merges are squash only, force pushes and branch deletion are blocked, and two checks must pass: `PR shape` (conventional title, a proof file with a negative control, or a `no-proof: <reason>` line in the body for a docs-only or config-only PR; [docs/dev/testing.md](docs/dev/testing.md#merge-checks)) and `CI summary`.
+- A new script or workflow also adds its own line to `.github/CODEOWNERS` (`/scripts/<file> @owner`); the owner check fails without it, and `bash scripts/check.sh` runs it.
+- A change to a workflow file needs a maintainer's review before merge, because a PR can edit the workflow that checks it. Do not merge your own.
 - CI must be green before merge.
 
 ### Proof of done
