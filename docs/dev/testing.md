@@ -47,7 +47,7 @@ macOS ships bash 3.2 as `/bin/bash`, and CI runs the suite with it. Write test a
 
 ## Merge checks
 
-Two checks gate a merge into `main`:
+A ruleset on `main` requires a PR, squash merge only, and two checks; it blocks force pushes and deleting the branch:
 
 | Check | Workflow | Runs | Passes when |
 |---|---|---|---|

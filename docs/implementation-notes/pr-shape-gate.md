@@ -18,6 +18,11 @@ Only the decisions the brief did not make. The brief: a `pr-shape` check on ever
 - **CODEOWNERS lists every script and workflow by path**, not a `*` or a directory line, which would make the owner check vacuous. A PR that adds a script adds its line. Counted as a script: every tracked file under `scripts/`, `bin/` and `.github/workflows/` (except Markdown), plus every tracked `*.sh`, `*.py` and `*.mjs` outside `docs/` (proof folders hold dated helper scripts).
 - **timeout-minutes 20** on every job. Test and build took two to three minutes in recent runs.
 
+- **Ruleset targets `~DEFAULT_BRANCH`**, not the literal `main`, so a rename keeps it.
+- **Required checks need not be up to date with `main`.** Several PRs land in parallel; requiring a rebase before each merge would re-run the macOS jobs for every one. The squash merge still runs CI on `main`.
+- **Admin bypass mode is `always`.** One maintainer, no second account: anything narrower risks a lockout. The negative control therefore shows the block through a normal merge (`gh pr merge --squash` refused), never `--admin`.
+- **An open PR from before the ruleset** has no `PR shape` run until its next push or edit, and stays blocked until then.
+
 ## Open questions
 
 - Should pr-shape also reject em and en dashes in added lines? AGENTS.md bans them; no check enforces it.
