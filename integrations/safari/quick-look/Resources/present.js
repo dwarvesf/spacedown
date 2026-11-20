@@ -93,8 +93,8 @@
   var R = "#sd-present:not(:checked) ~ .sd-slide > "; // a slide child on the reading page
   var CSS =
     // Snap points exist only while a slide has scroll-snap-align (checked, below), so this
-    // rule changes nothing on the reading page. It sits on html because :has() is not
-    // available on the deployment target.
+    // rule changes nothing on the reading page. It sits on html so the toggle needs only
+    // the sibling selector, no :has().
     "html{scroll-snap-type:y mandatory}" +
     ".sd-present-btn{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;" +
     "border-radius:6px;cursor:pointer;user-select:none;-webkit-user-select:none;" +

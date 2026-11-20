@@ -48,8 +48,22 @@
 #                       Used as given: it is not font-embedded. Unset, the build runs
 #                       scripts/build-ql-skin, which embeds the four vendored iA Writer
 #                       fonts (assets/fonts/ia/) into the shipped ql-reading.css.
+#   CONFIG=Debug        a test build that never touches an installed release: every id carries
+#                       .dev (app dfoundation.spacedown.dev, extensions dfoundation.spacedown.dev.*,
+#                       App Group W777S7V8TN.dfoundation.spacedown.dev, helper service and
+#                       LaunchAgent dfoundation.spacedown.render.dev), it installs as
+#                       "Spacedown Dev.app" and its helper as spacedown-render-dev. Default Release:
+#                       the ids as published.
+#
+# Every build is universal (arm64 + x86_64): the direct download and the store build run on
+# Apple silicon and Intel Macs from macOS 13.
 set -euo pipefail
 SIGN_ID="${SIGN_ID:--}"
+CONFIG="${CONFIG:-Release}"
+case "$CONFIG" in
+  Release|Debug) ;;
+  *) echo "build-safari: CONFIG must be Release or Debug, not $CONFIG" >&2; exit 64 ;;
+esac
 NO_INSTALL="${NO_INSTALL:-0}"
 NOTARIZE="${NOTARIZE:-}"
 NOTARY_KEY="${NOTARY_KEY:-}"
@@ -65,6 +79,12 @@ STRIP_SETTINGS=(
   STRIP_STYLE=all STRIP_SWIFT_SYMBOLS=YES DEAD_CODE_STRIPPING=YES
   DEBUG_INFORMATION_FORMAT=dwarf GCC_GENERATE_DEBUGGING_SYMBOLS=NO
 )
+# Both slices in every configuration; ONLY_ACTIVE_ARCH would otherwise drop the one this
+# host does not run.
+ARCH_SETTINGS=(ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO)
+# A Debug build would split each binary into a debug dylib plus a preview stub, which the
+# signing step below does not cover: one plain binary in both configurations.
+ARCH_SETTINGS+=(ENABLE_DEBUG_DYLIB=NO)
 
 SAFARI=0
 case "${1:-}" in
@@ -83,8 +103,19 @@ APP_NAME="Spacedown.app"
 APP_DEST="${APP_DEST:-${HOME}/Applications}"
 HELPER_DEST="${HOME}/.local/libexec/spacedown-render"
 AGENT_LABEL="dfoundation.spacedown.render"
-PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
 QL_ID="dfoundation.spacedown.quicklook"
+GROUP_ID="W777S7V8TN.dfoundation.spacedown"
+# The installed name; the build product keeps PRODUCT_NAME's Spacedown.app in both configurations.
+INSTALL_NAME="$APP_NAME"
+if [[ "$CONFIG" == "Debug" ]]; then
+  # Must match the Debug ids in the Xcode project, project.yml and the #if DEBUG constants.
+  HELPER_DEST="${HELPER_DEST}-dev"
+  AGENT_LABEL="${AGENT_LABEL}.dev"
+  QL_ID="dfoundation.spacedown.dev.quicklook"
+  GROUP_ID="${GROUP_ID}.dev"
+  INSTALL_NAME="Spacedown Dev.app"
+fi
+PLIST_DEST="${HOME}/Library/LaunchAgents/${AGENT_LABEL}.plist"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 UID_NUM="$(id -u)"
 source "${HERE}/notary-auth.sh"
@@ -110,20 +141,22 @@ if [[ $SAFARI -eq 1 ]]; then
   # 1. Unsandboxed XPC render helper (adhoc signed, no entitlements, no runtime so
   #    its pandoc/python child processes stay unconstrained).
   echo "build-safari: compiling render helper..."
-  swiftc -O "$HELPER_SRC" -o "$PROJ/build/spacedown-render"
+  SWIFT_FLAGS=(-O)
+  [[ "$CONFIG" == "Debug" ]] && SWIFT_FLAGS=(-D DEBUG)
+  swiftc "${SWIFT_FLAGS[@]}" "$HELPER_SRC" -o "$PROJ/build/spacedown-render"
   codesign --force --sign - --timestamp=none "$PROJ/build/spacedown-render"
 fi
 
 # 2. Container app + Safari extension, UNSIGNED (signed manually in step 5).
 echo "build-safari: building app + Safari extension..."
 xcodebuild -project "$PROJ/SpacedownDrop.xcodeproj" \
-  -scheme SpacedownDrop -configuration Release \
-  "${STRIP_SETTINGS[@]}" \
+  -scheme SpacedownDrop -configuration "$CONFIG" \
+  "${STRIP_SETTINGS[@]}" "${ARCH_SETTINGS[@]}" \
   -derivedDataPath "$PROJ/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   INFOPLIST_KEY_NSHumanReadableCopyright="© 2026 Console Labs" \
   build >/dev/null
-APP="$PROJ/build/Build/Products/Release/${APP_NAME}"
+APP="$PROJ/build/Build/Products/${CONFIG}/${APP_NAME}"
 [[ -d "$APP" ]] || { echo "build-safari: app build produced nothing" >&2; exit 1; }
 
 # 3. Quick Look appex (sibling xcodegen project), UNSIGNED. Share the VS Code CSS
@@ -135,12 +168,12 @@ if command -v node >/dev/null 2>&1; then
 fi
 ( cd "$QLDIR" && xcodegen generate >/dev/null )
 xcodebuild -project "${QLDIR}/SpacedownQL.xcodeproj" \
-  -scheme SpacedownQL -configuration Release \
-  "${STRIP_SETTINGS[@]}" \
+  -scheme SpacedownQL -configuration "$CONFIG" \
+  "${STRIP_SETTINGS[@]}" "${ARCH_SETTINGS[@]}" \
   -derivedDataPath "${QLDIR}/build" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
   build >/dev/null
-QL_APPEX="${QLDIR}/build/Build/Products/Release/SpacedownQL.appex"
+QL_APPEX="${QLDIR}/build/Build/Products/${CONFIG}/SpacedownQL.appex"
 [[ -d "$QL_APPEX" ]] || { echo "build-safari: QL appex build produced nothing" >&2; exit 1; }
 
 # 4. Embed the QL appex into the app.
@@ -179,6 +212,7 @@ fi
 #    re-seals PlugIns). Safari appex carries the sandbox + mach-lookup exception.
 APP_ENT="${ENT}/app.entitlements"
 EXT_ENT="${ENT}/extension.entitlements"
+QL_ENT="${QLDIR}/SpacedownQL.entitlements"
 TIMESTAMP=()
 if [[ "$SIGN_ID" != "-" ]]; then
   APP_ENT="${ENT}/app.release.entitlements"
@@ -187,10 +221,22 @@ if [[ "$SIGN_ID" != "-" ]]; then
   /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$EXT_ENT" 2>/dev/null || true
   TIMESTAMP=(--timestamp)
 fi
-echo "build-safari: signing (${SIGN_ID} + runtime + entitlements)..."
+if [[ "$CONFIG" == "Debug" ]]; then
+  # One set of entitlement files: a Debug build signs with copies whose App Group and
+  # helper Mach service carry .dev, so it never reads the release settings or helper.
+  for f in APP_ENT EXT_ENT QL_ENT; do
+    src="${!f}"
+    dst="$PROJ/build/dev.$(basename "$src")"
+    [[ "$src" == "$dst" ]] || cp -f "$src" "$dst"
+    /usr/libexec/PlistBuddy -c "Set :com.apple.security.application-groups:0 $GROUP_ID" "$dst" 2>/dev/null || true
+    /usr/libexec/PlistBuddy -c "Set :com.apple.security.temporary-exception.mach-lookup.global-name:0 $AGENT_LABEL" "$dst" 2>/dev/null || true
+    printf -v "$f" '%s' "$dst"
+  done
+fi
+echo "build-safari: signing (${SIGN_ID} + runtime + entitlements, $CONFIG)..."
 # The ${a[@]+...} form keeps an empty array safe under set -u on macOS's bash 3.2.
 sign() { codesign --force --sign "$SIGN_ID" --options runtime ${TIMESTAMP[@]+"${TIMESTAMP[@]}"} --entitlements "$1" "$2"; }
-sign "${QLDIR}/SpacedownQL.entitlements" "${APP}/Contents/PlugIns/SpacedownQL.appex"
+sign "$QL_ENT" "${APP}/Contents/PlugIns/SpacedownQL.appex"
 [[ $SAFARI -eq 1 ]] && sign "$EXT_ENT" "$SAFARI_APPEX"
 sign "$APP_ENT"                                 "${APP}"
 codesign --verify --deep --strict "$APP" || { echo "build-safari: signature verify failed" >&2; exit 1; }
@@ -213,33 +259,33 @@ fi
 
 # 6. Install the app.
 mkdir -p "$APP_DEST"
-rsync -a --delete "$APP" "$APP_DEST/"
-echo "build-safari: installed -> ${APP_DEST}/${APP_NAME}"
+rsync -a --delete "$APP/" "$APP_DEST/$INSTALL_NAME/"
+echo "build-safari: installed -> ${APP_DEST}/${INSTALL_NAME}"
 
 # 7. Install the helper binary + LaunchAgent (launch-on-demand Mach service).
 if [[ $SAFARI -eq 1 ]]; then
   mkdir -p "$(dirname "$HELPER_DEST")"
   cp -f "$PROJ/build/spacedown-render" "$HELPER_DEST"
   chmod +x "$HELPER_DEST"
-  sed "s|__HELPER_BIN__|$HELPER_DEST|g" "$PLIST_SRC" > "$PLIST_DEST"
+  sed -e "s|__HELPER_BIN__|$HELPER_DEST|g" -e "s|>dfoundation\.spacedown\.render<|>$AGENT_LABEL<|g" "$PLIST_SRC" > "$PLIST_DEST"
   launchctl bootout "gui/$UID_NUM/${AGENT_LABEL}" 2>/dev/null || true
   launchctl bootstrap "gui/$UID_NUM" "$PLIST_DEST"
   echo "build-safari: installed helper + bootstrapped LaunchAgent (on-demand)"
 fi
 
 # 8. Register the installed copy (the build-products copy left LaunchServices above).
-"$LSREGISTER" -f "${APP_DEST}/${APP_NAME}"
+"$LSREGISTER" -f "${APP_DEST}/${INSTALL_NAME}"
 
 # 9. Register + enable Quick Look. The explicit add matters: an OS upgrade has been
 #    seen to drop the registration while leaving the app in place.
-pluginkit -a "${APP_DEST}/${APP_NAME}/Contents/PlugIns/SpacedownQL.appex" 2>/dev/null || true
+pluginkit -a "${APP_DEST}/${INSTALL_NAME}/Contents/PlugIns/SpacedownQL.appex" 2>/dev/null || true
 pluginkit -e use -i "$QL_ID" >/dev/null 2>&1 || true
 if [[ $SAFARI -eq 0 ]]; then
   echo "build-safari: Quick Look ready. Select a .md in Finder and press space."
   exit 0
 fi
 # Launch the app once so Safari discovers the extension.
-open "${APP_DEST}/${APP_NAME}"
+open "${APP_DEST}/${INSTALL_NAME}"
 echo "build-safari: launched once to register the Safari extension."
 
 cat <<'EOF'

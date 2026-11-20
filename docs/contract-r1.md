@@ -13,7 +13,7 @@ The Quick Look extension is data-based (`QLIsDataBasedPreview`). It hands Quick 
 
 Consequences:
 
-- Q3 X-ray works in the panel with no JS. Mark the text at render time (`transform`). Toggle with a CSS checkbox: `controls` emits `<input type="checkbox" id="sd-xray" hidden>` as a body-level sibling before the content, `toolbar` emits `<label for="sd-xray">`, and the CSS uses `#sd-xray:checked ~ * .your-mark`. Do not use `:has()`: the deployment target is macOS 12.0, and `:has()` needs 12.3.
+- Q3 X-ray works in the panel with no JS. Mark the text at render time (`transform`). Toggle with a CSS checkbox: `controls` emits `<input type="checkbox" id="sd-xray" hidden>` as a body-level sibling before the content, `toolbar` emits `<label for="sd-xray">`, and the CSS uses `#sd-xray:checked ~ * .your-mark`. The deployment target is macOS 13.0, so `:has()` is available; regex lookbehind is not (JavaScriptCore has it from macOS 13.3).
 - Q4 Present needs page time: P, the arrows and Esc are key events. In the Finder panel it is blocked until the appex becomes a view-based preview with its own `WKWebView` (an architecture change, a human call). In that panel Esc also closes Quick Look. Build Q4 against `SD.boot` and test it in node and in the CLI page.
 
 ## Load order
@@ -95,6 +95,7 @@ Source of truth: `SD.DEFAULTS` in `ql-render.js`. `integrations/safari/shared/Sp
 - App (A2) writes: `SpacedownSettings.store.set(value, forKey: key)`. Use the key names above.
 - Extension reads: `buildPreviewHTML` passes `SpacedownSettings.stored()` (only the keys that are set) to `SD.render` on every preview, so a change shows on the next spacebar press.
 - CLI reads: `scripts/sd-settings` prints the stored keys as JSON, or `{}`. C1 passes that output, plus `"surface":"cli"`, to `SD.render`. The CLI keeps no copy of the defaults. `SPACEDOWN_PREFS=<plist>` overrides the path. The script reads the plist file directly, so a write from the last few seconds can lag.
+- Debug builds (`build-safari.sh` with `CONFIG=Debug`) use the group `W777S7V8TN.dfoundation.spacedown.dev`, so a test build never reads or writes the installed release's settings. `scripts/sd-settings` reads the release group.
 - Adhoc builds (`build-safari.sh` with no `SIGN_ID`) have no team, so the group is not granted. The extension then reads its own empty defaults and renders with the defaults. A2 can test end to end only with a Developer ID or Apple Distribution build.
 
 ## File ownership
@@ -104,7 +105,7 @@ Paths are relative to `integrations/safari/quick-look/` (QL), `integrations/safa
 | Node | Owns (edit freely) | Smoke sections to run |
 |---|---|---|
 | Q1 box diagrams + fonts | QL `Resources/boxdraw.js`, QL `test-boxdraw.js`, `scripts/build-ql-skin`, `scripts/ia-fontface-css`, `assets/fonts/ia/**` | `quicklook,fonts,render` |
-| T1 size trim | QL `Resources/highlight.min.js` (plus any script that builds it), `integrations/build-safari.sh`, `scripts/release.sh`, `integrations/safari/make-appicon.swift`, APP `Assets.xcassets/AppIcon.appiconset/**`, APP `Resources/Icon.png` | `quicklook,render,bundle,notary,katex` |
+| T1 size trim | QL `Resources/highlight.min.js` (plus any script that builds it), `integrations/build-safari.sh`, `scripts/release.sh`, `integrations/safari/make-appicon.swift`, APP `Assets.xcassets/AppIcon.appiconset/**` | `quicklook,render,bundle,notary,katex` |
 | C1 CLI on the QL core | `bin/spacedown` (HTML path), `scripts/bundle-cli`, new CLI-side files under `scripts/` or `assets/` | full suite |
 | Q3 X-ray | QL `Resources/xray.js`, QL `test-xray.js` | `xray,quicklook` |
 | Q4 Present | QL `Resources/present.js`, QL `test-present.js` | `present,quicklook` |

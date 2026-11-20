@@ -2,14 +2,14 @@ name: SpacedownQL
 options:
   bundleIdPrefix: dfoundation.spacedown
   deploymentTarget:
-    macOS: "12.0"
+    macOS: "13.0"
   createIntermediateGroups: true
 settings:
   base:
     DEVELOPMENT_TEAM: W777S7V8TN
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.1.0"
+    MARKETING_VERSION: "1.2.0"
     CURRENT_PROJECT_VERSION: "1"
     PRODUCT_NAME: SpacedownQL
     INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Console Labs"
@@ -24,6 +24,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dfoundation.spacedown.quicklook
+        QL_DISPLAY_NAME: Spacedown Quick Look
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Info.plist
         CODE_SIGN_ENTITLEMENTS: SpacedownQL.entitlements
+      # A Debug build never touches an installed release: its ids carry .dev under the
+      # Debug host app's dfoundation.spacedown.dev (integrations/build-safari.sh CONFIG=Debug).
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: dfoundation.spacedown.dev.quicklook
+          QL_DISPLAY_NAME: Spacedown Dev Quick Look

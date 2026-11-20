@@ -72,6 +72,44 @@ check("real callout beside code still a callout", mixed.includes("sd-callout-tip
 check("real inline and display math beside code still render",
   (mixed.match(/class="katex"/g) || []).length === 2 && mixed.includes("katex-display") && mixed.includes("<code>$b$</code>"));
 
+// Indented (four-space) code blocks and code spans that cross a line break are code too.
+const katexCount = (s) => (s.match(/class="katex"/g) || []).length;
+const ind = ctx.mdToHtml("Run this:\n\n    export P=$HOME/bin:$PATH\n    echo \"$(date)\" $USER\n\nThen $a^2$ holds.\n");
+check("indented block keeps $VAR and $(cmd) literal", /<pre><code>export P=\$HOME\/bin:\$PATH\n/.test(ind) &&
+  ind.includes("$(date)") && katexCount(ind) === 1);
+const indTab = ctx.mdToHtml("\techo $HOME/$USER and $(pwd)\n");
+check("tab-indented block at the start keeps $ literal", indTab.includes("<pre><code>echo $HOME/$USER and $(pwd)") && katexCount(indTab) === 0);
+const indCallout = ctx.mdToHtml("Example:\n\n    > [!note] Not a callout\n    > body\n");
+check("indented > [!note] stays code", !indCallout.includes("sd-callout") && indCallout.includes("[!note]"));
+const indQuote = ctx.mdToHtml("> Quoted:\n>\n>     echo $HOME/$USER $(pwd)\n");
+check("indented block inside a blockquote keeps $ literal", indQuote.includes("echo $HOME/$USER $(pwd)") && katexCount(indQuote) === 0);
+const indHead = ctx.mdToHtml("# Shell\n    echo $HOME/$USER $(pwd)\n");
+check("indented block right under a heading keeps $ literal", indHead.includes("<pre><code>echo $HOME") && katexCount(indHead) === 0);
+const lazy = ctx.mdToHtml("A paragraph line\n    with $a^2$ indented on the next line.\n");
+check("indented lazy paragraph line still renders math", katexCount(lazy) === 1 && !lazy.includes("<pre>"));
+const listCont = ctx.mdToHtml("- item one\n\n    continued with $a^2$ in the item.\n\n- item two\n");
+check("list continuation indented four spaces still renders math", katexCount(listCont) === 1 && !listCont.includes("<pre>"));
+const nested = ctx.mdToHtml("1. First\n\n    - nested $b^2$ item\n\n          echo $HOME/$USER\n\n    still $c^2$ in the nested item\n");
+check("nested list item renders math, its own indented code stays literal",
+  katexCount(nested) === 2 && nested.includes("<pre><code>echo $HOME"));
+const multiSpan = ctx.mdToHtml("Set `PATH=\n$HOME/$USER/bin` first, then $a^2$.\n");
+check("code span across a line break keeps $ literal", /<code>PATH=\s\$HOME\/\$USER\/bin<\/code>/.test(multiSpan) && katexCount(multiSpan) === 1);
+const multiQuote = ctx.mdToHtml("> Use `echo\n> $HOME/$USER` here.\n");
+check("code span across a line break in a blockquote keeps $ literal", katexCount(multiQuote) === 0 && multiQuote.includes("$HOME/$USER</code>"));
+const stray = ctx.mdToHtml("A stray ` backtick.\n\nThen $a^2$ and `x`.\n");
+check("a stray backtick does not reach past a blank line", katexCount(stray) === 1 && stray.includes("<code>x</code>"));
+const strayList = ctx.mdToHtml("- one ` tick\n- two $a^2$ and ` tick\n");
+check("a span never joins two list items", katexCount(strayList) === 1);
+const strayHead = ctx.mdToHtml("# Head ` tick\nThen $a^2$ ` here.\n");
+check("a span never crosses a heading line", katexCount(strayHead) === 1);
+// A span closes on its own line first: a stray backtick above must not shift the pairing.
+const strayAbove = ctx.mdToHtml("A stray ` tick here.\nThen `$A/$B` is code and $x$ is math.\n");
+check("a balanced span after a stray backtick stays code", katexCount(strayAbove) === 1 &&
+  strayAbove.includes("$A/$B") && !strayAbove.includes("SDCODE"));
+// A multi-line span is stashed line by line, so no $ pair forms across it.
+const across = ctx.mdToHtml("Pay $A and `x\ny` then B$ now.\n");
+check("no math pairs a $ before a two-line span with one after it", katexCount(across) === 0 && !across.includes("SDCODE"));
+
 // Short table columns get sd-tight so auto layout cannot collapse them to their
 // longest word; the prose column that competes for the width stays wrappable.
 const tt = ctx.mdToHtml("| Date | Event |\n|---|---|\n| 1960s to 1970s | Phototypesetting replaced hot metal across the trade, and the craft went with it |\n");

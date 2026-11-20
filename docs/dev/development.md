@@ -36,12 +36,13 @@ How the parts fit, how to build each one, and where the code lives. Setup from a
 | The app, Quick Look only, not installed | `NO_INSTALL=1 integrations/build-safari.sh` | prints the path of the built `Spacedown.app` |
 | Also the Safari extension and its helper | `NO_INSTALL=1 integrations/build-safari.sh --with-safari` | same |
 | Build and install | `integrations/build-safari.sh` | `~/Applications/Spacedown.app`, registered and opened once |
+| A test build beside an installed release | `CONFIG=Debug integrations/build-safari.sh` | `~/Applications/Spacedown Dev.app`: every id, the App Group and the helper service carry `.dev`, so it never touches the release |
 | The Quick Look skin with the iA fonts embedded | `scripts/build-ql-skin [out.css]` | the shipped `ql-reading.css` |
 | KaTeX for the panel | `scripts/build-ql-katex` | KaTeX CSS with the fonts inlined |
 | The custom highlight.js | `scripts/hljs-build` | `Resources/highlight.min.js` |
 | The CLI copy inside the app | `scripts/bundle-cli` (run by the build; `BUNDLE_CLI=0` skips it) | `Contents/Resources/cli/` |
 
-The build signs ad hoc, so Gatekeeper and Safari treat a local build as unsigned. The header of `integrations/build-safari.sh` lists every variable (`SIGN_ID`, `NOTARIZE`, `APP_DEST`, `SKIN_CSS`, ...). Signing with a real identity is a maintainer step ([release.md](release.md)).
+Every build is universal (arm64 and x86_64) with a macOS 13.0 deployment target. The build signs ad hoc, so Gatekeeper and Safari treat a local build as unsigned. The header of `integrations/build-safari.sh` lists every variable (`SIGN_ID`, `NOTARIZE`, `APP_DEST`, `SKIN_CSS`, `CONFIG`, ...). Signing with a real identity is a maintainer step ([release.md](release.md)).
 
 The Quick Look Xcode project is generated from `integrations/safari/quick-look/project.yml` by XcodeGen on every build; do not commit the generated `.xcodeproj`.
 

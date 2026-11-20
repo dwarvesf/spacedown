@@ -114,7 +114,7 @@ check("css: scroll snapping on, slides at least one screen tall",
   /scroll-snap-align:start/.test(page.css));
 check("css: the checked state switches slides on, by sibling selector",
   /#sd-present:checked ~ \.sd-slide\{/.test(page.css));
-check("css: no :has() (the deployment target is macOS 12.0)", !/:has\(/.test(page.css));
+check("css: no :has(), the sibling selector alone toggles the slides", !/:has\(/.test(page.css));
 check("css: off, slide children keep the reading page's body-child measure, rhythm and phone table scroll",
   /#sd-present:not\(:checked\) ~ \.sd-slide > p,/.test(page.css) &&
   /#sd-present:not\(:checked\) ~ \.sd-slide > hr\{max-width:var\(--sd-measure\)\}/.test(page.css) &&
