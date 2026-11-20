@@ -76,7 +76,7 @@ A door is hard to undo once it ships. A change that touches one needs a maintain
 | Door | Paths or change | Why it is one way | Held by |
 |---|---|---|---|
 | Contract-frozen files | the list in [scripts/agent-frozen-paths.txt](scripts/agent-frozen-paths.txt), from `docs/contract-r1.md` | other code and the settings store are built against them | agent hook (a `contract/<slug>` branch), review |
-| Release and signing | `scripts/release.sh`, `scripts/mas-altool.sh`, `scripts/asc_setup.py`, `scripts/asc_listing.py`, `docs/dev/release.md`, `*.entitlements`, notarization and provisioning material | a release publishes and deletes the older ones; a signing change breaks update paths | review; never run a release script |
+| Release and signing | `scripts/release.sh`, `scripts/mas-altool.sh`, `scripts/asc_setup.py`, `scripts/asc_listing.py`, `docs/dev/release.md`, `*.entitlements`, notarization and provisioning material | a release publishes (older releases are kept by default; `PRUNE_OLD_RELEASES=1` opts in to deleting them); a signing change breaks update paths | review; never run a release script |
 | Bundle ids and the App Group | `dfoundation.spacedown`, `dfoundation.spacedown.quicklook`, the App Group id in `docs/contract-r1.md`, `Info.plist`, `project.yml`, `project.pbxproj` | stored settings, store listings and installed copies are keyed to them | review (most of these paths are frozen files too) |
 | License and trademark | `LICENSE`, `NOTICE`, `TRADEMARKS.md`, the license of contributions in `CONTRIBUTING.md` and the PR template | versions already released keep the license they shipped under | review |
 | CI workflows | `.github/workflows/`, `.github/actionlint.yaml` | the repo is public: a workflow change can spend money or expose a secret; never a self-hosted runner | review |
@@ -85,7 +85,7 @@ A door is hard to undo once it ships. A change that touches one needs a maintain
 
 ### Never
 - Never commit secrets, signing material, provisioning profiles, or build output (`build/`, rendered `.html`).
-- Never run `scripts/release.sh`: it publishes a release and deletes the older ones. Only a maintainer cuts a release ([docs/dev/release.md](docs/dev/release.md)).
+- Never run `scripts/release.sh`: it publishes a release (older releases are kept by default; `PRUNE_OLD_RELEASES=1` opts in to deleting them). Only a maintainer cuts a release ([docs/dev/release.md](docs/dev/release.md)).
 - Never add a self-hosted runner to CI. The repo is public; a fork PR would run on that machine.
 - Never use em or en dashes in code, comments or docs.
 

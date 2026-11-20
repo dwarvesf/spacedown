@@ -11,7 +11,7 @@
 # What it runs, in order:
 #   1. bash -n on every tests/*.sh and every agent script (CI does this too)
 #   2. bash tests/smoke.sh under /bin/bash (bash 3.2, as CI does); must end "smoke: all N passed"
-#   3. the unit tests outside smoke: katex-one-test.sh, size-budget-test.sh, hljs-bundle-test.js,
+#   3. the unit tests outside smoke: katex-one-test.sh, size-budget-test.sh, release-notes-test.sh, hljs-bundle-test.js,
 #      plus the owner check and pr-shape-test.sh that CI runs
 #   4. the agent harness tests: guard, kit hook wrapper, lesson index
 #   5. actionlint, when installed (a missing one is a note, not a failure)
@@ -116,6 +116,8 @@ run_step "katex-one-test.sh" "read the FAIL lines above; docs/dev/testing.md, ro
     /bin/bash tests/katex-one-test.sh
 run_step "size-budget-test.sh" "read the FAIL lines above; docs/dev/testing.md, row Size budget" \
     /bin/bash tests/size-budget-test.sh
+run_step "release-notes-test.sh" "read the FAIL lines above; scripts/release-notes.sh and the CHANGELOG section for the version in project.yml" \
+    /bin/bash tests/release-notes-test.sh
 if command -v node >/dev/null 2>&1; then
     run_step "hljs-bundle-test.js" "read the FAIL lines above; docs/dev/testing.md, row highlight.js" \
         node tests/hljs-bundle-test.js
